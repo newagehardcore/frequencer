@@ -22,16 +22,16 @@ chmod +x setup.sh
 Double-click setup.bat
 ```
 
-This downloads Tone.js (~1.5MB) into the folder and opens `frequencer.html` in your browser. After that first setup, just open `frequencer.html` directly — no internet needed.
+This downloads Tone.js (~1.5MB) into the folder and opens `index.html` in your browser. After that first setup, just open `index.html` directly — no internet needed.
 
 ### Manual setup (if the scripts don't work)
 
 1. Download **Tone.js 14.8.49** from:  
    `https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js`
 2. Place `Tone.js` in the same folder as `frequencer.html`
-3. Open `frequencer.html` in Chrome, Firefox, or Safari
+3. Open `index.html` in Chrome, Firefox, or Safari
 
-> **Note:** Opening `frequencer.html` directly as a `file://` URL works in most browsers. If you see audio errors in Chrome, try launching Chrome with `--allow-file-access-from-files`, or serve locally with `python3 -m http.server` and open `http://localhost:8000`.
+> **Note:** Opening `index.html` directly as a `file://` URL works in most browsers. If you see audio errors in Chrome, try launching Chrome with `--allow-file-access-from-files`, or serve locally with `python3 -m http.server` and open `http://localhost:8000`.
 
 ---
 
@@ -259,14 +259,14 @@ npx serve .
 
 ```
 frequencer/
-├── frequencer.html ← The entire app (single file, ~1600 lines)
+├── index.html      ← The entire app (single file, ~1600 lines)
 ├── Tone.js         ← Audio engine (downloaded by setup script)
 ├── setup.sh        ← Mac/Linux setup & launch script
 ├── setup.bat       ← Windows setup & launch script
 └── README.md       ← This file
 ```
 
-The app is entirely self-contained in `frequencer.html`. If you want to share it or use it online, you can also swap the local `./Tone.js` reference back to the CDN URL:
+The app is entirely self-contained in `index.html`. If you want to share it or use it online, you can also swap the local `./Tone.js` reference back to the CDN URL:
 
 ```html
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
