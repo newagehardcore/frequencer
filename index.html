@@ -322,7 +322,7 @@
     .tile.expanded {
       z-index: 50;
       cursor: default;
-      opacity: 0;
+      opacity: 0.15;
       pointer-events: none;
     }
 
@@ -398,15 +398,13 @@
     }
 
     /* ═══ FLOATING SAMPLE CARD ═══ */
-    /* Appears at tile center, grows down to reveal controls */
-    #card {
+    .sample-card {
       position: fixed;
       z-index: 400;
       width: 280px;
       background: #0a0a0a;
       border: 1px solid #333;
       overflow: hidden;
-      /* grow animation: max-height reveals content top→bottom */
       max-height: 0;
       opacity: 0;
       pointer-events: none;
@@ -414,21 +412,14 @@
         opacity 0.18s ease;
     }
 
-    #card.open {
+    .sample-card.open {
       max-height: 620px;
       opacity: 1;
       pointer-events: all;
     }
 
-    #card-titlebar {
+    .card-titlebar {
       cursor: grab;
-    }
-
-    #card-titlebar:active {
-      cursor: grabbing;
-    }
-
-    #card-titlebar {
       padding: 7px 10px;
       display: flex;
       align-items: center;
@@ -437,14 +428,18 @@
       background: #111;
     }
 
-    #card-color-dot {
+    .card-titlebar:active {
+      cursor: grabbing;
+    }
+
+    .card-color-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
-    #card-name {
+    .card-name {
       font-size: 11px;
       font-weight: 700;
       letter-spacing: -0.03em;
@@ -456,7 +451,7 @@
       color: #ccc;
     }
 
-    #card-close {
+    .card-close {
       background: none;
       border: none;
       color: #555;
@@ -468,11 +463,11 @@
       font-family: inherit;
     }
 
-    #card-close:hover {
+    .card-close:hover {
       color: #fff;
     }
 
-    #card-wave-wrap {
+    .card-wave-wrap {
       position: relative;
       height: 80px;
       margin: 8px 8px 0;
@@ -482,7 +477,7 @@
       cursor: zoom-in;
     }
 
-    #card-zoom-label {
+    .card-zoom-label {
       position: absolute;
       top: 4px;
       right: 6px;
@@ -497,16 +492,16 @@
       z-index: 10;
     }
 
-    #card-zoom-label.visible {
+    .card-zoom-label.visible {
       opacity: 1;
     }
 
-    #card-wave-canvas {
+    .card-wave-canvas {
       width: 100%;
       height: 100%;
     }
 
-    #card-ph {
+    .card-ph {
       position: absolute;
       top: 0;
       bottom: 0;
@@ -516,7 +511,7 @@
       z-index: 3;
     }
 
-    #card-loop-reg {
+    .card-loop-reg {
       position: absolute;
       top: 0;
       bottom: 0;
@@ -526,7 +521,7 @@
       pointer-events: none;
     }
 
-    #card-times {
+    .card-times {
       display: flex;
       justify-content: space-between;
       padding: 2px 8px 0;
@@ -698,13 +693,11 @@
       background: #fff;
     }
 
-    #lh-s,
-    #clh-s {
+    .clh-s {
       left: -6px;
     }
 
-    #lh-e,
-    #clh-e {
+    .clh-e {
       right: -6px;
     }
 
@@ -874,116 +867,6 @@
     </div>
   </div>
 
-  <!-- FLOATING SAMPLE CARD (click on tile to open, expands in place) -->
-  <div id="card">
-    <!-- Titlebar colored per sample -->
-    <div id="card-titlebar">
-      <div id="card-color-dot"></div>
-      <div id="card-name">SAMPLE</div>
-      <button id="card-close">✕</button>
-    </div>
-
-    <!-- Enlarged waveform -->
-    <div id="card-wave-wrap">
-      <canvas id="card-wave-canvas"></canvas>
-      <div id="card-loop-reg">
-        <div class="lh" id="clh-s"></div>
-        <div class="lh" id="clh-e"></div>
-      </div>
-      <div id="card-ph"></div>
-      <div id="card-zoom-label"></div>
-    </div>
-    <div id="card-times">
-      <span id="ct-s">Start: 0.000s</span>
-      <span id="ct-e">End: 0.000s</span>
-    </div>
-
-    <!-- Controls -->
-    <div class="card-body">
-
-      <div class="csec">
-        <div class="crow">
-          <button class="cbtn act" id="card-play">▶ Play</button>
-          <button class="cbtn" id="card-stop">■ Stop</button>
-        </div>
-        <div class="crow">
-          <span class="clbl">Mute</span>
-          <div class="tog" id="card-mute"></div>
-          <span class="clbl" style="margin-left:10px">Solo</span>
-          <div class="tog" id="card-solo"></div>
-        </div>
-      </div>
-
-      <div class="csec">
-        <div class="crow">
-          <span class="clbl">Pitch</span>
-          <input type="range" id="card-pitch" min="-24" max="24" step="1" value="0">
-          <span class="cval" id="cval-pitch">0 st</span>
-        </div>
-      </div>
-
-      <div class="csec">
-        <div class="crow">
-          <span class="clbl">Start</span>
-          <input type="range" id="card-start" min="0" max="1" step="0.001" value="0">
-          <span class="cval" id="cval-start">0.000</span>
-        </div>
-        <div class="crow">
-          <span class="clbl">End</span>
-          <input type="range" id="card-end" min="0" max="1" step="0.001" value="1">
-          <span class="cval" id="cval-end">1.000</span>
-        </div>
-      </div>
-
-      <div class="csec">
-        <div class="crow">
-          <span class="clbl">Attack</span>
-          <input type="range" id="card-attack" min="0" max="4" step="0.01" value="0">
-          <span class="cval" id="cval-attack">0 ms</span>
-        </div>
-        <div class="crow">
-          <span class="clbl">Release</span>
-          <input type="range" id="card-release" min="0" max="4" step="0.01" value="0">
-          <span class="cval" id="cval-release">0 ms</span>
-        </div>
-        <div class="crow">
-          <span class="clbl">X-Fade</span>
-          <input type="range" id="card-xfade" min="0" max="4" step="0.01" value="0">
-          <span class="cval" id="cval-xfade">0 ms</span>
-        </div>
-      </div>
-
-      <div class="csec">
-        <div class="crow">
-          <span class="clbl">Grid</span>
-          <div class="tog" id="card-grid"></div>
-          <span class="clbl" style="margin-left:10px">Sub</span>
-          <select id="card-subdiv" style="flex:1">
-            <option value="1">1 Bar</option>
-            <option value="2">½</option>
-            <option value="4" selected>¼</option>
-            <option value="8">⅛</option>
-            <option value="16">1/16</option>
-          </select>
-        </div>
-        <div class="crow" id="card-overflow-row">
-          <span class="clbl">Overflow</span>
-          <select id="card-overflow" style="flex:1">
-            <option value="wait" selected>Wait</option>
-            <option value="cut">Cut</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="csec" style="border:none">
-        <div class="crow">
-          <button class="cbtn danger" id="card-remove">✕ Remove</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
   <!-- FOOTER -->
   <div id="ftr">
     <div class="fsec">
@@ -1034,32 +917,10 @@
     let isPlaying = false;
     let metroOn = false;
 
-    let waveZoom = 1.0;
-    let waveZoomCenter = 0.5;
     const WAVE_ZOOM_MAX = 32;
-
-    function getZoomView() {
-      const w = 1 / waveZoom;
-      let s = waveZoomCenter - w / 2;
-      let e = s + w;
-      if (s < 0) { s = 0; e = w; }
-      if (e > 1) { e = 1; s = Math.max(0, 1 - w); }
-      return { start: s, end: e, width: e - s };
-    }
-
-    function updateZoomLabel() {
-      const lbl = document.getElementById('card-zoom-label');
-      if (!lbl) return;
-      if (waveZoom <= 1.005) {
-        lbl.classList.remove('visible');
-      } else {
-        lbl.textContent = waveZoom.toFixed(1) + '\u00d7';
-        lbl.classList.add('visible');
-      }
-    }
     let soloId = null;
-    let activeId = null;   // open card
-    let _cardDragged = false;
+    const openCards = new Map(); // sampleId → { el, getZView, drawWave, updateLoopReg }
+    let cardZTop = 400;
     let nextId = 1;
 
     const samples = new Map();
@@ -1660,7 +1521,7 @@
       // Single click → open card, or close if already open
       t.addEventListener('click', (e) => {
         if (!t._dragged) {
-          if (activeId === s.id) closeCard();
+          if (openCards.has(s.id)) closeCard(s.id);
           else openCard(s.id, t);
         }
       });
@@ -1814,15 +1675,18 @@
         ph.style.display = 'block';
       }
 
-      // Card (floating inspector) playhead
-      const si = samples.get(activeId);
-      const cph = document.getElementById('card-ph');
-      if (si instanceof Sample && si.playing && cph && activeId !== null) {
-        const W = document.getElementById('card-wave-wrap').clientWidth || 264;
+      // Card playheads — one per open card
+      for (const [cid, cardInfo] of openCards) {
+        const si = samples.get(cid);
+        const cph = cardInfo.phEl();
+        if (!cph) continue;
+        if (!(si instanceof Sample) || !si.playing) { cph.style.display = 'none'; continue; }
+        const wrap = cardInfo.waveWrap();
+        const W = wrap ? wrap.clientWidth || 264 : 264;
         const pos = si.playheadPos();
         if (pos !== null) {
           const absPos = si.loopStart + pos * (si.loopEnd - si.loopStart);
-          const { start: vs, width: vw } = getZoomView();
+          const { start: vs, width: vw } = cardInfo.getZView();
           const viewPos = (absPos - vs) / vw;
           if (viewPos >= 0 && viewPos <= 1) {
             cph.style.left = viewPos * W + 'px';
@@ -1831,7 +1695,7 @@
             cph.style.display = 'none';
           }
         } else cph.style.display = 'none';
-      } else if (cph) cph.style.display = 'none';
+      }
 
       requestAnimationFrame(phLoop);
     })();
@@ -1969,9 +1833,8 @@
       const t = document.getElementById('t' + id) || document.getElementById('stub' + id);
       if (t) t.remove();
       samples.delete(id);
-      if (activeId === id) closeInspector();
+      if (openCards.has(id)) closeCard(id);
       if (soloId === id) { soloId = null; applyAllVols(); refreshSoloVis(); }
-      hidePopup();
       updateEmpty();
     }
 
@@ -1981,486 +1844,8 @@
     }
 
     // ════════════════════════════════════════════════════
-    // FLOATING SAMPLE CARD
+    // FLOATING SAMPLE CARDS (multi-open)
     // ════════════════════════════════════════════════════
-    const card = document.getElementById('card');
-
-    function openCard(id, tile) {
-      const s = samples.get(id);
-      if (!(s instanceof Sample)) return;
-      activeId = id;
-
-      // Mark tile as active, clear others
-      document.querySelectorAll('.tile').forEach(t => t.classList.remove('active', 'expanded'));
-      tile.classList.add('active');
-
-      // Color the card border and titlebar dot
-      card.style.borderColor = s.color;
-      document.getElementById('card-color-dot').style.background = s.color;
-      document.getElementById('card-ph').style.background = s.color;
-      document.getElementById('card-name').textContent = s.name.toUpperCase();
-
-      // Sync controls
-      document.getElementById('card-pitch').value = s.pitchST;
-      document.getElementById('cval-pitch').textContent = s.pitchST + ' st';
-      document.getElementById('card-start').value = s.loopStart;
-      document.getElementById('cval-start').textContent = s.loopStart.toFixed(3);
-      document.getElementById('card-end').value = s.loopEnd;
-      document.getElementById('cval-end').textContent = s.loopEnd.toFixed(3);
-      document.getElementById('card-subdiv').value = s.subdiv;
-      document.getElementById('card-overflow').value = s.overflow;
-      document.getElementById('card-mute').classList.toggle('on', s.muted);
-      document.getElementById('card-solo').classList.toggle('on', soloId === s.id);
-      document.getElementById('card-grid').classList.toggle('on', s.gridSync);
-      setCardGridUI(s.gridSync);
-      document.getElementById('card-attack').value = s.attackTime;
-      document.getElementById('cval-attack').textContent = fmtFade(s.attackTime);
-      document.getElementById('card-release').value = s.releaseTime;
-      document.getElementById('cval-release').textContent = fmtFade(s.releaseTime);
-      document.getElementById('card-xfade').value = s.crossfadeTime;
-      document.getElementById('cval-xfade').textContent = fmtFade(s.crossfadeTime);
-      _updateFadeDisabledState();
-
-      // Position card centered on the tile horizontally, anchored at tile top
-      const tileRect = tile.getBoundingClientRect();
-      const CW = 280, CH = 420;
-      let cx = tileRect.left + TW / 2 - CW / 2;
-      let cy = tileRect.top;
-
-      // Keep on screen
-      const margin = 8;
-      cx = Math.max(margin, Math.min(window.innerWidth - CW - margin, cx));
-      cy = Math.max(margin + 40, Math.min(window.innerHeight - CH - 60, cy));
-
-      card.style.left = cx + 'px';
-      card.style.top = cy + 'px';
-
-      // Hide the underlying tile (card appears over it)
-      tile.classList.add('expanded');
-
-      // Trigger grow animation
-      requestAnimationFrame(() => card.classList.add('open'));
-
-      // Reset waveform zoom for new card
-      waveZoom = 1.0;
-      waveZoomCenter = 0.5;
-      updateZoomLabel();
-
-      // Draw waveform in card
-      drawCardWave(s);
-      updateCardLoopReg(s);
-    }
-
-    function closeCard() {
-      card.classList.remove('open');
-      document.querySelectorAll('.tile').forEach(t => t.classList.remove('active', 'expanded'));
-      activeId = null;
-    }
-
-    function drawCardWave(s) {
-      const wrap = document.getElementById('card-wave-wrap');
-      const W = wrap.clientWidth || 264, H = wrap.clientHeight || 80;
-      const c = document.getElementById('card-wave-canvas');
-      c.width = W; c.height = H;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-
-      const peaks = s.getHiResPeaks();
-      const { start: vs, end: ve } = getZoomView();
-      const startIdx = vs * peaks.length;
-      const endIdx = ve * peaks.length;
-      const range = endIdx - startIdx;
-      const step = range / W;
-
-      for (let i = 0; i < W; i++) {
-        const binStart = Math.floor(startIdx + i * step);
-        const binEnd = Math.ceil(startIdx + (i + 1) * step);
-        let amp = 0;
-        for (let b = binStart; b < binEnd && b < peaks.length; b++) {
-          if (peaks[b] > amp) amp = peaks[b];
-        }
-        const barH = Math.max(1, amp * H * 0.88);
-        ctx.fillStyle = hexToRgba(s.color, 0.25 + amp * 0.75);
-        ctx.fillRect(i, H / 2 - barH / 2, 1, barH);
-      }
-      ctx.fillStyle = hexToRgba(s.color, 0.15);
-      ctx.fillRect(0, H / 2, W, 1);
-
-      // ── Fade overlays ──
-      const vw = ve - vs;
-      const toX = norm => (norm - vs) / vw * W;
-
-      // Attack: dark → transparent from loopStart going right
-      if (s.attackTime > 0) {
-        const atkEndNorm = Math.min(s.loopEnd, s.loopStart + s.attackTime / s.duration);
-        const x0 = Math.max(0, toX(s.loopStart));
-        const x1 = Math.min(W, Math.max(x0, toX(atkEndNorm)));
-        if (x1 > x0) {
-          const g = ctx.createLinearGradient(x0, 0, x1, 0);
-          g.addColorStop(0, 'rgba(0,0,0,0.78)');
-          g.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = g;
-          ctx.fillRect(x0, 0, x1 - x0, H);
-        }
-      }
-
-      // Release: transparent → dark toward loopEnd going right
-      if (s.releaseTime > 0) {
-        const relStartNorm = Math.max(s.loopStart, s.loopEnd - s.releaseTime / s.duration);
-        const x0 = Math.max(0, Math.min(W, toX(relStartNorm)));
-        const x1 = Math.min(W, toX(s.loopEnd));
-        if (x1 > x0) {
-          const g = ctx.createLinearGradient(x0, 0, x1, 0);
-          g.addColorStop(0, 'rgba(0,0,0,0)');
-          g.addColorStop(1, 'rgba(0,0,0,0.78)');
-          ctx.fillStyle = g;
-          ctx.fillRect(x0, 0, x1 - x0, H);
-        }
-      }
-
-      // Crossfade: colored tint centered on each handle, extending both inside
-      // and outside the loop region to show that pre/post-roll audio is being used.
-      if (s.crossfadeTime > 0) {
-        const xfdNorm = s.crossfadeTime / s.duration;
-        const preAvail = s.loopStart * s.duration >= s.crossfadeTime;
-        const postAvail = (1 - s.loopEnd) * s.duration >= s.crossfadeTime;
-
-        // Start handle: gradient spans [loopStart - xfdNorm … loopStart + xfdNorm]
-        // Left half (outside/pre-roll): transparent → color at handle
-        // Right half (inside loop):     color at handle → transparent
-        const sxOut = toX(s.loopStart - xfdNorm); // outside (pre-roll side)
-        const sxMid = toX(s.loopStart);            // at the handle
-        const sxIn  = toX(s.loopStart + xfdNorm);  // inside loop
-        if (preAvail && sxMid > sxOut) {
-          const g = ctx.createLinearGradient(Math.max(0, sxOut), 0, sxMid, 0);
-          g.addColorStop(0, hexToRgba(s.color, 0));
-          g.addColorStop(1, hexToRgba(s.color, 0.5));
-          ctx.fillStyle = g;
-          ctx.fillRect(Math.max(0, sxOut), 0, sxMid - Math.max(0, sxOut), H);
-        }
-        if (sxIn > sxMid) {
-          const g = ctx.createLinearGradient(sxMid, 0, Math.min(W, sxIn), 0);
-          g.addColorStop(0, hexToRgba(s.color, preAvail ? 0.5 : 0.35));
-          g.addColorStop(1, hexToRgba(s.color, 0));
-          ctx.fillStyle = g;
-          ctx.fillRect(sxMid, 0, Math.min(W, sxIn) - sxMid, H);
-        }
-
-        // End handle: gradient spans [loopEnd - xfdNorm … loopEnd + xfdNorm]
-        // Left half (inside loop):     transparent → color at handle
-        // Right half (outside/post-roll): color at handle → transparent
-        const exIn  = toX(s.loopEnd - xfdNorm);   // inside loop
-        const exMid = toX(s.loopEnd);              // at the handle
-        const exOut = toX(s.loopEnd + xfdNorm);    // outside (post-roll side)
-        if (exMid > exIn) {
-          const g = ctx.createLinearGradient(Math.max(0, exIn), 0, exMid, 0);
-          g.addColorStop(0, hexToRgba(s.color, 0));
-          g.addColorStop(1, hexToRgba(s.color, postAvail ? 0.5 : 0.35));
-          ctx.fillStyle = g;
-          ctx.fillRect(Math.max(0, exIn), 0, exMid - Math.max(0, exIn), H);
-        }
-        if (postAvail && exOut > exMid) {
-          const g = ctx.createLinearGradient(exMid, 0, Math.min(W, exOut), 0);
-          g.addColorStop(0, hexToRgba(s.color, 0.5));
-          g.addColorStop(1, hexToRgba(s.color, 0));
-          ctx.fillStyle = g;
-          ctx.fillRect(exMid, 0, Math.min(W, exOut) - exMid, H);
-        }
-      }
-    }
-
-    function updateCardLoopReg(s) {
-      const W = document.getElementById('card-wave-wrap').clientWidth || 264;
-      const { start: vs, width: vw } = getZoomView();
-      const reg = document.getElementById('card-loop-reg');
-      const regStart = (s.loopStart - vs) / vw;
-      const regEnd = (s.loopEnd - vs) / vw;
-      reg.style.left = regStart * W + 'px';
-      reg.style.width = Math.max(0, (regEnd - regStart) * W) + 'px';
-      document.getElementById('ct-s').textContent = 'Start: ' + s.startSec.toFixed(3) + 's';
-      document.getElementById('ct-e').textContent = 'End: ' + s.endSec.toFixed(3) + 's';
-      drawCardWave(s);
-      refreshTileWave(s);
-    }
-
-    function setCardGridUI(on) {
-      const ov = document.getElementById('card-overflow-row');
-      ov.style.opacity = on ? '1' : '0.3';
-      ov.style.pointerEvents = on ? 'all' : 'none';
-      const sub = document.getElementById('card-subdiv');
-      sub.style.opacity = on ? '1' : '0.4';
-      sub.style.pointerEvents = on ? 'all' : 'none';
-      // Lock end handle when grid is on — end is determined by subdivision length
-      const endSlider = document.getElementById('card-end');
-      const endHandle = document.getElementById('clh-e');
-      endSlider.disabled = on;
-      endHandle.style.pointerEvents = on ? 'none' : 'all';
-      endHandle.style.opacity = on ? '0.35' : '1';
-    }
-
-    // Snap loopEnd to the current subdivision length from loopStart
-    function _snapEndToSubdiv(s) {
-      const bpm = Tone.Transport.bpm.value;
-      const subdivSec = (60 / bpm) * (4 / s.subdiv);
-      const snappedEnd = Math.min(1, s.loopStart + subdivSec / s.duration);
-      s.setLoopBounds(s.loopStart, snappedEnd);
-      document.getElementById('card-end').value = s.loopEnd;
-      document.getElementById('cval-end').textContent = s.loopEnd.toFixed(3);
-      updateCardLoopReg(s);
-      drawCardWave(s);
-    }
-
-    // Loop handle dragging in card waveform
-    ['clh-s', 'clh-e'].forEach(hid => {
-      const isStart = hid === 'clh-s';
-      document.getElementById(hid).addEventListener('mousedown', e => {
-        e.stopPropagation();
-        // End handle is locked when grid sync is on
-        if (!isStart) {
-          const s = samples.get(activeId);
-          if (s instanceof Sample && s.gridSync) return;
-        }
-        const wrap = document.getElementById('card-wave-wrap');
-        const rect = wrap.getBoundingClientRect(), W = rect.width;
-        const mm = ev => {
-          const s = samples.get(activeId);
-          if (!(s instanceof Sample)) return;
-          const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
-          const { start: vs, width: vw } = getZoomView();
-          const rel = Math.max(0, Math.min(1, vs + relView * vw));
-          let newStart = s.loopStart;
-          let newEnd = s.loopEnd;
-          if (isStart) {
-            newStart = Math.min(rel, s.loopEnd - 0.005);
-            document.getElementById('card-start').value = newStart;
-            document.getElementById('cval-start').textContent = newStart.toFixed(3);
-          } else {
-            newEnd = Math.max(rel, s.loopStart + 0.005);
-            document.getElementById('card-end').value = newEnd;
-            document.getElementById('cval-end').textContent = newEnd.toFixed(3);
-          }
-          s.setLoopBounds(newStart, newEnd);
-          updateCardLoopReg(s);
-        };
-        const mu = () => {
-          document.removeEventListener('mousemove', mm);
-          document.removeEventListener('mouseup', mu);
-          const s = samples.get(activeId);
-          // Re-snap end handle if grid is on and start was moved
-          if (s instanceof Sample && isStart && s.gridSync) {
-            _snapEndToSubdiv(s);
-            if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
-            return;
-          }
-          if (s instanceof Sample && s.playing && !s.gridSync) {
-            const hasFades = s.attackTime > 0 || s.releaseTime > 0 || s.crossfadeTime > 0;
-            if (hasFades) {
-              // Rebuild baked buffer with new loop bounds and restart
-              s._fadedBuf = null;
-              s.play();
-            } else if (isStart) {
-              // Seek to the new start position
-              const seekTo = s.startSec;
-              const startAt = Tone.context.rawContext.currentTime + 0.005;
-              s.player.seek(seekTo, startAt);
-              s._anchorAcTime = startAt;
-              s._anchorBufferPos = seekTo;
-            }
-          }
-        };
-        document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
-      });
-    });
-
-    // Waveform zoom + pan: drag down = zoom in, drag up = zoom out, drag left/right = pan
-    document.getElementById('card-wave-wrap').addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
-      if (e.target.closest('.lh')) return; // let handles take priority
-      e.preventDefault();
-      e.stopPropagation();
-
-      const wrap = document.getElementById('card-wave-wrap');
-      const rect = wrap.getBoundingClientRect();
-      const W = rect.width;
-      const mouseViewX = Math.max(0, Math.min(1, (e.clientX - rect.left) / W));
-      const { start: vs0, width: vw0 } = getZoomView();
-      const mouseAbsPos = vs0 + mouseViewX * vw0;
-
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startZoom = waveZoom;
-
-      const mm = ev => {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
-        wrap.style.cursor = 'all-scroll';
-        // Vertical: down = zoom in, up = zoom out
-        const newZoom = Math.max(1, Math.min(WAVE_ZOOM_MAX, startZoom * Math.pow(1.025, dy)));
-        waveZoom = newZoom;
-        const newVW = 1 / newZoom;
-        // Keep anchor point fixed under vertical drag; horizontal drag pans (right = later in sample)
-        let newVS = mouseAbsPos - mouseViewX * newVW + (dx / W) * newVW;
-        newVS = Math.max(0, Math.min(1 - newVW, newVS));
-        waveZoomCenter = newVS + newVW / 2;
-        const s = samples.get(activeId);
-        if (s instanceof Sample) { drawCardWave(s); updateCardLoopReg(s); }
-        updateZoomLabel();
-      };
-
-      const mu = () => {
-        wrap.style.cursor = '';
-        document.removeEventListener('mousemove', mm);
-        document.removeEventListener('mouseup', mu);
-        // Swallow the click that fires after drag-release so the document
-        // click handler doesn't mistake it for an "outside card" click
-        const blockClick = ev => {
-          ev.stopPropagation();
-          document.removeEventListener('click', blockClick, true);
-        };
-        document.addEventListener('click', blockClick, true);
-      };
-
-      document.addEventListener('mousemove', mm);
-      document.addEventListener('mouseup', mu);
-    });
-
-    // Double-click waveform to reset zoom
-    document.getElementById('card-wave-wrap').addEventListener('dblclick', e => {
-      if (e.target.closest('.lh')) return;
-      waveZoom = 1.0;
-      waveZoomCenter = 0.5;
-      const s = samples.get(activeId);
-      if (s instanceof Sample) { drawCardWave(s); updateCardLoopReg(s); }
-      updateZoomLabel();
-    });
-
-    // Card titlebar drag — moves card and updates sample position (vol/pan)
-    document.getElementById('card-titlebar').addEventListener('mousedown', e => {
-      if (e.button !== 0 || e.target.id === 'card-close') return;
-      if (activeId === null) return;
-      const s = samples.get(activeId);
-      if (!(s instanceof Sample)) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      _cardDragged = false;
-      const sx = e.clientX, sy = e.clientY;
-      const cx0 = parseFloat(card.style.left) || 0;
-      const cy0 = parseFloat(card.style.top) || 0;
-      const cvRect = cv.getBoundingClientRect();
-      const tile = document.getElementById('t' + activeId);
-
-      const mm = ev => {
-        if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 3) _cardDragged = true;
-        const nx = cx0 + (ev.clientX - sx);
-        const ny = cy0 + (ev.clientY - sy);
-        card.style.left = nx + 'px';
-        card.style.top = ny + 'px';
-        // Sync tile position (invisible but drives audio)
-        if (tile) {
-          tile.style.left = (nx - cvRect.left + 72) + 'px'; // 72 = CW/2 - TW/2 = 140 - 68
-          tile.style.top = (ny - cvRect.top) + 'px';
-        }
-        s.x = nx - cvRect.left + 140; // CW/2 = 140
-        s.y = ny - cvRect.top + 28;   // TH/2 = 28
-        s.updateVol();
-        s.updatePan();
-      };
-      const mu = () => {
-        document.removeEventListener('mousemove', mm);
-        document.removeEventListener('mouseup', mu);
-      };
-      document.addEventListener('mousemove', mm);
-      document.addEventListener('mouseup', mu);
-    });
-
-    // Clicking the titlebar (without dragging) collapses the card
-    document.getElementById('card-titlebar').addEventListener('click', e => {
-      if (e.target.id === 'card-close') return; // close btn has its own handler
-      if (!_cardDragged) closeCard();
-    });
-
-    // Card control bindings
-    document.getElementById('card-close').addEventListener('click', e => { e.stopPropagation(); closeCard(); });
-
-    document.getElementById('card-play').addEventListener('click', e => {
-      e.stopPropagation();
-      if (activeId) togglePlay(activeId);
-      const s = samples.get(activeId);
-      document.getElementById('card-play').classList.toggle('act', s instanceof Sample && s.playing);
-    });
-    document.getElementById('card-stop').addEventListener('click', e => {
-      e.stopPropagation();
-      const s = samples.get(activeId);
-      if (s instanceof Sample) { s.stop(); document.getElementById('card-play').classList.remove('act'); }
-    });
-
-    document.getElementById('card-mute').addEventListener('click', e => {
-      e.stopPropagation();
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      s.muted = !s.muted;
-      document.getElementById('card-mute').classList.toggle('on', s.muted);
-      s.vol.volume.value = s._effectiveDb(); s._renderTile();
-    });
-    document.getElementById('card-solo').addEventListener('click', e => {
-      e.stopPropagation();
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      soloId = (soloId === s.id) ? null : s.id;
-      document.getElementById('card-solo').classList.toggle('on', soloId === s.id);
-      applyAllVols(); refreshSoloVis();
-    });
-
-    document.getElementById('card-pitch').addEventListener('input', e => {
-      const v = parseInt(e.target.value);
-      document.getElementById('cval-pitch').textContent = v + ' st';
-      const s = samples.get(activeId); if (s instanceof Sample) s.setPitch(v);
-    });
-
-    document.getElementById('card-start').addEventListener('input', e => {
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      const newStart = Math.min(parseFloat(e.target.value), s.loopEnd - 0.005);
-      s.setLoopBounds(newStart, s.loopEnd);
-      e.target.value = s.loopStart;
-      document.getElementById('cval-start').textContent = s.loopStart.toFixed(3);
-      updateCardLoopReg(s);
-    });
-    document.getElementById('card-end').addEventListener('input', e => {
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      if (s.gridSync) { e.target.value = s.loopEnd; return; }
-      const newEnd = Math.max(parseFloat(e.target.value), s.loopStart + 0.005);
-      s.setLoopBounds(s.loopStart, newEnd);
-      e.target.value = s.loopEnd;
-      document.getElementById('cval-end').textContent = s.loopEnd.toFixed(3);
-      updateCardLoopReg(s);
-    });
-
-    document.getElementById('card-grid').addEventListener('click', e => {
-      e.stopPropagation();
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      s.gridSync = !s.gridSync;
-      document.getElementById('card-grid').classList.toggle('on', s.gridSync);
-      if (s.gridSync) _snapEndToSubdiv(s);
-      setCardGridUI(s.gridSync); s._renderTile();
-      if (s.playing) {
-        s._cancelGrid(); s._stopPlayer();
-        s.player.loop = false;
-        if (s.gridSync) s.playGrid(); else s.play();
-      }
-    });
-    document.getElementById('card-subdiv').addEventListener('change', e => {
-      e.stopPropagation();
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      s.subdiv = parseInt(e.target.value);
-      if (s.gridSync) _snapEndToSubdiv(s);
-      if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
-    });
-    document.getElementById('card-overflow').addEventListener('change', e => {
-      e.stopPropagation();
-      const s = samples.get(activeId); if (s instanceof Sample) s.overflow = e.target.value;
-    });
-    document.getElementById('card-remove').addEventListener('click', e => {
-      e.stopPropagation(); removeSample(activeId);
-    });
 
     function fmtFade(secs) {
       if (secs < 0.0005) return '0 ms';
@@ -2468,68 +1853,527 @@
       return secs.toFixed(2) + ' s';
     }
 
-    function _updateFadeDisabledState() {
-      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      const hasAtk = s.attackTime > 0 || s.releaseTime > 0;
-      const hasXfd = s.crossfadeTime > 0;
-      // Crossfade disabled when attack or release is active, and vice versa
-      const xfEl = document.getElementById('card-xfade');
-      xfEl.disabled = hasAtk;
-      xfEl.closest('.crow').style.opacity = hasAtk ? '0.35' : '1';
-      ['attack', 'release'].forEach(k => {
-        const el = document.getElementById('card-' + k);
-        el.disabled = hasXfd;
-        el.closest('.crow').style.opacity = hasXfd ? '0.35' : '1';
-      });
+    function openCard(id, tile) {
+      const s = samples.get(id);
+      if (!(s instanceof Sample)) return;
+
+      // If already open, just bring to front
+      if (openCards.has(id)) {
+        const info = openCards.get(id);
+        info.el.style.zIndex = ++cardZTop;
+        return;
+      }
+
+      createCardForSample(s, tile);
     }
 
-    let _fadeRestartTimer = null;
-    ['attack', 'release', 'xfade'].forEach(key => {
-      document.getElementById('card-' + key).addEventListener('input', e => {
-        e.stopPropagation();
-        const v = parseFloat(e.target.value);
-        const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-        const prop = key === 'xfade' ? 'crossfadeTime' : key + 'Time';
+    function closeCard(id) {
+      const info = openCards.get(id);
+      if (!info) return;
+      info.el.remove();
+      openCards.delete(id);
+      const tile = document.getElementById('t' + id);
+      if (tile) tile.classList.remove('active', 'expanded');
+    }
 
-        // Mutual exclusion: crossfade ↔ attack/release
-        if (key === 'xfade' && v > 0) {
-          s.attackTime = 0; s.releaseTime = 0;
-          document.getElementById('card-attack').value = 0;
-          document.getElementById('card-release').value = 0;
-          document.getElementById('cval-attack').textContent = fmtFade(0);
-          document.getElementById('cval-release').textContent = fmtFade(0);
-        } else if (key !== 'xfade' && v > 0) {
-          s.crossfadeTime = 0;
-          document.getElementById('card-xfade').value = 0;
-          document.getElementById('cval-xfade').textContent = fmtFade(0);
-        }
+    function createCardForSample(s, tile) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'sample-card';
 
-        s[prop] = v;
-        s._fadedBuf = null;
-        document.getElementById('cval-' + key).textContent = fmtFade(v);
-        _updateFadeDisabledState();
-        drawCardWave(s); updateCardLoopReg(s);
-        if (s.playing && !s.gridSync) {
-          clearTimeout(_fadeRestartTimer);
-          _fadeRestartTimer = setTimeout(() => { s.play(); }, 60);
-        }
-      });
-    });
+      let waveZoom = 1.0;
+      let waveZoomCenter = 0.5;
+      let _cardDragged = false;
+      let _fadeRestartTimer = null;
 
-    // Close card on outside click
-    document.addEventListener('click', e => {
-      if (activeId !== null && !card.contains(e.target)) {
-        // Don't close if clicking on a tile (tile click will reopen/swap)
-        if (!e.target.closest('.tile')) closeCard();
+      function getZView() {
+        const w = 1 / waveZoom;
+        let sv = waveZoomCenter - w / 2;
+        let ev = sv + w;
+        if (sv < 0) { sv = 0; ev = w; }
+        if (ev > 1) { ev = 1; sv = Math.max(0, 1 - w); }
+        return { start: sv, end: ev, width: ev - sv };
       }
-    });
 
-    // Tile click now opens card (replaces inspector)
+      function updateZoomLbl() {
+        const lbl = cardEl.querySelector('.card-zoom-label');
+        if (!lbl) return;
+        if (waveZoom <= 1.005) lbl.classList.remove('visible');
+        else { lbl.textContent = waveZoom.toFixed(1) + '\u00d7'; lbl.classList.add('visible'); }
+      }
+
+      cardEl.innerHTML = `
+        <div class="card-titlebar">
+          <div class="card-color-dot"></div>
+          <div class="card-name">SAMPLE</div>
+          <button class="card-close">✕</button>
+        </div>
+        <div class="card-wave-wrap">
+          <canvas class="card-wave-canvas"></canvas>
+          <div class="card-loop-reg">
+            <div class="lh clh-s"></div>
+            <div class="lh clh-e"></div>
+          </div>
+          <div class="card-ph"></div>
+          <div class="card-zoom-label"></div>
+        </div>
+        <div class="card-times">
+          <span class="ct-s">Start: 0.000s</span>
+          <span class="ct-e">End: 0.000s</span>
+        </div>
+        <div class="card-body">
+          <div class="csec">
+            <div class="crow">
+              <button class="cbtn act card-play">&#9654; Play</button>
+              <button class="cbtn card-stop">&#9632; Stop</button>
+            </div>
+            <div class="crow">
+              <span class="clbl">Mute</span>
+              <div class="tog card-mute"></div>
+              <span class="clbl" style="margin-left:10px">Solo</span>
+              <div class="tog card-solo"></div>
+            </div>
+          </div>
+          <div class="csec">
+            <div class="crow">
+              <span class="clbl">Pitch</span>
+              <input type="range" class="card-pitch" min="-24" max="24" step="1" value="0">
+              <span class="cval cval-pitch">0 st</span>
+            </div>
+          </div>
+          <div class="csec">
+            <div class="crow">
+              <span class="clbl">Start</span>
+              <input type="range" class="card-start" min="0" max="1" step="0.001" value="0">
+              <span class="cval cval-start">0.000</span>
+            </div>
+            <div class="crow">
+              <span class="clbl">End</span>
+              <input type="range" class="card-end" min="0" max="1" step="0.001" value="1">
+              <span class="cval cval-end">1.000</span>
+            </div>
+          </div>
+          <div class="csec">
+            <div class="crow">
+              <span class="clbl">Attack</span>
+              <input type="range" class="card-attack" min="0" max="4" step="0.01" value="0">
+              <span class="cval cval-attack">0 ms</span>
+            </div>
+            <div class="crow">
+              <span class="clbl">Release</span>
+              <input type="range" class="card-release" min="0" max="4" step="0.01" value="0">
+              <span class="cval cval-release">0 ms</span>
+            </div>
+            <div class="crow">
+              <span class="clbl">X-Fade</span>
+              <input type="range" class="card-xfade" min="0" max="4" step="0.01" value="0">
+              <span class="cval cval-xfade">0 ms</span>
+            </div>
+          </div>
+          <div class="csec">
+            <div class="crow">
+              <span class="clbl">Grid</span>
+              <div class="tog card-grid"></div>
+              <span class="clbl" style="margin-left:10px">Sub</span>
+              <select class="card-subdiv" style="flex:1">
+                <option value="1">1 Bar</option>
+                <option value="2">&frac12;</option>
+                <option value="4" selected>&frac14;</option>
+                <option value="8">&#8539;</option>
+                <option value="16">1/16</option>
+              </select>
+            </div>
+            <div class="crow card-overflow-row">
+              <span class="clbl">Overflow</span>
+              <select class="card-overflow" style="flex:1">
+                <option value="wait" selected>Wait</option>
+                <option value="cut">Cut</option>
+              </select>
+            </div>
+          </div>
+          <div class="csec" style="border:none">
+            <div class="crow">
+              <button class="cbtn danger card-remove">&#10005; Remove</button>
+            </div>
+          </div>
+        </div>`;
+
+      const q = sel => cardEl.querySelector(sel);
+
+      // Set initial values
+      cardEl.style.borderColor = s.color;
+      q('.card-color-dot').style.background = s.color;
+      q('.card-ph').style.background = s.color;
+      q('.card-name').textContent = s.name.toUpperCase();
+      q('.card-pitch').value = s.pitchST;
+      q('.cval-pitch').textContent = s.pitchST + ' st';
+      q('.card-start').value = s.loopStart;
+      q('.cval-start').textContent = s.loopStart.toFixed(3);
+      q('.card-end').value = s.loopEnd;
+      q('.cval-end').textContent = s.loopEnd.toFixed(3);
+      q('.card-subdiv').value = s.subdiv;
+      q('.card-overflow').value = s.overflow;
+      q('.card-mute').classList.toggle('on', s.muted);
+      q('.card-solo').classList.toggle('on', soloId === s.id);
+      q('.card-grid').classList.toggle('on', s.gridSync);
+      q('.card-attack').value = s.attackTime;
+      q('.cval-attack').textContent = fmtFade(s.attackTime);
+      q('.card-release').value = s.releaseTime;
+      q('.cval-release').textContent = fmtFade(s.releaseTime);
+      q('.card-xfade').value = s.crossfadeTime;
+      q('.cval-xfade').textContent = fmtFade(s.crossfadeTime);
+
+      function setGridUI(on) {
+        const ov = q('.card-overflow-row');
+        ov.style.opacity = on ? '1' : '0.3';
+        ov.style.pointerEvents = on ? 'all' : 'none';
+        const sub = q('.card-subdiv');
+        sub.style.opacity = on ? '1' : '0.4';
+        sub.style.pointerEvents = on ? 'all' : 'none';
+        q('.card-end').disabled = on;
+        q('.clh-e').style.pointerEvents = on ? 'none' : 'all';
+        q('.clh-e').style.opacity = on ? '0.35' : '1';
+      }
+      setGridUI(s.gridSync);
+
+      function updateFadeDisabled() {
+        const hasAtk = s.attackTime > 0 || s.releaseTime > 0;
+        const hasXfd = s.crossfadeTime > 0;
+        const xfEl = q('.card-xfade');
+        xfEl.disabled = hasAtk;
+        xfEl.closest('.crow').style.opacity = hasAtk ? '0.35' : '1';
+        ['card-attack', 'card-release'].forEach(cls => {
+          const el = q('.' + cls);
+          el.disabled = hasXfd;
+          el.closest('.crow').style.opacity = hasXfd ? '0.35' : '1';
+        });
+      }
+      updateFadeDisabled();
+
+      function drawWave() {
+        const wrap = q('.card-wave-wrap');
+        const W = wrap.clientWidth || 264, H = wrap.clientHeight || 80;
+        const c = q('.card-wave-canvas');
+        c.width = W; c.height = H;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+        const peaks = s.getHiResPeaks();
+        const { start: vs, end: ve } = getZView();
+        const startIdx = vs * peaks.length;
+        const endIdx = ve * peaks.length;
+        const range = endIdx - startIdx;
+        const step = range / W;
+        for (let i = 0; i < W; i++) {
+          const binStart = Math.floor(startIdx + i * step);
+          const binEnd = Math.ceil(startIdx + (i + 1) * step);
+          let amp = 0;
+          for (let b = binStart; b < binEnd && b < peaks.length; b++) {
+            if (peaks[b] > amp) amp = peaks[b];
+          }
+          const barH = Math.max(1, amp * H * 0.88);
+          ctx.fillStyle = hexToRgba(s.color, 0.25 + amp * 0.75);
+          ctx.fillRect(i, H / 2 - barH / 2, 1, barH);
+        }
+        ctx.fillStyle = hexToRgba(s.color, 0.15);
+        ctx.fillRect(0, H / 2, W, 1);
+        const vw = ve - vs;
+        const toX = norm => (norm - vs) / vw * W;
+        if (s.attackTime > 0) {
+          const atkEndNorm = Math.min(s.loopEnd, s.loopStart + s.attackTime / s.duration);
+          const x0 = Math.max(0, toX(s.loopStart));
+          const x1 = Math.min(W, Math.max(x0, toX(atkEndNorm)));
+          if (x1 > x0) {
+            const g = ctx.createLinearGradient(x0, 0, x1, 0);
+            g.addColorStop(0, 'rgba(0,0,0,0.78)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(x0, 0, x1 - x0, H);
+          }
+        }
+        if (s.releaseTime > 0) {
+          const relStartNorm = Math.max(s.loopStart, s.loopEnd - s.releaseTime / s.duration);
+          const x0 = Math.max(0, Math.min(W, toX(relStartNorm)));
+          const x1 = Math.min(W, toX(s.loopEnd));
+          if (x1 > x0) {
+            const g = ctx.createLinearGradient(x0, 0, x1, 0);
+            g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.78)');
+            ctx.fillStyle = g; ctx.fillRect(x0, 0, x1 - x0, H);
+          }
+        }
+        if (s.crossfadeTime > 0) {
+          const xfdNorm = s.crossfadeTime / s.duration;
+          const preAvail = s.loopStart * s.duration >= s.crossfadeTime;
+          const postAvail = (1 - s.loopEnd) * s.duration >= s.crossfadeTime;
+          const sxOut = toX(s.loopStart - xfdNorm), sxMid = toX(s.loopStart), sxIn = toX(s.loopStart + xfdNorm);
+          if (preAvail && sxMid > sxOut) {
+            const g = ctx.createLinearGradient(Math.max(0, sxOut), 0, sxMid, 0);
+            g.addColorStop(0, hexToRgba(s.color, 0)); g.addColorStop(1, hexToRgba(s.color, 0.5));
+            ctx.fillStyle = g; ctx.fillRect(Math.max(0, sxOut), 0, sxMid - Math.max(0, sxOut), H);
+          }
+          if (sxIn > sxMid) {
+            const g = ctx.createLinearGradient(sxMid, 0, Math.min(W, sxIn), 0);
+            g.addColorStop(0, hexToRgba(s.color, preAvail ? 0.5 : 0.35)); g.addColorStop(1, hexToRgba(s.color, 0));
+            ctx.fillStyle = g; ctx.fillRect(sxMid, 0, Math.min(W, sxIn) - sxMid, H);
+          }
+          const exIn = toX(s.loopEnd - xfdNorm), exMid = toX(s.loopEnd), exOut = toX(s.loopEnd + xfdNorm);
+          if (exMid > exIn) {
+            const g = ctx.createLinearGradient(Math.max(0, exIn), 0, exMid, 0);
+            g.addColorStop(0, hexToRgba(s.color, 0)); g.addColorStop(1, hexToRgba(s.color, postAvail ? 0.5 : 0.35));
+            ctx.fillStyle = g; ctx.fillRect(Math.max(0, exIn), 0, exMid - Math.max(0, exIn), H);
+          }
+          if (postAvail && exOut > exMid) {
+            const g = ctx.createLinearGradient(exMid, 0, Math.min(W, exOut), 0);
+            g.addColorStop(0, hexToRgba(s.color, 0.5)); g.addColorStop(1, hexToRgba(s.color, 0));
+            ctx.fillStyle = g; ctx.fillRect(exMid, 0, Math.min(W, exOut) - exMid, H);
+          }
+        }
+      }
+
+      function updateLoopReg() {
+        const W = q('.card-wave-wrap').clientWidth || 264;
+        const { start: vs, width: vw } = getZView();
+        const reg = q('.card-loop-reg');
+        const regStart = (s.loopStart - vs) / vw;
+        const regEnd = (s.loopEnd - vs) / vw;
+        reg.style.left = regStart * W + 'px';
+        reg.style.width = Math.max(0, (regEnd - regStart) * W) + 'px';
+        q('.ct-s').textContent = 'Start: ' + s.startSec.toFixed(3) + 's';
+        q('.ct-e').textContent = 'End: ' + s.endSec.toFixed(3) + 's';
+        drawWave();
+        refreshTileWave(s);
+      }
+
+      function snapEndToSubdiv() {
+        const bpm = Tone.Transport.bpm.value;
+        const subdivSec = (60 / bpm) * (4 / s.subdiv);
+        const snappedEnd = Math.min(1, s.loopStart + subdivSec / s.duration);
+        s.setLoopBounds(s.loopStart, snappedEnd);
+        q('.card-end').value = s.loopEnd;
+        q('.cval-end').textContent = s.loopEnd.toFixed(3);
+        updateLoopReg();
+      }
+
+      function bringToFront() { cardEl.style.zIndex = ++cardZTop; }
+
+      // Position near tile
+      const tileRect = tile.getBoundingClientRect();
+      const CW = 280, CH = 420;
+      const margin = 8;
+      let cx = tileRect.left + TW / 2 - CW / 2;
+      let cy = tileRect.top;
+      cx = Math.max(margin, Math.min(window.innerWidth - CW - margin, cx));
+      cy = Math.max(margin + 40, Math.min(window.innerHeight - CH - 60, cy));
+      cardEl.style.left = cx + 'px';
+      cardEl.style.top = cy + 'px';
+      cardEl.style.zIndex = ++cardZTop;
+
+      tile.classList.add('active', 'expanded');
+      document.body.appendChild(cardEl);
+      requestAnimationFrame(() => cardEl.classList.add('open'));
+      requestAnimationFrame(() => { drawWave(); updateLoopReg(); });
+
+      // Store in openCards with references needed by phLoop
+      openCards.set(s.id, { el: cardEl, getZView, phEl: () => q('.card-ph'), waveWrap: () => q('.card-wave-wrap') });
+
+      // ── Titlebar drag ──
+      q('.card-titlebar').addEventListener('mousedown', e => {
+        if (e.button !== 0 || e.target.classList.contains('card-close')) return;
+        e.preventDefault(); e.stopPropagation();
+        bringToFront();
+        _cardDragged = false;
+        const sx = e.clientX, sy = e.clientY;
+        const cx0 = parseFloat(cardEl.style.left) || 0;
+        const cy0 = parseFloat(cardEl.style.top) || 0;
+        const cvRect = cv.getBoundingClientRect();
+        const tileEl = document.getElementById('t' + s.id);
+        const mm = ev => {
+          if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 3) _cardDragged = true;
+          const nx = cx0 + (ev.clientX - sx);
+          const ny = cy0 + (ev.clientY - sy);
+          cardEl.style.left = nx + 'px';
+          cardEl.style.top = ny + 'px';
+          if (tileEl) {
+            tileEl.style.left = (nx - cvRect.left + 72) + 'px';
+            tileEl.style.top = (ny - cvRect.top) + 'px';
+          }
+          s.x = nx - cvRect.left + 140;
+          s.y = ny - cvRect.top + 28;
+          s.updateVol(); s.updatePan();
+        };
+        const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+      });
+
+      q('.card-titlebar').addEventListener('click', e => {
+        if (e.target.classList.contains('card-close')) return;
+        if (!_cardDragged) closeCard(s.id);
+      });
+
+      q('.card-close').addEventListener('click', e => { e.stopPropagation(); closeCard(s.id); });
+      cardEl.addEventListener('mousedown', () => bringToFront());
+
+      // ── Loop handles ──
+      ['.clh-s', '.clh-e'].forEach(sel => {
+        const isStart = sel === '.clh-s';
+        q(sel).addEventListener('mousedown', e => {
+          e.stopPropagation();
+          if (!isStart && s.gridSync) return;
+          const wrap = q('.card-wave-wrap');
+          const rect = wrap.getBoundingClientRect(), W = rect.width;
+          const mm = ev => {
+            const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
+            const { start: vs, width: vw } = getZView();
+            const rel = Math.max(0, Math.min(1, vs + relView * vw));
+            if (isStart) {
+              const newStart = Math.min(rel, s.loopEnd - 0.005);
+              s.setLoopBounds(newStart, s.loopEnd);
+              q('.card-start').value = s.loopStart;
+              q('.cval-start').textContent = s.loopStart.toFixed(3);
+            } else {
+              const newEnd = Math.max(rel, s.loopStart + 0.005);
+              s.setLoopBounds(s.loopStart, newEnd);
+              q('.card-end').value = s.loopEnd;
+              q('.cval-end').textContent = s.loopEnd.toFixed(3);
+            }
+            updateLoopReg();
+          };
+          const mu = () => {
+            document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+            if (isStart && s.gridSync) { snapEndToSubdiv(); if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); } return; }
+            if (s.playing && !s.gridSync) {
+              const hasFades = s.attackTime > 0 || s.releaseTime > 0 || s.crossfadeTime > 0;
+              if (hasFades) { s._fadedBuf = null; s.play(); }
+              else if (isStart) { const seekTo = s.startSec; const startAt = Tone.context.rawContext.currentTime + 0.005; s.player.seek(seekTo, startAt); s._anchorAcTime = startAt; s._anchorBufferPos = seekTo; }
+            }
+          };
+          document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+        });
+      });
+
+      // ── Waveform zoom/pan ──
+      q('.card-wave-wrap').addEventListener('mousedown', e => {
+        if (e.button !== 0 || e.target.closest('.lh')) return;
+        e.preventDefault(); e.stopPropagation();
+        const wrap = q('.card-wave-wrap');
+        const rect = wrap.getBoundingClientRect(), W = rect.width;
+        const mouseViewX = Math.max(0, Math.min(1, (e.clientX - rect.left) / W));
+        const { start: vs0, width: vw0 } = getZView();
+        const mouseAbsPos = vs0 + mouseViewX * vw0;
+        const startX = e.clientX, startY = e.clientY, startZoom = waveZoom;
+        const mm = ev => {
+          const dx = ev.clientX - startX, dy = ev.clientY - startY;
+          wrap.style.cursor = 'all-scroll';
+          const newZoom = Math.max(1, Math.min(WAVE_ZOOM_MAX, startZoom * Math.pow(1.025, dy)));
+          waveZoom = newZoom;
+          const newVW = 1 / newZoom;
+          let newVS = mouseAbsPos - mouseViewX * newVW + (dx / W) * newVW;
+          newVS = Math.max(0, Math.min(1 - newVW, newVS));
+          waveZoomCenter = newVS + newVW / 2;
+          drawWave(); updateLoopReg(); updateZoomLbl();
+        };
+        const mu = () => {
+          wrap.style.cursor = '';
+          document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+          const blockClick = ev => { ev.stopPropagation(); document.removeEventListener('click', blockClick, true); };
+          document.addEventListener('click', blockClick, true);
+        };
+        document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+      });
+
+      q('.card-wave-wrap').addEventListener('dblclick', e => {
+        if (e.target.closest('.lh')) return;
+        waveZoom = 1.0; waveZoomCenter = 0.5;
+        drawWave(); updateLoopReg(); updateZoomLbl();
+      });
+
+      // ── Controls ──
+      q('.card-play').addEventListener('click', e => {
+        e.stopPropagation();
+        togglePlay(s.id);
+        q('.card-play').classList.toggle('act', s.playing);
+      });
+      q('.card-stop').addEventListener('click', e => {
+        e.stopPropagation();
+        s.stop(); q('.card-play').classList.remove('act');
+      });
+      q('.card-mute').addEventListener('click', e => {
+        e.stopPropagation();
+        s.muted = !s.muted;
+        q('.card-mute').classList.toggle('on', s.muted);
+        s.vol.volume.value = s._effectiveDb(); s._renderTile();
+      });
+      q('.card-solo').addEventListener('click', e => {
+        e.stopPropagation();
+        soloId = (soloId === s.id) ? null : s.id;
+        q('.card-solo').classList.toggle('on', soloId === s.id);
+        applyAllVols(); refreshSoloVis();
+      });
+      q('.card-pitch').addEventListener('input', e => {
+        const v = parseInt(e.target.value);
+        q('.cval-pitch').textContent = v + ' st';
+        s.setPitch(v);
+      });
+      q('.card-start').addEventListener('input', e => {
+        const newStart = Math.min(parseFloat(e.target.value), s.loopEnd - 0.005);
+        s.setLoopBounds(newStart, s.loopEnd);
+        e.target.value = s.loopStart;
+        q('.cval-start').textContent = s.loopStart.toFixed(3);
+        updateLoopReg();
+      });
+      q('.card-end').addEventListener('input', e => {
+        if (s.gridSync) { e.target.value = s.loopEnd; return; }
+        const newEnd = Math.max(parseFloat(e.target.value), s.loopStart + 0.005);
+        s.setLoopBounds(s.loopStart, newEnd);
+        e.target.value = s.loopEnd;
+        q('.cval-end').textContent = s.loopEnd.toFixed(3);
+        updateLoopReg();
+      });
+      q('.card-grid').addEventListener('click', e => {
+        e.stopPropagation();
+        s.gridSync = !s.gridSync;
+        q('.card-grid').classList.toggle('on', s.gridSync);
+        if (s.gridSync) snapEndToSubdiv();
+        setGridUI(s.gridSync); s._renderTile();
+        if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.player.loop = false; if (s.gridSync) s.playGrid(); else s.play(); }
+      });
+      q('.card-subdiv').addEventListener('change', e => {
+        e.stopPropagation();
+        s.subdiv = parseInt(e.target.value);
+        if (s.gridSync) snapEndToSubdiv();
+        if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+      });
+      q('.card-overflow').addEventListener('change', e => { e.stopPropagation(); s.overflow = e.target.value; });
+      q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSample(s.id); });
+
+      ['attack', 'release', 'xfade'].forEach(key => {
+        q('.card-' + key).addEventListener('input', e => {
+          e.stopPropagation();
+          const v = parseFloat(e.target.value);
+          const prop = key === 'xfade' ? 'crossfadeTime' : key + 'Time';
+          if (key === 'xfade' && v > 0) {
+            s.attackTime = 0; s.releaseTime = 0;
+            q('.card-attack').value = 0; q('.card-release').value = 0;
+            q('.cval-attack').textContent = fmtFade(0); q('.cval-release').textContent = fmtFade(0);
+          } else if (key !== 'xfade' && v > 0) {
+            s.crossfadeTime = 0;
+            q('.card-xfade').value = 0; q('.cval-xfade').textContent = fmtFade(0);
+          }
+          s[prop] = v; s._fadedBuf = null;
+          q('.cval-' + key).textContent = fmtFade(v);
+          updateFadeDisabled(); drawWave(); updateLoopReg();
+          if (s.playing && !s.gridSync) {
+            clearTimeout(_fadeRestartTimer);
+            _fadeRestartTimer = setTimeout(() => { s.play(); }, 60);
+          }
+        });
+      });
+
+      return cardEl;
+    }
+
+    // Tile click opens/closes card for that sample
     function openInspector(id) {
       const t = document.getElementById('t' + id);
       if (t) openCard(id, t);
     }
-    function closeInspector() { closeCard(); }
+    function closeInspector(id) { closeCard(id); }
 
     // ════════════════════════════════════════════════════
     // TRANSPORT
@@ -2693,7 +2537,7 @@
         if (audioReady) isPlaying ? pauseAll() : playAll();
       }
       if (e.key === '.') stopAll();
-      if (e.key === 'Escape') closeCard();
+      if (e.key === 'Escape') { for (const id of [...openCards.keys()]) closeCard(id); }
     });
 
     // ════════════════════════════════════════════════════
