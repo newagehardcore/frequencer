@@ -414,7 +414,7 @@
       opacity: 0;
       pointer-events: none;
       transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-                  opacity 0.18s ease;
+        opacity 0.18s ease;
     }
 
     #card.open {
@@ -482,6 +482,26 @@
       background: #000;
       border: 1px solid #1a1a1a;
       overflow: hidden;
+      cursor: zoom-in;
+    }
+
+    #card-zoom-label {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 10;
+    }
+
+    #card-zoom-label.visible {
+      opacity: 1;
     }
 
     #card-wave-canvas {
@@ -874,6 +894,7 @@
         <div class="lh" id="clh-e"></div>
       </div>
       <div id="card-ph"></div>
+      <div id="card-zoom-label"></div>
     </div>
     <div id="card-times">
       <span id="ct-s">Start: 0.000s</span>
@@ -997,6 +1018,30 @@
     let audioReady = false;
     let isPlaying = false;
     let metroOn = false;
+
+    let waveZoom = 1.0;
+    let waveZoomCenter = 0.5;
+    const WAVE_ZOOM_MAX = 32;
+
+    function getZoomView() {
+      const w = 1 / waveZoom;
+      let s = waveZoomCenter - w / 2;
+      let e = s + w;
+      if (s < 0) { s = 0; e = w; }
+      if (e > 1) { e = 1; s = Math.max(0, 1 - w); }
+      return { start: s, end: e, width: e - s };
+    }
+
+    function updateZoomLabel() {
+      const lbl = document.getElementById('card-zoom-label');
+      if (!lbl) return;
+      if (waveZoom <= 1.005) {
+        lbl.classList.remove('visible');
+      } else {
+        lbl.textContent = waveZoom.toFixed(1) + '\u00d7';
+        lbl.classList.add('visible');
+      }
+    }
     let soloId = null;
     let activeId = null;   // open card
     let _cardDragged = false;
@@ -1063,8 +1108,8 @@
         this.overflow = 'wait';
 
         this.playing = false;
-        this._acStartAt = null; // AudioContext.currentTime when loop cycle started
-        this._loopLen = rawBuf.duration;
+        this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
+        this._anchorBufferPos = 0; // Absolute buffer seconds tracking anchor
         this._gridEv = null;
         this._currentDb = 0;
 
@@ -1148,8 +1193,8 @@
         const startAt = Tone.context.rawContext.currentTime + 0.005;
         try {
           this.player.start(startAt, startSec);
-          this._acStartAt = startAt;
-          this._loopLen = lenSec;
+          this._anchorAcTime = startAt;
+          this._anchorBufferPos = startSec;
           this.playing = true;
         } catch (e) { console.warn('play() failed', e); }
 
@@ -1186,10 +1231,10 @@
           try {
             this.player.start(time, this.startSec, dur);
           } catch (e) { }
-          // Store the exact AC time this cycle started — used by playheadPos()
+          // Store the exact anchor time and buffer pos
           Tone.Draw.schedule(() => {
-            this._acStartAt = time;
-            this._loopLen = this.lenSec;
+            this._anchorAcTime = time;
+            this._anchorBufferPos = this.startSec;
           }, time);
         };
 
@@ -1204,24 +1249,59 @@
         this._cancelGrid();
         this._stopPlayer();
         this.playing = false;
-        this._acStartAt = null;
+        this._anchorAcTime = null;
         this._renderTile();
       }
 
-      // Returns 0..1 position within current loop cycle for playhead rendering.
-      // Normalises _acStartAt each call to prevent float precision drift over
-      // many loop iterations (advances the anchor to the current cycle start).
-      playheadPos() {
-        if (!this.playing || this._acStartAt === null) return null;
+      updateBufferAnchor() {
+        if (!this.playing || this._anchorAcTime === null) return;
         const acNow = Tone.context.rawContext.currentTime;
-        let elapsed = Math.max(0, acNow - this._acStartAt);
-        const len = this._loopLen || 1;
-        const cycles = Math.floor(elapsed / len);
-        if (cycles > 0) {
-          this._acStartAt += cycles * len;
-          elapsed -= cycles * len;
+        let elapsed = acNow - this._anchorAcTime;
+        if (elapsed <= 0) return;
+
+        let pos = this._anchorBufferPos + elapsed;
+        if (!this.gridSync && pos >= this.endSec) {
+          pos = this.startSec + ((pos - this.startSec) % this.lenSec);
+        } else if (this.gridSync && pos >= this.endSec) {
+          pos = this.endSec;
         }
-        return elapsed / len;
+        this._anchorAcTime = acNow;
+        this._anchorBufferPos = pos;
+      }
+
+      playheadPos() {
+        if (!this.playing || this._anchorAcTime === null) return null;
+        const acNow = Tone.context.rawContext.currentTime;
+        let elapsed = Math.max(0, acNow - this._anchorAcTime);
+        let pos = this._anchorBufferPos + elapsed;
+
+        if (this.gridSync) {
+          pos = Math.min(pos, this.endSec);
+          return (pos - this.startSec) / this.lenSec;
+        }
+
+        if (pos >= this.endSec) {
+          let over = pos - this.startSec;
+          if (over >= 0 && this.lenSec > 0) {
+            pos = this.startSec + (over % this.lenSec);
+            this._anchorAcTime = acNow;
+            this._anchorBufferPos = pos;
+          }
+        }
+        return (pos - this.startSec) / this.lenSec;
+      }
+
+      // Automatically syncs WebAudio loop nodes & visually correct relative playhead phase without jumping
+      setLoopBounds(start, end) {
+        this.updateBufferAnchor();
+
+        this.loopStart = start;
+        this.loopEnd = end;
+
+        if (!this.gridSync) {
+          this.player.loopStart = this.startSec;
+          this.player.loopEnd = this.endSec;
+        }
       }
 
       dispose() {
@@ -1247,6 +1327,24 @@
           p[i] = mx;
         }
         this.peaks = p;
+        return p;
+      }
+
+      getHiResPeaks() {
+        if (this._hiPeaks) return this._hiPeaks;
+        const bins = 8192;
+        const ch = this.raw.getChannelData(0);
+        const bsz = Math.max(1, Math.floor(ch.length / bins));
+        const p = new Float32Array(bins);
+        for (let i = 0; i < bins; i++) {
+          let mx = 0, off = i * bsz;
+          for (let j = 0; j < bsz; j++) {
+            const v = Math.abs(ch[off + j] || 0);
+            if (v > mx) mx = v;
+          }
+          p[i] = mx;
+        }
+        this._hiPeaks = p;
         return p;
       }
 
@@ -1295,7 +1393,7 @@
       lb.textContent = s.name;
       t.appendChild(lb);
 
-      requestAnimationFrame(() => drawTileWave(wc, s.computePeaks(TW), s.color));
+      requestAnimationFrame(() => drawTileWave(wc, s));
 
       makeDraggable(t, s);
 
@@ -1324,7 +1422,7 @@
       return t;
     }
 
-    function drawTileWave(canvas, peaks, color) {
+    function drawTileWave(canvas, s) {
       const ctx = canvas.getContext('2d');
       const W = TW, H = TH;
       ctx.clearRect(0, 0, W, H);
@@ -1332,21 +1430,34 @@
       const labelH = 14;
       const drawH = H - labelH;
       const mid = drawH / 2;
-      const bw = W / peaks.length;
 
-      // Parse color to get RGB for alpha manipulation
-      // Use color at varying alpha based on amplitude
-      for (let i = 0; i < peaks.length; i++) {
-        const amp = peaks[i];
+      const peaks = s.getHiResPeaks();
+      const startIdx = s.loopStart * peaks.length;
+      const endIdx = s.loopEnd * peaks.length;
+      const range = endIdx - startIdx;
+      const step = range / W;
+
+      for (let i = 0; i < W; i++) {
+        const binStart = Math.floor(startIdx + i * step);
+        const binEnd = Math.ceil(startIdx + (i + 1) * step);
+        let amp = 0;
+        for (let b = binStart; b < binEnd && b < peaks.length; b++) {
+          if (peaks[b] > amp) amp = peaks[b];
+        }
         const barH = Math.max(1, amp * drawH * 0.85);
-        const alpha = 0.25 + amp * 0.75;
-        ctx.fillStyle = hexToRgba(color, alpha);
-        ctx.fillRect(i * bw, mid - barH / 2, Math.max(1, bw - 0.5), barH);
+        ctx.fillStyle = hexToRgba(s.color, 0.25 + amp * 0.75);
+        ctx.fillRect(i, mid - barH / 2, 1, barH);
       }
 
-      // center line in sample color
-      ctx.fillStyle = hexToRgba(color, 0.15);
+      ctx.fillStyle = hexToRgba(s.color, 0.15);
       ctx.fillRect(0, mid, W, 1);
+    }
+
+    function refreshTileWave(s) {
+      const t = document.getElementById('t' + s.id);
+      if (!t) return;
+      const wc = t.querySelector('.tile-canvas');
+      if (wc) drawTileWave(wc, s);
     }
 
     function hexToRgba(hex, alpha) {
@@ -1402,7 +1513,7 @@
         if (!s.playing) { ph.style.display = 'none'; continue; }
         const pos = s.playheadPos();
         if (pos === null) { ph.style.display = 'none'; continue; }
-        const tileX = (s.loopStart + pos * (s.loopEnd - s.loopStart)) * TW;
+        const tileX = pos * TW;
         ph.style.left = tileX + 'px';
         ph.style.display = 'block';
       }
@@ -1414,8 +1525,15 @@
         const W = document.getElementById('card-wave-wrap').clientWidth || 264;
         const pos = si.playheadPos();
         if (pos !== null) {
-          cph.style.left = (si.loopStart + pos * (si.loopEnd - si.loopStart)) * W + 'px';
-          cph.style.display = 'block';
+          const absPos = si.loopStart + pos * (si.loopEnd - si.loopStart);
+          const { start: vs, width: vw } = getZoomView();
+          const viewPos = (absPos - vs) / vw;
+          if (viewPos >= 0 && viewPos <= 1) {
+            cph.style.left = viewPos * W + 'px';
+            cph.style.display = 'block';
+          } else {
+            cph.style.display = 'none';
+          }
         } else cph.style.display = 'none';
       } else if (cph) cph.style.display = 'none';
 
@@ -1611,6 +1729,11 @@
       // Trigger grow animation
       requestAnimationFrame(() => card.classList.add('open'));
 
+      // Reset waveform zoom for new card
+      waveZoom = 1.0;
+      waveZoomCenter = 0.5;
+      updateZoomLabel();
+
       // Draw waveform in card
       drawCardWave(s);
       updateCardLoopReg(s);
@@ -1630,13 +1753,23 @@
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
 
-      const peaks = s.peaks || s.computePeaks(W);
-      const bw = W / peaks.length;
-      for (let i = 0; i < peaks.length; i++) {
-        const amp = peaks[i];
+      const peaks = s.getHiResPeaks();
+      const { start: vs, end: ve } = getZoomView();
+      const startIdx = vs * peaks.length;
+      const endIdx = ve * peaks.length;
+      const range = endIdx - startIdx;
+      const step = range / W;
+
+      for (let i = 0; i < W; i++) {
+        const binStart = Math.floor(startIdx + i * step);
+        const binEnd = Math.ceil(startIdx + (i + 1) * step);
+        let amp = 0;
+        for (let b = binStart; b < binEnd && b < peaks.length; b++) {
+          if (peaks[b] > amp) amp = peaks[b];
+        }
         const barH = Math.max(1, amp * H * 0.88);
         ctx.fillStyle = hexToRgba(s.color, 0.25 + amp * 0.75);
-        ctx.fillRect(i * bw, H / 2 - barH / 2, Math.max(1, bw - 0.5), barH);
+        ctx.fillRect(i, H / 2 - barH / 2, 1, barH);
       }
       ctx.fillStyle = hexToRgba(s.color, 0.15);
       ctx.fillRect(0, H / 2, W, 1);
@@ -1644,11 +1777,15 @@
 
     function updateCardLoopReg(s) {
       const W = document.getElementById('card-wave-wrap').clientWidth || 264;
+      const { start: vs, width: vw } = getZoomView();
       const reg = document.getElementById('card-loop-reg');
-      reg.style.left = (s.loopStart * W) + 'px';
-      reg.style.width = ((s.loopEnd - s.loopStart) * W) + 'px';
+      const regStart = (s.loopStart - vs) / vw;
+      const regEnd = (s.loopEnd - vs) / vw;
+      reg.style.left = regStart * W + 'px';
+      reg.style.width = Math.max(0, (regEnd - regStart) * W) + 'px';
       document.getElementById('ct-s').textContent = 'Start: ' + s.startSec.toFixed(3) + 's';
       document.getElementById('ct-e').textContent = 'End: ' + s.endSec.toFixed(3) + 's';
+      refreshTileWave(s);
     }
 
     function setCardGridUI(on) {
@@ -1670,22 +1807,104 @@
         const mm = ev => {
           const s = samples.get(activeId);
           if (!(s instanceof Sample)) return;
-          const rel = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
+          const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
+          const { start: vs, width: vw } = getZoomView();
+          const rel = Math.max(0, Math.min(1, vs + relView * vw));
+          let newStart = s.loopStart;
+          let newEnd = s.loopEnd;
           if (isStart) {
-            s.loopStart = Math.min(rel, s.loopEnd - 0.005);
-            document.getElementById('card-start').value = s.loopStart;
-            document.getElementById('cval-start').textContent = s.loopStart.toFixed(3);
+            newStart = Math.min(rel, s.loopEnd - 0.005);
+            document.getElementById('card-start').value = newStart;
+            document.getElementById('cval-start').textContent = newStart.toFixed(3);
           } else {
-            s.loopEnd = Math.max(rel, s.loopStart + 0.005);
-            document.getElementById('card-end').value = s.loopEnd;
-            document.getElementById('cval-end').textContent = s.loopEnd.toFixed(3);
+            newEnd = Math.max(rel, s.loopStart + 0.005);
+            document.getElementById('card-end').value = newEnd;
+            document.getElementById('cval-end').textContent = newEnd.toFixed(3);
           }
+          s.setLoopBounds(newStart, newEnd);
           updateCardLoopReg(s);
-          if (!s.gridSync) { s.player.loopStart = s.startSec; s.player.loopEnd = s.endSec; }
         };
-        const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        const mu = () => {
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+          if (isStart) {
+            const s = samples.get(activeId);
+            if (s instanceof Sample && s.playing && !s.gridSync) {
+              // Use player.seek() which does an atomic stop+start at the same
+              // time — avoids Tone.js "Source cannot be started more than once"
+              // assertion that fires when stop()+start() are called in sequence.
+              const seekTo = s.startSec;
+              const startAt = Tone.context.rawContext.currentTime + 0.005;
+              s.player.seek(seekTo, startAt);
+              s._anchorAcTime = startAt;
+              s._anchorBufferPos = seekTo;
+            }
+          }
+        };
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
       });
+    });
+
+    // Waveform zoom + pan: drag down = zoom in, drag up = zoom out, drag left/right = pan
+    document.getElementById('card-wave-wrap').addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      if (e.target.closest('.lh')) return; // let handles take priority
+      e.preventDefault();
+      e.stopPropagation();
+
+      const wrap = document.getElementById('card-wave-wrap');
+      const rect = wrap.getBoundingClientRect();
+      const W = rect.width;
+      const mouseViewX = Math.max(0, Math.min(1, (e.clientX - rect.left) / W));
+      const { start: vs0, width: vw0 } = getZoomView();
+      const mouseAbsPos = vs0 + mouseViewX * vw0;
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startZoom = waveZoom;
+
+      const mm = ev => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        wrap.style.cursor = 'all-scroll';
+        // Vertical: down = zoom in, up = zoom out
+        const newZoom = Math.max(1, Math.min(WAVE_ZOOM_MAX, startZoom * Math.pow(1.025, dy)));
+        waveZoom = newZoom;
+        const newVW = 1 / newZoom;
+        // Keep anchor point fixed under vertical drag; horizontal drag pans (right = later in sample)
+        let newVS = mouseAbsPos - mouseViewX * newVW + (dx / W) * newVW;
+        newVS = Math.max(0, Math.min(1 - newVW, newVS));
+        waveZoomCenter = newVS + newVW / 2;
+        const s = samples.get(activeId);
+        if (s instanceof Sample) { drawCardWave(s); updateCardLoopReg(s); }
+        updateZoomLabel();
+      };
+
+      const mu = () => {
+        wrap.style.cursor = '';
+        document.removeEventListener('mousemove', mm);
+        document.removeEventListener('mouseup', mu);
+        // Swallow the click that fires after drag-release so the document
+        // click handler doesn't mistake it for an "outside card" click
+        const blockClick = ev => {
+          ev.stopPropagation();
+          document.removeEventListener('click', blockClick, true);
+        };
+        document.addEventListener('click', blockClick, true);
+      };
+
+      document.addEventListener('mousemove', mm);
+      document.addEventListener('mouseup', mu);
+    });
+
+    // Double-click waveform to reset zoom
+    document.getElementById('card-wave-wrap').addEventListener('dblclick', e => {
+      if (e.target.closest('.lh')) return;
+      waveZoom = 1.0;
+      waveZoomCenter = 0.5;
+      const s = samples.get(activeId);
+      if (s instanceof Sample) { drawCardWave(s); updateCardLoopReg(s); }
+      updateZoomLabel();
     });
 
     // Card titlebar drag — moves card and updates sample position (vol/pan)
@@ -1772,19 +1991,19 @@
 
     document.getElementById('card-start').addEventListener('input', e => {
       const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      s.loopStart = Math.min(parseFloat(e.target.value), s.loopEnd - 0.005);
+      const newStart = Math.min(parseFloat(e.target.value), s.loopEnd - 0.005);
+      s.setLoopBounds(newStart, s.loopEnd);
       e.target.value = s.loopStart;
       document.getElementById('cval-start').textContent = s.loopStart.toFixed(3);
       updateCardLoopReg(s);
-      if (!s.gridSync) { s.player.loopStart = s.startSec; s.player.loopEnd = s.endSec; }
     });
     document.getElementById('card-end').addEventListener('input', e => {
       const s = samples.get(activeId); if (!(s instanceof Sample)) return;
-      s.loopEnd = Math.max(parseFloat(e.target.value), s.loopStart + 0.005);
+      const newEnd = Math.max(parseFloat(e.target.value), s.loopStart + 0.005);
+      s.setLoopBounds(s.loopStart, newEnd);
       e.target.value = s.loopEnd;
       document.getElementById('cval-end').textContent = s.loopEnd.toFixed(3);
       updateCardLoopReg(s);
-      if (!s.gridSync) { s.player.loopStart = s.startSec; s.player.loopEnd = s.endSec; }
     });
 
     document.getElementById('card-grid').addEventListener('click', e => {
