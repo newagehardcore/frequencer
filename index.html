@@ -69,7 +69,7 @@
     #unlock-sub {
       font-size: 13px;
       color: var(--mid);
-      letter-spacing: 0.12em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
     }
 
@@ -80,7 +80,7 @@
       font-family: Helvetica, Arial, sans-serif;
       font-size: 14px;
       font-weight: 700;
-      letter-spacing: 0.15em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       padding: 14px 48px;
       cursor: pointer;
@@ -94,7 +94,7 @@
     #unlock-note {
       font-size: 10px;
       color: var(--b3);
-      letter-spacing: 0.1em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
     }
 
@@ -126,7 +126,7 @@
     #drop-box h2 {
       font-size: 22px;
       font-weight: 700;
-      letter-spacing: 0.2em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
     }
 
@@ -134,7 +134,7 @@
       font-size: 11px;
       color: var(--mid);
       margin-top: 10px;
-      letter-spacing: 0.15em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
     }
 
@@ -176,7 +176,7 @@
       font-family: Helvetica, Arial, sans-serif;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       padding: 5px 12px;
       cursor: pointer;
@@ -192,7 +192,7 @@
     #hdr-hint {
       font-size: 10px;
       color: var(--b3);
-      letter-spacing: 0.08em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       margin-left: auto;
     }
@@ -205,11 +205,8 @@
       right: 0;
       bottom: var(--ftr);
       background: var(--bg);
-      /* subtle 90s graph-paper grid */
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 48px 48px;
+      background-image: radial-gradient(circle, #2a2a2a 1px, transparent 1px);
+      background-size: 24px 24px;
       overflow: hidden;
     }
 
@@ -237,7 +234,7 @@
       position: absolute;
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.12);
       pointer-events: none;
@@ -282,7 +279,7 @@
       font-size: 12px;
       font-weight: 700;
       color: var(--b2);
-      letter-spacing: 0.2em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       text-align: center;
       line-height: 2.4;
@@ -365,7 +362,7 @@
       padding: 2px 5px;
       font-size: 8px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       color: var(--b3);
       background: rgba(0, 0, 0, 0.8);
@@ -386,7 +383,7 @@
       z-index: 3;
       font-size: 7px;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: -0.03em;
       color: var(--b3);
       display: none;
     }
@@ -418,7 +415,7 @@
     }
 
     #card.open {
-      max-height: 540px;
+      max-height: 620px;
       opacity: 1;
       pointer-events: all;
     }
@@ -450,7 +447,7 @@
     #card-name {
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       flex: 1;
       white-space: nowrap;
@@ -494,7 +491,7 @@
       color: rgba(255, 255, 255, 0.5);
       pointer-events: none;
       font-family: 'Courier New', monospace;
-      letter-spacing: 0.05em;
+      letter-spacing: -0.03em;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 10;
@@ -536,7 +533,7 @@
       font-size: 8px;
       color: #444;
       font-family: 'Courier New', monospace;
-      letter-spacing: 0.05em;
+      letter-spacing: -0.03em;
     }
 
     .card-body {
@@ -563,7 +560,7 @@
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: -0.03em;
       color: #666;
       width: 42px;
       flex-shrink: 0;
@@ -587,7 +584,7 @@
       font-family: Helvetica, Arial, sans-serif;
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       cursor: pointer;
       transition: all 0.08s;
@@ -670,7 +667,7 @@
       font-family: Helvetica, Arial, sans-serif;
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       padding: 5px 6px;
       cursor: pointer;
@@ -779,7 +776,7 @@
     .flbl {
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.18em;
+      letter-spacing: -0.03em;
       text-transform: uppercase;
       color: var(--b3);
     }
@@ -801,7 +798,7 @@
       font-size: 15px;
       color: var(--mid);
       font-family: 'Courier New', monospace;
-      letter-spacing: 0.04em;
+      letter-spacing: -0.03em;
     }
 
     #beat-pos b {
@@ -935,6 +932,24 @@
           <span class="clbl">End</span>
           <input type="range" id="card-end" min="0" max="1" step="0.001" value="1">
           <span class="cval" id="cval-end">1.000</span>
+        </div>
+      </div>
+
+      <div class="csec">
+        <div class="crow">
+          <span class="clbl">Attack</span>
+          <input type="range" id="card-attack" min="0" max="4" step="0.01" value="0">
+          <span class="cval" id="cval-attack">0 ms</span>
+        </div>
+        <div class="crow">
+          <span class="clbl">Release</span>
+          <input type="range" id="card-release" min="0" max="4" step="0.01" value="0">
+          <span class="cval" id="cval-release">0 ms</span>
+        </div>
+        <div class="crow">
+          <span class="clbl">X-Fade</span>
+          <input type="range" id="card-xfade" min="0" max="4" step="0.01" value="0">
+          <span class="cval" id="cval-xfade">0 ms</span>
         </div>
       </div>
 
@@ -1107,26 +1122,42 @@
         this.subdiv = 4;
         this.overflow = 'wait';
 
+        this.attackTime = 0;    // seconds
+        this.releaseTime = 0;   // seconds
+        this.crossfadeTime = 0; // seconds
+
         this.playing = false;
         this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
         this._anchorBufferPos = 0; // Absolute buffer seconds tracking anchor
         this._gridEv = null;
         this._currentDb = 0;
 
-        // Audio chain: Player → PitchShift → Panner → Volume → Destination
+        // Audio chain: Player → fadeGain → PitchShift → Panner → Volume → Destination
         this.vol = new Tone.Volume(0).toDestination();
         this.pan = new Tone.Panner(0).connect(this.vol);
         this.ps = new Tone.PitchShift(0).connect(this.pan);
-        this.player = new Tone.Player().connect(this.ps);
+        this.fadeGain = new Tone.Gain(1).connect(this.ps);
+        this.player = new Tone.Player().connect(this.fadeGain);
+        this._fadedBuf = null; // cached baked-fade buffer; null = needs rebuild
+        this._xfTimeout = null;
 
-        // Load buffer safely
+        // Second player for crossfade overlap — both xfGain and fadeGain feed into this.ps
+        this.xfGain = new Tone.Gain(0).connect(this.ps);
+        this.xfPlayer = new Tone.Player().connect(this.xfGain);
+
+        // Load buffer into both players
         if (typeof this.player.buffer.set === 'function') {
           this.player.buffer.set(rawBuf);
         } else {
-          // fallback for older Tone versions
           this.player.buffer._buffer = rawBuf;
         }
-        this.player.loop = false; // we handle looping manually for grid control
+        if (typeof this.xfPlayer.buffer.set === 'function') {
+          this.xfPlayer.buffer.set(rawBuf);
+        } else {
+          this.xfPlayer.buffer._buffer = rawBuf;
+        }
+        this.player.loop = false;
+        this.xfPlayer.loop = false;
       }
 
       // ── Computed helpers ──
@@ -1168,6 +1199,181 @@
         try { this.player.stop(); } catch (e) { }
       }
 
+      // ── Internal: cancel the two-player crossfade loop ──
+      _stopXfLoop() {
+        clearTimeout(this._xfTimeout);
+        this._xfTimeout = null;
+        try { this.xfPlayer.stop(); } catch (e) { }
+        const now = Tone.context.rawContext.currentTime;
+        this.xfGain.gain.cancelScheduledValues(now);
+        this.xfGain.gain.setValueAtTime(0, now);
+      }
+
+      // ── Apply fade gain automation for grid one-shots ──
+      _applyFadeGain(time, dur) {
+        const atk = Math.min(this.attackTime, dur * 0.45);
+        const rel = Math.min(this.releaseTime, dur * 0.45);
+        const fg = this.fadeGain.gain;
+        fg.cancelScheduledValues(time - 0.0001);
+        if (atk > 0) {
+          fg.setValueAtTime(0, time);
+          fg.linearRampToValueAtTime(1, time + atk);
+        } else {
+          fg.setValueAtTime(1, time);
+        }
+        if (rel > 0) {
+          const rStart = time + Math.max(atk, dur - rel);
+          fg.setValueAtTime(1, rStart);
+          fg.linearRampToValueAtTime(0, time + dur);
+        }
+      }
+
+      // ── Build a baked AudioBuffer with fades written into sample data ──
+      // Fades are written directly into a copy of the loop region so that
+      // native player.loop = true gives a perfectly seamless, click-free loop.
+      _buildFadedLoopBuffer() {
+        const ctx = Tone.context.rawContext;
+        const sr = ctx.sampleRate;
+        const startSample = Math.round(this.startSec * sr);
+        const loopLen = Math.round(this.lenSec * sr);
+        if (loopLen <= 0) return null;
+
+        const nCh = this.raw.numberOfChannels;
+        const buf = ctx.createBuffer(nCh, loopLen, sr);
+        const maxFade = Math.floor(loopLen * 0.45);
+        const atkS = Math.min(Math.round(this.attackTime * sr), maxFade);
+        const relS = Math.min(Math.round(this.releaseTime * sr), maxFade);
+        // Crossfade is mutually exclusive with attack/release
+        const xfdS = (atkS > 0 || relS > 0) ? 0
+          : Math.min(Math.round(this.crossfadeTime * sr), maxFade);
+        // Inaudible micro-fade (~1ms) at the loop boundary to eliminate the wrap-point
+        // click without any perceptible silence — below the ~5ms auditory threshold.
+        const microS = xfdS > 0
+          ? Math.min(Math.round(sr * 0.001), Math.floor(loopLen * 0.005))
+          : 0;
+
+        for (let c = 0; c < nCh; c++) {
+          const src = this.raw.getChannelData(c);
+          const dst = buf.getChannelData(c);
+          for (let i = 0; i < loopLen; i++) dst[i] = src[startSample + i] || 0;
+
+          // Crossfade: equal-power blend of tail (fading out) into head (fading in).
+          // Only the tail region is modified; head stays as pure loop-start content.
+          if (xfdS > 0) {
+            const tailOff = loopLen - xfdS;
+            for (let i = 0; i < xfdS; i++) {
+              const t = i / xfdS;
+              const tailGain = Math.cos(t * 0.5 * Math.PI); // 1 → 0
+              const headGain = Math.sin(t * 0.5 * Math.PI); // 0 → 1
+              dst[tailOff + i] = dst[tailOff + i] * tailGain + dst[i] * headGain;
+            }
+          }
+
+          // Attack: explicit fade-in from silence
+          if (atkS > 0) {
+            for (let i = 0; i < atkS; i++) dst[i] *= i / atkS;
+          }
+          // Release: explicit fade-out to silence
+          if (relS > 0) {
+            for (let i = 0; i < relS; i++) dst[loopLen - 1 - i] *= i / relS;
+          }
+
+          // Micro-fade at wrap boundary: guarantees last ≈ first ≈ 0 so the
+          // native loop wrap is click-free. 1ms is below auditory perception.
+          if (microS > 0) {
+            for (let i = 0; i < microS; i++) {
+              dst[i] *= i / microS;
+              dst[loopLen - 1 - i] *= i / microS;
+            }
+          }
+        }
+        return buf;
+      }
+
+      // ── True crossfade loop using two overlapping players ──
+      // Player A plays the loop content. xfdTime before it ends, Player B starts
+      // from the loop beginning and fades in (equal-power) while A fades out.
+      // At the crossfade midpoint both are playing simultaneously — constant amplitude.
+      // After the fade, A is stopped and B takes its role; the cycle repeats.
+      _playCrossfadeLoop() {
+        const ctx = Tone.context.rawContext;
+        const loopLen = this.lenSec;
+        const xfdTime = Math.min(this.crossfadeTime, loopLen * 0.45);
+        const startSec = this.startSec;
+
+        this._stopXfLoop();
+
+        // Reload raw buffer into both players (in case baked buf was previously in place)
+        const setBuf = (pl) => {
+          if (typeof pl.buffer.set === 'function') pl.buffer.set(this.raw);
+          else pl.buffer._buffer = this.raw;
+        };
+        setBuf(this.player);
+        setBuf(this.xfPlayer);
+        this.player.loop = false;
+        this.xfPlayer.loop = false;
+
+        const now = ctx.currentTime + 0.005;
+
+        // Reset gains: current=1, incoming=0
+        this.fadeGain.gain.cancelScheduledValues(now - 0.001);
+        this.fadeGain.gain.setValueAtTime(1, now);
+        this.xfGain.gain.cancelScheduledValues(now - 0.001);
+        this.xfGain.gain.setValueAtTime(0, now);
+
+        // players[0]/gains[0] = currently audible, players[1]/gains[1] = next to fade in
+        let players = [this.player, this.xfPlayer];
+        let gains = [this.fadeGain, this.xfGain];
+
+        // Start the first player
+        try { players[0].start(now, startSec); } catch (e) { console.warn('xf start', e); }
+
+        this._anchorAcTime = now;
+        this._anchorBufferPos = startSec;
+        this.playing = true;
+        this._renderTile();
+
+        // Schedule the repeating crossfade
+        const scheduleXf = (iterStartTime) => {
+          if (!this.playing) return;
+
+          const xfStartTime = iterStartTime + loopLen - xfdTime;
+          const xfEndTime   = iterStartTime + loopLen;
+
+          // Equal-power fade curves via N-step setValueAtTime
+          const N = 32;
+          for (let i = 0; i <= N; i++) {
+            const t   = i / N;
+            const tAc = xfStartTime + t * xfdTime;
+            gains[0].gain.setValueAtTime(Math.cos(t * 0.5 * Math.PI), tAc); // 1 → 0
+            gains[1].gain.setValueAtTime(Math.sin(t * 0.5 * Math.PI), tAc); // 0 → 1
+          }
+
+          // Start incoming player at the crossfade start point
+          try { players[1].start(xfStartTime, startSec); } catch (e) { console.warn('xf incoming start', e); }
+
+          // After fade completes: stop old player, swap roles, schedule next iteration
+          const swapDelay = (xfEndTime - ctx.currentTime + 0.05) * 1000;
+          this._xfTimeout = setTimeout(() => {
+            if (!this.playing) return;
+
+            // Gain is ~0 on players[0] — safe to stop silently
+            try { players[0].stop(); } catch (e) { }
+            gains[0].gain.cancelScheduledValues(ctx.currentTime);
+            gains[0].gain.setValueAtTime(0, ctx.currentTime);
+
+            // Swap: incoming becomes current, current becomes next incoming
+            [players[0], players[1]] = [players[1], players[0]];
+            [gains[0], gains[1]] = [gains[1], gains[0]];
+
+            // The new current started at xfStartTime; schedule next crossfade from there
+            scheduleXf(xfStartTime);
+          }, swapDelay);
+        };
+
+        scheduleXf(now);
+      }
+
       // ── Internal: cancel any pending grid schedule event ──
       _cancelGrid() {
         if (this._gridEv !== null) {
@@ -1180,24 +1386,58 @@
       play() {
         this._cancelGrid();
         this._stopPlayer();
+        this._stopXfLoop();
 
-        const startSec = this.startSec;
-        const lenSec = this.lenSec;
+        // True crossfade: two overlapping players — only when no attack/release
+        if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
+          this._playCrossfadeLoop();
+          return;
+        }
 
-        this.player.loopStart = startSec;
-        this.player.loopEnd = startSec + lenSec;
-        this.player.loop = true;
-
-        // Small scheduling buffer so the AudioBufferSourceNode is queued
-        // before its scheduled start time — keeps _acStartAt accurate
+        const hasFades = this.attackTime > 0 || this.releaseTime > 0;
         const startAt = Tone.context.rawContext.currentTime + 0.005;
+
+        if (hasFades) {
+          // Bake fades directly into a copy of the loop region buffer,
+          // then use native player.loop = true for a perfectly seamless loop.
+          if (!this._fadedBuf) this._fadedBuf = this._buildFadedLoopBuffer();
+          const fb = this._fadedBuf;
+          if (fb) {
+            if (typeof this.player.buffer.set === 'function') {
+              this.player.buffer.set(fb);
+            } else {
+              this.player.buffer._buffer = fb;
+            }
+            this.player.loopStart = 0;
+            this.player.loopEnd = fb.duration;
+            this.player.loop = true;
+            try {
+              this.player.start(startAt, 0);
+              this._anchorAcTime = startAt;
+              this._anchorBufferPos = this.startSec;
+              this.playing = true;
+            } catch (e) { console.warn('play() failed', e); }
+            this._renderTile();
+            return;
+          }
+          // fallthrough to native loop if build failed
+        }
+
+        // Native loop with raw buffer
+        if (typeof this.player.buffer.set === 'function') {
+          this.player.buffer.set(this.raw);
+        } else {
+          this.player.buffer._buffer = this.raw;
+        }
+        this.player.loopStart = this.startSec;
+        this.player.loopEnd = this.endSec;
+        this.player.loop = true;
         try {
-          this.player.start(startAt, startSec);
+          this.player.start(startAt, this.startSec);
           this._anchorAcTime = startAt;
-          this._anchorBufferPos = startSec;
+          this._anchorBufferPos = this.startSec;
           this.playing = true;
         } catch (e) { console.warn('play() failed', e); }
-
         this._renderTile();
       }
 
@@ -1209,7 +1449,14 @@
       playGrid() {
         this._cancelGrid();
         this._stopPlayer();
+        this._stopXfLoop();
         this.player.loop = false;
+        // Restore raw buffer in case a faded buffer was previously loaded
+        if (typeof this.player.buffer.set === 'function') {
+          this.player.buffer.set(this.raw);
+        } else {
+          this.player.buffer._buffer = this.raw;
+        }
 
         const bpm = Tone.Transport.bpm.value;
         const subdivSec = (60 / bpm) * (4 / this.subdiv);
@@ -1224,10 +1471,11 @@
 
         const fire = (time) => {
           // 'time' is the AudioContext time passed by scheduleRepeat — use it directly
-          this._stopPlayer();
+          try { this.player.stop(time); } catch (e) { }
           const dur = this.overflow === 'cut'
             ? Math.min(this.lenSec, subdivSec)
             : this.lenSec;
+          this._applyFadeGain(time, dur);
           try {
             this.player.start(time, this.startSec, dur);
           } catch (e) { }
@@ -1248,8 +1496,12 @@
       stop() {
         this._cancelGrid();
         this._stopPlayer();
+        this._stopXfLoop();
         this.playing = false;
         this._anchorAcTime = null;
+        const now = Tone.context.rawContext.currentTime;
+        this.fadeGain.gain.cancelScheduledValues(now);
+        this.fadeGain.gain.setValueAtTime(1, now);
         this._renderTile();
       }
 
@@ -1294,13 +1546,18 @@
       // Automatically syncs WebAudio loop nodes & visually correct relative playhead phase without jumping
       setLoopBounds(start, end) {
         this.updateBufferAnchor();
-
         this.loopStart = start;
         this.loopEnd = end;
+        this._fadedBuf = null; // invalidate — bounds changed, need fresh bake
 
         if (!this.gridSync) {
-          this.player.loopStart = this.startSec;
-          this.player.loopEnd = this.endSec;
+          const hasFades = this.attackTime > 0 || this.releaseTime > 0 || this.crossfadeTime > 0;
+          if (!hasFades) {
+            // No fades: update native loop bounds live
+            this.player.loopStart = this.startSec;
+            this.player.loopEnd = this.endSec;
+          }
+          // With fades: play() will be called on mouseup to rebuild the baked buffer
         }
       }
 
@@ -1308,6 +1565,9 @@
         this.stop();
         setTimeout(() => {
           try { this.player.dispose(); } catch (e) { }
+          try { this.xfPlayer.dispose(); } catch (e) { }
+          try { this.fadeGain.dispose(); } catch (e) { }
+          try { this.xfGain.dispose(); } catch (e) { }
           try { this.ps.dispose(); } catch (e) { }
           try { this.pan.dispose(); } catch (e) { }
           try { this.vol.dispose(); } catch (e) { }
@@ -1451,6 +1711,42 @@
 
       ctx.fillStyle = hexToRgba(s.color, 0.15);
       ctx.fillRect(0, mid, W, 1);
+
+      // ── Fade overlays on tile ──
+      const loopRange = Math.max(0.001, s.loopEnd - s.loopStart);
+      if (s.attackTime > 0) {
+        const atkPx = Math.min(W * 0.45, (s.attackTime / s.duration) / loopRange * W);
+        if (atkPx > 0) {
+          const g = ctx.createLinearGradient(0, 0, atkPx, 0);
+          g.addColorStop(0, 'rgba(0,0,0,0.75)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, atkPx, drawH);
+        }
+      }
+      if (s.releaseTime > 0) {
+        const relPx = Math.min(W * 0.45, (s.releaseTime / s.duration) / loopRange * W);
+        if (relPx > 0) {
+          const g = ctx.createLinearGradient(W - relPx, 0, W, 0);
+          g.addColorStop(0, 'rgba(0,0,0,0)');
+          g.addColorStop(1, 'rgba(0,0,0,0.75)');
+          ctx.fillStyle = g;
+          ctx.fillRect(W - relPx, 0, relPx, drawH);
+        }
+      }
+      if (s.crossfadeTime > 0) {
+        const xfdPx = Math.min(W * 0.45, (s.crossfadeTime / s.duration) / loopRange * W);
+        if (xfdPx > 0) {
+          const ge = ctx.createLinearGradient(W - xfdPx, 0, W, 0);
+          ge.addColorStop(0, hexToRgba(s.color, 0));
+          ge.addColorStop(1, hexToRgba(s.color, 0.38));
+          ctx.fillStyle = ge; ctx.fillRect(W - xfdPx, 0, xfdPx, drawH);
+          const gs = ctx.createLinearGradient(0, 0, xfdPx, 0);
+          gs.addColorStop(0, hexToRgba(s.color, 0.38));
+          gs.addColorStop(1, hexToRgba(s.color, 0));
+          ctx.fillStyle = gs; ctx.fillRect(0, 0, xfdPx, drawH);
+        }
+      }
     }
 
     function refreshTileWave(s) {
@@ -1546,15 +1842,22 @@
     const AUDIO_EXTS = new Set(['wav', 'mp3', 'ogg', 'flac', 'aiff', 'aif', 'm4a', 'opus', 'webm', 'weba']);
     const isAudio = n => AUDIO_EXTS.has((n.split('.').pop() || '').toLowerCase());
 
-    async function importFile(file) {
+    async function importFile(file, dropPos = null) {
       if (!isAudio(file.name)) return;
 
       const id = nextId++;
       const name = file.name.replace(/\.[^.]+$/, '');
       const cw = cv.clientWidth || 800;
       const ch = cv.clientHeight || 500;
-      const x = 80 + Math.random() * (cw - 160);
-      const y = 60 + Math.random() * (ch - 120);
+      let x, y;
+      if (dropPos) {
+        const cvRect = cv.getBoundingClientRect();
+        x = Math.max(TW / 2, Math.min(cw - TW / 2, dropPos.x - cvRect.left));
+        y = Math.max(TH / 2, Math.min(ch - TH / 2, dropPos.y - cvRect.top));
+      } else {
+        x = 80 + Math.random() * (cw - 160);
+        y = 60 + Math.random() * (ch - 120);
+      }
 
       // Placeholder tile while decoding
       const stub = document.createElement('div');
@@ -1593,11 +1896,13 @@
       }
     }
 
-    async function importList(list) {
-      Array.from(list).forEach(f => { if (isAudio(f.name)) importFile(f); });
+    async function importList(list, dropPos = null) {
+      const audioFiles = Array.from(list).filter(f => isAudio(f.name));
+      const pos = audioFiles.length === 1 ? dropPos : null;
+      audioFiles.forEach(f => importFile(f, pos));
     }
 
-    async function importFromDT(items, fallbackFiles) {
+    async function importFromDT(items, fallbackFiles, dropPos = null) {
       const files = [];
       const readEntry = e => new Promise(res => {
         if (!e) return res();
@@ -1619,9 +1924,9 @@
       await Promise.all(entries.map(readEntry));
       // If File System API gave us nothing (e.g. local file:// quirk), fall back
       if (files.length === 0 && fallbackFiles && fallbackFiles.length) {
-        importList(fallbackFiles);
+        importList(fallbackFiles, dropPos);
       } else {
-        importList(files);
+        importList(files, dropPos);
       }
     }
 
@@ -1708,6 +2013,13 @@
       document.getElementById('card-solo').classList.toggle('on', soloId === s.id);
       document.getElementById('card-grid').classList.toggle('on', s.gridSync);
       setCardGridUI(s.gridSync);
+      document.getElementById('card-attack').value = s.attackTime;
+      document.getElementById('cval-attack').textContent = fmtFade(s.attackTime);
+      document.getElementById('card-release').value = s.releaseTime;
+      document.getElementById('cval-release').textContent = fmtFade(s.releaseTime);
+      document.getElementById('card-xfade').value = s.crossfadeTime;
+      document.getElementById('cval-xfade').textContent = fmtFade(s.crossfadeTime);
+      _updateFadeDisabledState();
 
       // Position card centered on the tile horizontally, anchored at tile top
       const tileRect = tile.getBoundingClientRect();
@@ -1773,6 +2085,88 @@
       }
       ctx.fillStyle = hexToRgba(s.color, 0.15);
       ctx.fillRect(0, H / 2, W, 1);
+
+      // ── Fade overlays ──
+      const vw = ve - vs;
+      const toX = norm => (norm - vs) / vw * W;
+
+      // Attack: dark → transparent from loopStart going right
+      if (s.attackTime > 0) {
+        const atkEndNorm = Math.min(s.loopEnd, s.loopStart + s.attackTime / s.duration);
+        const x0 = Math.max(0, toX(s.loopStart));
+        const x1 = Math.min(W, Math.max(x0, toX(atkEndNorm)));
+        if (x1 > x0) {
+          const g = ctx.createLinearGradient(x0, 0, x1, 0);
+          g.addColorStop(0, 'rgba(0,0,0,0.78)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x0, 0, x1 - x0, H);
+        }
+      }
+
+      // Release: transparent → dark toward loopEnd going right
+      if (s.releaseTime > 0) {
+        const relStartNorm = Math.max(s.loopStart, s.loopEnd - s.releaseTime / s.duration);
+        const x0 = Math.max(0, Math.min(W, toX(relStartNorm)));
+        const x1 = Math.min(W, toX(s.loopEnd));
+        if (x1 > x0) {
+          const g = ctx.createLinearGradient(x0, 0, x1, 0);
+          g.addColorStop(0, 'rgba(0,0,0,0)');
+          g.addColorStop(1, 'rgba(0,0,0,0.78)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x0, 0, x1 - x0, H);
+        }
+      }
+
+      // Crossfade: colored tint centered on each handle, extending both inside
+      // and outside the loop region to show that pre/post-roll audio is being used.
+      if (s.crossfadeTime > 0) {
+        const xfdNorm = s.crossfadeTime / s.duration;
+        const preAvail = s.loopStart * s.duration >= s.crossfadeTime;
+        const postAvail = (1 - s.loopEnd) * s.duration >= s.crossfadeTime;
+
+        // Start handle: gradient spans [loopStart - xfdNorm … loopStart + xfdNorm]
+        // Left half (outside/pre-roll): transparent → color at handle
+        // Right half (inside loop):     color at handle → transparent
+        const sxOut = toX(s.loopStart - xfdNorm); // outside (pre-roll side)
+        const sxMid = toX(s.loopStart);            // at the handle
+        const sxIn  = toX(s.loopStart + xfdNorm);  // inside loop
+        if (preAvail && sxMid > sxOut) {
+          const g = ctx.createLinearGradient(Math.max(0, sxOut), 0, sxMid, 0);
+          g.addColorStop(0, hexToRgba(s.color, 0));
+          g.addColorStop(1, hexToRgba(s.color, 0.5));
+          ctx.fillStyle = g;
+          ctx.fillRect(Math.max(0, sxOut), 0, sxMid - Math.max(0, sxOut), H);
+        }
+        if (sxIn > sxMid) {
+          const g = ctx.createLinearGradient(sxMid, 0, Math.min(W, sxIn), 0);
+          g.addColorStop(0, hexToRgba(s.color, preAvail ? 0.5 : 0.35));
+          g.addColorStop(1, hexToRgba(s.color, 0));
+          ctx.fillStyle = g;
+          ctx.fillRect(sxMid, 0, Math.min(W, sxIn) - sxMid, H);
+        }
+
+        // End handle: gradient spans [loopEnd - xfdNorm … loopEnd + xfdNorm]
+        // Left half (inside loop):     transparent → color at handle
+        // Right half (outside/post-roll): color at handle → transparent
+        const exIn  = toX(s.loopEnd - xfdNorm);   // inside loop
+        const exMid = toX(s.loopEnd);              // at the handle
+        const exOut = toX(s.loopEnd + xfdNorm);    // outside (post-roll side)
+        if (exMid > exIn) {
+          const g = ctx.createLinearGradient(Math.max(0, exIn), 0, exMid, 0);
+          g.addColorStop(0, hexToRgba(s.color, 0));
+          g.addColorStop(1, hexToRgba(s.color, postAvail ? 0.5 : 0.35));
+          ctx.fillStyle = g;
+          ctx.fillRect(Math.max(0, exIn), 0, exMid - Math.max(0, exIn), H);
+        }
+        if (postAvail && exOut > exMid) {
+          const g = ctx.createLinearGradient(exMid, 0, Math.min(W, exOut), 0);
+          g.addColorStop(0, hexToRgba(s.color, 0.5));
+          g.addColorStop(1, hexToRgba(s.color, 0));
+          ctx.fillStyle = g;
+          ctx.fillRect(exMid, 0, Math.min(W, exOut) - exMid, H);
+        }
+      }
     }
 
     function updateCardLoopReg(s) {
@@ -1785,6 +2179,7 @@
       reg.style.width = Math.max(0, (regEnd - regStart) * W) + 'px';
       document.getElementById('ct-s').textContent = 'Start: ' + s.startSec.toFixed(3) + 's';
       document.getElementById('ct-e').textContent = 'End: ' + s.endSec.toFixed(3) + 's';
+      drawCardWave(s);
       refreshTileWave(s);
     }
 
@@ -1795,6 +2190,24 @@
       const sub = document.getElementById('card-subdiv');
       sub.style.opacity = on ? '1' : '0.4';
       sub.style.pointerEvents = on ? 'all' : 'none';
+      // Lock end handle when grid is on — end is determined by subdivision length
+      const endSlider = document.getElementById('card-end');
+      const endHandle = document.getElementById('clh-e');
+      endSlider.disabled = on;
+      endHandle.style.pointerEvents = on ? 'none' : 'all';
+      endHandle.style.opacity = on ? '0.35' : '1';
+    }
+
+    // Snap loopEnd to the current subdivision length from loopStart
+    function _snapEndToSubdiv(s) {
+      const bpm = Tone.Transport.bpm.value;
+      const subdivSec = (60 / bpm) * (4 / s.subdiv);
+      const snappedEnd = Math.min(1, s.loopStart + subdivSec / s.duration);
+      s.setLoopBounds(s.loopStart, snappedEnd);
+      document.getElementById('card-end').value = s.loopEnd;
+      document.getElementById('cval-end').textContent = s.loopEnd.toFixed(3);
+      updateCardLoopReg(s);
+      drawCardWave(s);
     }
 
     // Loop handle dragging in card waveform
@@ -1802,6 +2215,11 @@
       const isStart = hid === 'clh-s';
       document.getElementById(hid).addEventListener('mousedown', e => {
         e.stopPropagation();
+        // End handle is locked when grid sync is on
+        if (!isStart) {
+          const s = samples.get(activeId);
+          if (s instanceof Sample && s.gridSync) return;
+        }
         const wrap = document.getElementById('card-wave-wrap');
         const rect = wrap.getBoundingClientRect(), W = rect.width;
         const mm = ev => {
@@ -1827,12 +2245,21 @@
         const mu = () => {
           document.removeEventListener('mousemove', mm);
           document.removeEventListener('mouseup', mu);
-          if (isStart) {
-            const s = samples.get(activeId);
-            if (s instanceof Sample && s.playing && !s.gridSync) {
-              // Use player.seek() which does an atomic stop+start at the same
-              // time — avoids Tone.js "Source cannot be started more than once"
-              // assertion that fires when stop()+start() are called in sequence.
+          const s = samples.get(activeId);
+          // Re-snap end handle if grid is on and start was moved
+          if (s instanceof Sample && isStart && s.gridSync) {
+            _snapEndToSubdiv(s);
+            if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+            return;
+          }
+          if (s instanceof Sample && s.playing && !s.gridSync) {
+            const hasFades = s.attackTime > 0 || s.releaseTime > 0 || s.crossfadeTime > 0;
+            if (hasFades) {
+              // Rebuild baked buffer with new loop bounds and restart
+              s._fadedBuf = null;
+              s.play();
+            } else if (isStart) {
+              // Seek to the new start position
               const seekTo = s.startSec;
               const startAt = Tone.context.rawContext.currentTime + 0.005;
               s.player.seek(seekTo, startAt);
@@ -1999,6 +2426,7 @@
     });
     document.getElementById('card-end').addEventListener('input', e => {
       const s = samples.get(activeId); if (!(s instanceof Sample)) return;
+      if (s.gridSync) { e.target.value = s.loopEnd; return; }
       const newEnd = Math.max(parseFloat(e.target.value), s.loopStart + 0.005);
       s.setLoopBounds(s.loopStart, newEnd);
       e.target.value = s.loopEnd;
@@ -2011,6 +2439,7 @@
       const s = samples.get(activeId); if (!(s instanceof Sample)) return;
       s.gridSync = !s.gridSync;
       document.getElementById('card-grid').classList.toggle('on', s.gridSync);
+      if (s.gridSync) _snapEndToSubdiv(s);
       setCardGridUI(s.gridSync); s._renderTile();
       if (s.playing) {
         s._cancelGrid(); s._stopPlayer();
@@ -2022,6 +2451,7 @@
       e.stopPropagation();
       const s = samples.get(activeId); if (!(s instanceof Sample)) return;
       s.subdiv = parseInt(e.target.value);
+      if (s.gridSync) _snapEndToSubdiv(s);
       if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
     });
     document.getElementById('card-overflow').addEventListener('change', e => {
@@ -2030,6 +2460,60 @@
     });
     document.getElementById('card-remove').addEventListener('click', e => {
       e.stopPropagation(); removeSample(activeId);
+    });
+
+    function fmtFade(secs) {
+      if (secs < 0.0005) return '0 ms';
+      if (secs < 1) return Math.round(secs * 1000) + ' ms';
+      return secs.toFixed(2) + ' s';
+    }
+
+    function _updateFadeDisabledState() {
+      const s = samples.get(activeId); if (!(s instanceof Sample)) return;
+      const hasAtk = s.attackTime > 0 || s.releaseTime > 0;
+      const hasXfd = s.crossfadeTime > 0;
+      // Crossfade disabled when attack or release is active, and vice versa
+      const xfEl = document.getElementById('card-xfade');
+      xfEl.disabled = hasAtk;
+      xfEl.closest('.crow').style.opacity = hasAtk ? '0.35' : '1';
+      ['attack', 'release'].forEach(k => {
+        const el = document.getElementById('card-' + k);
+        el.disabled = hasXfd;
+        el.closest('.crow').style.opacity = hasXfd ? '0.35' : '1';
+      });
+    }
+
+    let _fadeRestartTimer = null;
+    ['attack', 'release', 'xfade'].forEach(key => {
+      document.getElementById('card-' + key).addEventListener('input', e => {
+        e.stopPropagation();
+        const v = parseFloat(e.target.value);
+        const s = samples.get(activeId); if (!(s instanceof Sample)) return;
+        const prop = key === 'xfade' ? 'crossfadeTime' : key + 'Time';
+
+        // Mutual exclusion: crossfade ↔ attack/release
+        if (key === 'xfade' && v > 0) {
+          s.attackTime = 0; s.releaseTime = 0;
+          document.getElementById('card-attack').value = 0;
+          document.getElementById('card-release').value = 0;
+          document.getElementById('cval-attack').textContent = fmtFade(0);
+          document.getElementById('cval-release').textContent = fmtFade(0);
+        } else if (key !== 'xfade' && v > 0) {
+          s.crossfadeTime = 0;
+          document.getElementById('card-xfade').value = 0;
+          document.getElementById('cval-xfade').textContent = fmtFade(0);
+        }
+
+        s[prop] = v;
+        s._fadedBuf = null;
+        document.getElementById('cval-' + key).textContent = fmtFade(v);
+        _updateFadeDisabledState();
+        drawCardWave(s); updateCardLoopReg(s);
+        if (s.playing && !s.gridSync) {
+          clearTimeout(_fadeRestartTimer);
+          _fadeRestartTimer = setTimeout(() => { s.play(); }, 60);
+        }
+      });
     });
 
     // Close card on outside click
@@ -2186,8 +2670,9 @@
       e.preventDefault(); dn = 0;
       document.getElementById('drop-overlay').classList.remove('active');
       if (!audioReady) { alert('Please click Initialize Audio first.'); return; }
-      if (e.dataTransfer.items?.length) await importFromDT(e.dataTransfer.items, e.dataTransfer.files);
-      else importList(e.dataTransfer.files);
+      const dropPos = { x: e.clientX, y: e.clientY };
+      if (e.dataTransfer.items?.length) await importFromDT(e.dataTransfer.items, e.dataTransfer.files, dropPos);
+      else importList(e.dataTransfer.files, dropPos);
     });
 
     document.getElementById('import-btn').addEventListener('click', () => {

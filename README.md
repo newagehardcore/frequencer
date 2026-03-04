@@ -140,6 +140,24 @@ Set the **start** and **end** points of the loop region. Values are 0.0–1.0 (n
 
 Only the region between start and end loops. This is non-destructive — the original file is untouched.
 
+### Fades
+
+Per-sample fade controls. Open the edit card to access them.
+
+| Control | Function |
+|---------|----------|
+| **Attack** | Fade in from silence at the start of each loop iteration |
+| **Release** | Fade out to silence at the end of each loop iteration |
+| **Crossfade** | Smooth the loop boundary — end fades out while start fades in simultaneously, constant amplitude |
+
+Fades use equal-power curves (no audible dip in the middle of a crossfade).
+
+**Crossfade vs. Attack/Release:** These are mutually exclusive. Enabling crossfade disables attack and release, and vice versa. Crossfade is for making seamless loops; attack/release are for shaping the volume envelope.
+
+**Crossfade implementation:** Two audio players overlap at the loop boundary — one fades out while the other fades in. The audio never goes silent at the wrap point. The waveform displays gradient overlays showing the crossfade region on each handle.
+
+**With grid sync:** The release fade ends exactly at the subdivision boundary (the end handle is locked to that position — see below).
+
 ### Grid Sync
 
 Lock the sample to the global tempo.
@@ -161,6 +179,8 @@ Lock the sample to the global tempo.
 - `Cut` — sample is hard-cut at the subdivision boundary and restarted
 
 When grid sync is active, multiple synced samples snap to the same grid clock — they start together on subdivision boundaries.
+
+**End handle locking:** When grid sync is turned on, the end loop handle automatically snaps to the subdivision boundary (start + one subdivision length) and becomes non-adjustable. This keeps the release fade and loop end perfectly aligned with the grid. The start handle remains freely movable; moving it re-snaps the end handle to the new position + subdivision. Changing the subdivision also re-snaps the end handle immediately.
 
 ### Remove
 
@@ -207,21 +227,24 @@ Each sample has its own audio chain:
 ```
 AudioBuffer
     │
-    ▼
-Tone.Player  (loop playback, loop points)
-    │
-    ▼
-Tone.PitchShift  (semitone shifting, ±24st)
-    │
-    ▼
-Tone.Panner  (stereo pan, –1 to +1)
-    │
-    ▼
-Tone.Volume  (dB gain, +6 to –60)
-    │
-    ▼
-AudioContext Destination (speakers)
+    ├──► Tone.Player ──► Tone.Gain (fadeGain) ──┐
+    │                                            │
+    └──► Tone.Player ──► Tone.Gain (xfGain)  ───┤  (crossfade second player)
+                                                 │
+                                                 ▼
+                                         Tone.PitchShift  (semitone shifting, ±24st)
+                                                 │
+                                                 ▼
+                                         Tone.Panner  (stereo pan, –1 to +1)
+                                                 │
+                                                 ▼
+                                         Tone.Volume  (dB gain, +6 to –60)
+                                                 │
+                                                 ▼
+                                         AudioContext Destination
 ```
+
+The second player (`xfGain`) is only active during crossfade transitions. For attack/release, fades are baked directly into a copy of the `AudioBuffer` — the loop plays via a single player with no gain automation needed.
 
 **Volume curve:** The Y-axis maps to dB using a power curve — linear dB over most of the canvas height, with the silent floor pushed to the bottom ~12%. This gives you smooth, usable control across the whole range.
 
@@ -259,7 +282,7 @@ npx serve .
 
 ```
 frequencer/
-├── index.html      ← The entire app (single file, ~1600 lines)
+├── index.html      ← The entire app (single file, ~2600 lines)
 ├── Tone.js         ← Audio engine (downloaded by setup script)
 ├── setup.sh        ← Mac/Linux setup & launch script
 ├── setup.bat       ← Windows setup & launch script
