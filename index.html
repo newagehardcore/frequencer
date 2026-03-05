@@ -497,9 +497,137 @@
     }
 
     .card-wave-canvas {
-      width: 100%;
+      width: calc(100% - 20px);
       height: 100%;
     }
+
+    .card-vu-canvas {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 20px;
+      image-rendering: pixelated;
+    }
+
+    .tile-vu-canvas {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 10px;
+      height: 42px; /* TH(56) - label(14) */
+      image-rendering: pixelated;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* M / S buttons */
+    .ms-btn {
+      flex: 0 0 26px !important;
+      padding: 6px 0;
+      font-size: 11px;
+      letter-spacing: 0;
+    }
+
+    .cbtn.mute-on {
+      background: #ccaa00;
+      color: #000;
+      border-color: #ccaa00;
+    }
+
+    .cbtn.mute-on:hover {
+      background: #ffcc00;
+      border-color: #ffcc00;
+    }
+
+    .cbtn.solo-on {
+      background: #cc2200;
+      color: #fff;
+      border-color: #cc2200;
+    }
+
+    .cbtn.solo-on:hover {
+      background: #ff4422;
+      border-color: #ff4422;
+    }
+
+    /* Editable range-field inputs flanking sliders */
+    .rng-field {
+      width: 28px;
+      height: 18px;
+      background: #000;
+      border: 1px solid #1a1a1a;
+      color: #444;
+      font-family: 'Courier New', monospace;
+      font-size: 8px;
+      text-align: center;
+      padding: 0 2px;
+      flex-shrink: 0;
+      outline: none;
+    }
+
+    .rng-field:focus {
+      border-color: #555;
+      color: #999;
+    }
+
+    /* ═══ CUSTOM ENVELOPE SLIDER ═══ */
+    .cslider {
+      position: relative;
+      flex: 1;
+      height: 18px;
+      background: var(--b1);
+      cursor: ew-resize;
+      overflow: visible;
+    }
+
+    .cslider input[type=range] {
+      display: none;
+    }
+
+    .cslider-thumb {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      transform: translateX(-50%);
+      min-width: 46px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      z-index: 1;
+    }
+
+    .cslider-thumb:active {
+      cursor: grabbing;
+    }
+
+    .cslider-lbl {
+      font-size: 9px;
+      font-family: 'Courier New', monospace;
+      color: #888;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .cslider-edit {
+      display: none;
+      width: 44px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      text-align: center;
+      outline: none;
+      padding: 0;
+    }
+
+    .cslider.editing .cslider-lbl { display: none; }
+    .cslider.editing .cslider-edit { display: block; }
+    .cslider.editing .cslider-thumb { border-color: #fff; cursor: text; }
 
     .card-ph {
       position: absolute;
@@ -540,11 +668,19 @@
       padding: 7px 8px;
     }
 
+    .csec.tight {
+      padding: 4px 8px;
+    }
+
     .crow {
       display: flex;
       align-items: center;
       gap: 7px;
       margin-bottom: 6px;
+    }
+
+    .csec.tight .crow {
+      margin-bottom: 3px;
     }
 
     .crow:last-child {
@@ -557,7 +693,7 @@
       text-transform: uppercase;
       letter-spacing: -0.03em;
       color: #666;
-      width: 42px;
+      width: 56px;
       flex-shrink: 0;
     }
 
@@ -600,6 +736,7 @@
       border-color: #ff3333;
       color: #ff3333;
     }
+
 
     /* ═══ SHARED INPUT STYLES ═══ */
     input[type=range] {
@@ -976,12 +1113,15 @@
         this.x = 0; this.y = 0;
         this.color = nextColor();
         this.pitchST = 0;
+        this.stretchST = 0;
+        this.reversed = false;
+        this._revBuf = null;
         this.loopStart = 0;  // normalized 0..1
         this.loopEnd = 1;
         this.muted = false;
         this.gridSync = false;
         this.subdiv = 4;
-        this.overflow = 'wait';
+        this.subdivFactor = 1; // 1 = normal, 1.5 = dotted, 0.667 = triplet
 
         this.attackTime = 0;    // seconds
         this.releaseTime = 0;   // seconds
@@ -995,6 +1135,8 @@
 
         // Audio chain: Player → fadeGain → PitchShift → Panner → Volume → Destination
         this.vol = new Tone.Volume(0).toDestination();
+        this.meter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
+        this.vol.connect(this.meter);
         this.pan = new Tone.Panner(0).connect(this.vol);
         this.ps = new Tone.PitchShift(0).connect(this.pan);
         this.fadeGain = new Tone.Gain(1).connect(this.ps);
@@ -1025,6 +1167,10 @@
       get startSec() { return this.loopStart * this.duration; }
       get endSec() { return this.loopEnd * this.duration; }
       get lenSec() { return Math.max(0.01, (this.loopEnd - this.loopStart) * this.duration); }
+      get _srcBuf() { return this.reversed ? this._revBuf : this.raw; }
+      get _revStart() { return this.reversed ? (this.duration - this.endSec) : this.startSec; }
+      get _revEnd() { return this.reversed ? (this.duration - this.startSec) : this.endSec; }
+      get _pbRate() { return Math.pow(2, this.stretchST / 12); }
 
       // ── Volume / Pan from canvas position ──
       updateVol() {
@@ -1053,6 +1199,34 @@
       setPitch(st) {
         this.pitchST = st;
         this.ps.pitch = st;
+      }
+
+      setStretch(st) {
+        this.stretchST = st;
+        const rate = Math.pow(2, st / 12);
+        this.player.playbackRate = rate;
+        this.xfPlayer.playbackRate = rate;
+      }
+
+      setReverse(val) {
+        this.reversed = val;
+        this._fadedBuf = null;
+        if (val && !this._revBuf) {
+          const ctx = Tone.context.rawContext;
+          const src = this.raw;
+          const buf = ctx.createBuffer(src.numberOfChannels, src.length, src.sampleRate);
+          for (let c = 0; c < src.numberOfChannels; c++) {
+            const srcData = src.getChannelData(c);
+            const dstData = buf.getChannelData(c);
+            const len = srcData.length;
+            for (let i = 0; i < len; i++) dstData[i] = srcData[len - 1 - i];
+          }
+          this._revBuf = buf;
+        }
+        if (this.playing) {
+          if (this.gridSync) { this._cancelGrid(); this._stopPlayer(); this.playGrid(); }
+          else { this.play(); }
+        }
       }
 
       // ── Internal: stop the player node without changing state ──
@@ -1095,11 +1269,11 @@
       _buildFadedLoopBuffer() {
         const ctx = Tone.context.rawContext;
         const sr = ctx.sampleRate;
-        const startSample = Math.round(this.startSec * sr);
+        const startSample = Math.round(this._revStart * sr);
         const loopLen = Math.round(this.lenSec * sr);
         if (loopLen <= 0) return null;
 
-        const nCh = this.raw.numberOfChannels;
+        const nCh = this._srcBuf.numberOfChannels;
         const buf = ctx.createBuffer(nCh, loopLen, sr);
         const maxFade = Math.floor(loopLen * 0.45);
         const atkS = Math.min(Math.round(this.attackTime * sr), maxFade);
@@ -1114,7 +1288,7 @@
           : 0;
 
         for (let c = 0; c < nCh; c++) {
-          const src = this.raw.getChannelData(c);
+          const src = this._srcBuf.getChannelData(c);
           const dst = buf.getChannelData(c);
           for (let i = 0; i < loopLen; i++) dst[i] = src[startSample + i] || 0;
 
@@ -1158,16 +1332,17 @@
       // After the fade, A is stopped and B takes its role; the cycle repeats.
       _playCrossfadeLoop() {
         const ctx = Tone.context.rawContext;
-        const loopLen = this.lenSec;
-        const xfdTime = Math.min(this.crossfadeTime, loopLen * 0.45);
-        const startSec = this.startSec;
+        const pbRate = this._pbRate;
+        const loopLen = this.lenSec / pbRate;
+        const xfdTime = Math.min(this.crossfadeTime / pbRate, loopLen * 0.45);
+        const startSec = this._revStart;
 
         this._stopXfLoop();
 
-        // Reload raw buffer into both players (in case baked buf was previously in place)
+        // Reload source buffer into both players (in case baked buf was previously in place)
         const setBuf = (pl) => {
-          if (typeof pl.buffer.set === 'function') pl.buffer.set(this.raw);
-          else pl.buffer._buffer = this.raw;
+          if (typeof pl.buffer.set === 'function') pl.buffer.set(this._srcBuf);
+          else pl.buffer._buffer = this._srcBuf;
         };
         setBuf(this.player);
         setBuf(this.xfPlayer);
@@ -1275,7 +1450,7 @@
             try {
               this.player.start(startAt, 0);
               this._anchorAcTime = startAt;
-              this._anchorBufferPos = this.startSec;
+              this._anchorBufferPos = this._revStart;
               this.playing = true;
             } catch (e) { console.warn('play() failed', e); }
             this._renderTile();
@@ -1284,19 +1459,19 @@
           // fallthrough to native loop if build failed
         }
 
-        // Native loop with raw buffer
+        // Native loop with source buffer
         if (typeof this.player.buffer.set === 'function') {
-          this.player.buffer.set(this.raw);
+          this.player.buffer.set(this._srcBuf);
         } else {
-          this.player.buffer._buffer = this.raw;
+          this.player.buffer._buffer = this._srcBuf;
         }
-        this.player.loopStart = this.startSec;
-        this.player.loopEnd = this.endSec;
+        this.player.loopStart = this._revStart;
+        this.player.loopEnd = this._revEnd;
         this.player.loop = true;
         try {
-          this.player.start(startAt, this.startSec);
+          this.player.start(startAt, this._revStart);
           this._anchorAcTime = startAt;
-          this._anchorBufferPos = this.startSec;
+          this._anchorBufferPos = this._revStart;
           this.playing = true;
         } catch (e) { console.warn('play() failed', e); }
         this._renderTile();
@@ -1312,15 +1487,15 @@
         this._stopPlayer();
         this._stopXfLoop();
         this.player.loop = false;
-        // Restore raw buffer in case a faded buffer was previously loaded
+        // Restore source buffer in case a faded buffer was previously loaded
         if (typeof this.player.buffer.set === 'function') {
-          this.player.buffer.set(this.raw);
+          this.player.buffer.set(this._srcBuf);
         } else {
-          this.player.buffer._buffer = this.raw;
+          this.player.buffer._buffer = this._srcBuf;
         }
 
         const bpm = Tone.Transport.bpm.value;
-        const subdivSec = (60 / bpm) * (4 / this.subdiv);
+        const subdivSec = (60 / bpm) * (4 / this.subdiv) * this.subdivFactor;
         this._loopLen = this.lenSec;
 
         // Quantize the start to the next subdivision boundary in Transport time
@@ -1333,17 +1508,15 @@
         const fire = (time) => {
           // 'time' is the AudioContext time passed by scheduleRepeat — use it directly
           try { this.player.stop(time); } catch (e) { }
-          const dur = this.overflow === 'cut'
-            ? Math.min(this.lenSec, subdivSec)
-            : this.lenSec;
+          const dur = this.lenSec;
           this._applyFadeGain(time, dur);
           try {
-            this.player.start(time, this.startSec, dur);
+            this.player.start(time, this._revStart, dur);
           } catch (e) { }
           // Store the exact anchor time and buffer pos
           Tone.Draw.schedule(() => {
             this._anchorAcTime = time;
-            this._anchorBufferPos = this.startSec;
+            this._anchorBufferPos = this._revStart;
           }, time);
         };
 
@@ -1372,11 +1545,11 @@
         let elapsed = acNow - this._anchorAcTime;
         if (elapsed <= 0) return;
 
-        let pos = this._anchorBufferPos + elapsed;
-        if (!this.gridSync && pos >= this.endSec) {
-          pos = this.startSec + ((pos - this.startSec) % this.lenSec);
-        } else if (this.gridSync && pos >= this.endSec) {
-          pos = this.endSec;
+        let pos = this._anchorBufferPos + elapsed * this._pbRate;
+        if (!this.gridSync && pos >= this._revEnd) {
+          pos = this._revStart + ((pos - this._revStart) % this.lenSec);
+        } else if (this.gridSync && pos >= this._revEnd) {
+          pos = this._revEnd;
         }
         this._anchorAcTime = acNow;
         this._anchorBufferPos = pos;
@@ -1386,22 +1559,25 @@
         if (!this.playing || this._anchorAcTime === null) return null;
         const acNow = Tone.context.rawContext.currentTime;
         let elapsed = Math.max(0, acNow - this._anchorAcTime);
-        let pos = this._anchorBufferPos + elapsed;
+        let pos = this._anchorBufferPos + elapsed * this._pbRate;
+        const rStart = this._revStart, rEnd = this._revEnd;
 
         if (this.gridSync) {
-          pos = Math.min(pos, this.endSec);
-          return (pos - this.startSec) / this.lenSec;
+          pos = Math.min(pos, rEnd);
+          const fwd = (pos - rStart) / this.lenSec;
+          return this.reversed ? 1 - fwd : fwd;
         }
 
-        if (pos >= this.endSec) {
-          let over = pos - this.startSec;
+        if (pos >= rEnd) {
+          let over = pos - rStart;
           if (over >= 0 && this.lenSec > 0) {
-            pos = this.startSec + (over % this.lenSec);
+            pos = rStart + (over % this.lenSec);
             this._anchorAcTime = acNow;
             this._anchorBufferPos = pos;
           }
         }
-        return (pos - this.startSec) / this.lenSec;
+        const fwd = (pos - rStart) / this.lenSec;
+        return this.reversed ? 1 - fwd : fwd;
       }
 
       // Automatically syncs WebAudio loop nodes & visually correct relative playhead phase without jumping
@@ -1432,6 +1608,7 @@
           try { this.ps.dispose(); } catch (e) { }
           try { this.pan.dispose(); } catch (e) { }
           try { this.vol.dispose(); } catch (e) { }
+          try { this.meter.dispose(); } catch (e) { }
         }, 300);
       }
 
@@ -1497,6 +1674,11 @@
       wc.className = 'tile-canvas';
       wc.width = TW; wc.height = TH;
       t.appendChild(wc);
+
+      const vu = document.createElement('canvas');
+      vu.className = 'tile-vu-canvas';
+      vu.width = 10; vu.height = 42;
+      t.appendChild(vu);
 
       const ph = document.createElement('div');
       ph.className = 'tile-ph';
@@ -1682,7 +1864,7 @@
         if (!cph) continue;
         if (!(si instanceof Sample) || !si.playing) { cph.style.display = 'none'; continue; }
         const wrap = cardInfo.waveWrap();
-        const W = wrap ? wrap.clientWidth || 264 : 264;
+        const W = wrap ? (wrap.clientWidth || 284) - 20 : 264;
         const pos = si.playheadPos();
         if (pos !== null) {
           const absPos = si.loopStart + pos * (si.loopEnd - si.loopStart);
@@ -1697,8 +1879,54 @@
         } else cph.style.display = 'none';
       }
 
+      // VU meters for open cards
+      for (const [cid, cardInfo] of openCards) {
+        const si = samples.get(cid);
+        if (!(si instanceof Sample) || !si.meter) continue;
+        const vuC = cardInfo.vuCanvas && cardInfo.vuCanvas();
+        if (vuC) drawVU(vuC, si);
+      }
+
+      // VU meters for all tiles
+      for (const [sid, si] of samples) {
+        if (!(si instanceof Sample) || !si.meter) continue;
+        const tile = document.getElementById('t' + sid);
+        if (!tile) continue;
+        const vuC = tile.querySelector('.tile-vu-canvas');
+        if (vuC) drawVU(vuC, si);
+      }
+
       requestAnimationFrame(phLoop);
     })();
+
+    function drawVU(canvas, s) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width || 20, H = canvas.height || 80;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+      let levels = s.meter.getValue();
+      if (!Array.isArray(levels)) levels = [levels, levels];
+      const barW = Math.floor((W - 3) / 2);
+      const gap = W - barW * 2;
+      for (let ch = 0; ch < 2; ch++) {
+        const raw = levels[ch];
+        const db = (raw === -Infinity || !isFinite(raw)) ? -60 : Math.max(-60, Math.min(6, raw));
+        const normalized = (db + 60) / 66;
+        const barH = Math.round(normalized * (H - 2));
+        const x = ch === 0 ? 0 : barW + gap;
+        ctx.fillStyle = '#111';
+        ctx.fillRect(x, 1, barW, H - 2);
+        if (barH > 0) {
+          let color;
+          if (db > 0) color = '#ff3333';
+          else if (db > -6) color = '#ccaa00';
+          else if (db > -18) color = '#00bb55';
+          else color = '#006633';
+          ctx.fillStyle = color;
+          ctx.fillRect(x, H - 1 - barH, barW, barH);
+        }
+      }
+    }
 
     // ════════════════════════════════════════════════════
     // IMPORT
@@ -1915,6 +2143,7 @@
           </div>
           <div class="card-ph"></div>
           <div class="card-zoom-label"></div>
+          <canvas class="card-vu-canvas" width="20" height="80"></canvas>
         </div>
         <div class="card-times">
           <span class="ct-s">Start: 0.000s</span>
@@ -1923,71 +2152,84 @@
         <div class="card-body">
           <div class="csec">
             <div class="crow">
-              <button class="cbtn act card-play">&#9654; Play</button>
-              <button class="cbtn card-stop">&#9632; Stop</button>
-            </div>
-            <div class="crow">
-              <span class="clbl">Mute</span>
-              <div class="tog card-mute"></div>
-              <span class="clbl" style="margin-left:10px">Solo</span>
-              <div class="tog card-solo"></div>
+              <button class="cbtn act card-play" style="flex:2">&#9654; Play</button>
+              <button class="cbtn card-stop" style="flex:2">&#9632; Stop</button>
+              <button class="cbtn card-rev" style="flex:2">&#9664;&#9664; Rev</button>
+              <button class="cbtn ms-btn card-mute-btn">M</button>
+              <button class="cbtn ms-btn card-solo-btn">S</button>
             </div>
           </div>
-          <div class="csec">
+          <div class="csec tight">
             <div class="crow">
-              <span class="clbl">Pitch</span>
-              <input type="range" class="card-pitch" min="-24" max="24" step="1" value="0">
-              <span class="cval cval-pitch">0 st</span>
+              <span class="clbl">Pitchshift</span>
+              <input type="text" class="rng-field" value="-24">
+              <div class="cslider">
+                <input type="range" class="card-pitch" min="-24" max="24" step="1" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="24">
+            </div>
+            <div class="crow">
+              <span class="clbl">Timestretch</span>
+              <input type="text" class="rng-field" value="-24">
+              <div class="cslider">
+                <input type="range" class="card-stretch" min="-24" max="24" step="1" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="24">
             </div>
           </div>
-          <div class="csec">
-            <div class="crow">
-              <span class="clbl">Start</span>
-              <input type="range" class="card-start" min="0" max="1" step="0.001" value="0">
-              <span class="cval cval-start">0.000</span>
-            </div>
-            <div class="crow">
-              <span class="clbl">End</span>
-              <input type="range" class="card-end" min="0" max="1" step="0.001" value="1">
-              <span class="cval cval-end">1.000</span>
-            </div>
-          </div>
-          <div class="csec">
+          <div class="csec tight">
             <div class="crow">
               <span class="clbl">Attack</span>
-              <input type="range" class="card-attack" min="0" max="4" step="0.01" value="0">
-              <span class="cval cval-attack">0 ms</span>
+              <input type="text" class="rng-field" value="0">
+              <div class="cslider">
+                <input type="range" class="card-attack" min="0" max="4" step="0.01" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="4">
             </div>
             <div class="crow">
               <span class="clbl">Release</span>
-              <input type="range" class="card-release" min="0" max="4" step="0.01" value="0">
-              <span class="cval cval-release">0 ms</span>
+              <input type="text" class="rng-field" value="0">
+              <div class="cslider">
+                <input type="range" class="card-release" min="0" max="4" step="0.01" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="4">
             </div>
             <div class="crow">
               <span class="clbl">X-Fade</span>
-              <input type="range" class="card-xfade" min="0" max="4" step="0.01" value="0">
-              <span class="cval cval-xfade">0 ms</span>
+              <input type="text" class="rng-field" value="0">
+              <div class="cslider">
+                <input type="range" class="card-xfade" min="0" max="4" step="0.01" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="4">
             </div>
           </div>
           <div class="csec">
             <div class="crow">
-              <span class="clbl">Grid</span>
-              <div class="tog card-grid"></div>
-              <span class="clbl" style="margin-left:10px">Sub</span>
+              <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
               <select class="card-subdiv" style="flex:1">
-                <option value="1">1 Bar</option>
-                <option value="2">&frac12;</option>
-                <option value="4" selected>&frac14;</option>
-                <option value="8">&#8539;</option>
-                <option value="16">1/16</option>
+                <optgroup label="— Long —">
+                  <option value="0.25">4 bars</option>
+                  <option value="0.333">3 bars</option>
+                  <option value="0.4">2.5 bars</option>
+                  <option value="0.5">2 bars</option>
+                  <option value="0.667">1.5 bars</option>
+                </optgroup>
+                <optgroup label="— Standard —">
+                  <option value="1">1 bar</option>
+                  <option value="2">1/2</option>
+                  <option value="4" selected>1/4</option>
+                  <option value="8">1/8</option>
+                  <option value="16">1/16</option>
+                  <option value="32">1/32</option>
+                </optgroup>
               </select>
-            </div>
-            <div class="crow card-overflow-row">
-              <span class="clbl">Overflow</span>
-              <select class="card-overflow" style="flex:1">
-                <option value="wait" selected>Wait</option>
-                <option value="cut">Cut</option>
-              </select>
+              <button class="cbtn ms-btn card-dot-btn">Dot</button>
+              <button class="cbtn ms-btn card-tri-btn">3let</button>
             </div>
           </div>
           <div class="csec" style="border:none">
@@ -2005,31 +2247,22 @@
       q('.card-ph').style.background = s.color;
       q('.card-name').textContent = s.name.toUpperCase();
       q('.card-pitch').value = s.pitchST;
-      q('.cval-pitch').textContent = s.pitchST + ' st';
-      q('.card-start').value = s.loopStart;
-      q('.cval-start').textContent = s.loopStart.toFixed(3);
-      q('.card-end').value = s.loopEnd;
-      q('.cval-end').textContent = s.loopEnd.toFixed(3);
+      q('.card-stretch').value = s.stretchST;
+      q('.card-rev').classList.toggle('act', s.reversed);
       q('.card-subdiv').value = s.subdiv;
-      q('.card-overflow').value = s.overflow;
-      q('.card-mute').classList.toggle('on', s.muted);
-      q('.card-solo').classList.toggle('on', soloId === s.id);
-      q('.card-grid').classList.toggle('on', s.gridSync);
+      q('.card-dot-btn').classList.toggle('act', s.subdivFactor === 1.5);
+      q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
+      q('.card-mute-btn').classList.toggle('mute-on', s.muted);
+      q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
+      q('.card-grid').classList.toggle('act', s.gridSync);
       q('.card-attack').value = s.attackTime;
-      q('.cval-attack').textContent = fmtFade(s.attackTime);
       q('.card-release').value = s.releaseTime;
-      q('.cval-release').textContent = fmtFade(s.releaseTime);
       q('.card-xfade').value = s.crossfadeTime;
-      q('.cval-xfade').textContent = fmtFade(s.crossfadeTime);
 
       function setGridUI(on) {
-        const ov = q('.card-overflow-row');
-        ov.style.opacity = on ? '1' : '0.3';
-        ov.style.pointerEvents = on ? 'all' : 'none';
         const sub = q('.card-subdiv');
         sub.style.opacity = on ? '1' : '0.4';
         sub.style.pointerEvents = on ? 'all' : 'none';
-        q('.card-end').disabled = on;
         q('.clh-e').style.pointerEvents = on ? 'none' : 'all';
         q('.clh-e').style.opacity = on ? '0.35' : '1';
       }
@@ -2051,7 +2284,7 @@
 
       function drawWave() {
         const wrap = q('.card-wave-wrap');
-        const W = wrap.clientWidth || 264, H = wrap.clientHeight || 80;
+        const W = (wrap.clientWidth || 284) - 20, H = wrap.clientHeight || 80;
         const c = q('.card-wave-canvas');
         c.width = W; c.height = H;
         const ctx = c.getContext('2d');
@@ -2127,7 +2360,7 @@
       }
 
       function updateLoopReg() {
-        const W = q('.card-wave-wrap').clientWidth || 264;
+        const W = (q('.card-wave-wrap').clientWidth || 284) - 20;
         const { start: vs, width: vw } = getZView();
         const reg = q('.card-loop-reg');
         const regStart = (s.loopStart - vs) / vw;
@@ -2142,11 +2375,9 @@
 
       function snapEndToSubdiv() {
         const bpm = Tone.Transport.bpm.value;
-        const subdivSec = (60 / bpm) * (4 / s.subdiv);
+        const subdivSec = (60 / bpm) * (4 / s.subdiv) * s.subdivFactor;
         const snappedEnd = Math.min(1, s.loopStart + subdivSec / s.duration);
         s.setLoopBounds(s.loopStart, snappedEnd);
-        q('.card-end').value = s.loopEnd;
-        q('.cval-end').textContent = s.loopEnd.toFixed(3);
         updateLoopReg();
       }
 
@@ -2170,7 +2401,7 @@
       requestAnimationFrame(() => { drawWave(); updateLoopReg(); });
 
       // Store in openCards with references needed by phLoop
-      openCards.set(s.id, { el: cardEl, getZView, phEl: () => q('.card-ph'), waveWrap: () => q('.card-wave-wrap') });
+      openCards.set(s.id, { el: cardEl, getZView, phEl: () => q('.card-ph'), waveWrap: () => q('.card-wave-wrap'), vuCanvas: () => q('.card-vu-canvas') });
 
       // ── Titlebar drag ──
       q('.card-titlebar').addEventListener('mousedown', e => {
@@ -2216,21 +2447,15 @@
           e.stopPropagation();
           if (!isStart && s.gridSync) return;
           const wrap = q('.card-wave-wrap');
-          const rect = wrap.getBoundingClientRect(), W = rect.width;
+          const rect = wrap.getBoundingClientRect(), W = rect.width - 20;
           const mm = ev => {
             const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
             const { start: vs, width: vw } = getZView();
             const rel = Math.max(0, Math.min(1, vs + relView * vw));
             if (isStart) {
-              const newStart = Math.min(rel, s.loopEnd - 0.005);
-              s.setLoopBounds(newStart, s.loopEnd);
-              q('.card-start').value = s.loopStart;
-              q('.cval-start').textContent = s.loopStart.toFixed(3);
+              s.setLoopBounds(Math.min(rel, s.loopEnd - 0.005), s.loopEnd);
             } else {
-              const newEnd = Math.max(rel, s.loopStart + 0.005);
-              s.setLoopBounds(s.loopStart, newEnd);
-              q('.card-end').value = s.loopEnd;
-              q('.cval-end').textContent = s.loopEnd.toFixed(3);
+              s.setLoopBounds(s.loopStart, Math.max(rel, s.loopStart + 0.005));
             }
             updateLoopReg();
           };
@@ -2252,7 +2477,7 @@
         if (e.button !== 0 || e.target.closest('.lh')) return;
         e.preventDefault(); e.stopPropagation();
         const wrap = q('.card-wave-wrap');
-        const rect = wrap.getBoundingClientRect(), W = rect.width;
+        const rect = wrap.getBoundingClientRect(), W = rect.width - 20;
         const mouseViewX = Math.max(0, Math.min(1, (e.clientX - rect.left) / W));
         const { start: vs0, width: vw0 } = getZView();
         const mouseAbsPos = vs0 + mouseViewX * vw0;
@@ -2293,53 +2518,52 @@
         e.stopPropagation();
         s.stop(); q('.card-play').classList.remove('act');
       });
-      q('.card-mute').addEventListener('click', e => {
+      q('.card-mute-btn').addEventListener('click', e => {
         e.stopPropagation();
         s.muted = !s.muted;
-        q('.card-mute').classList.toggle('on', s.muted);
+        q('.card-mute-btn').classList.toggle('mute-on', s.muted);
         s.vol.volume.value = s._effectiveDb(); s._renderTile();
       });
-      q('.card-solo').addEventListener('click', e => {
+      q('.card-solo-btn').addEventListener('click', e => {
         e.stopPropagation();
         soloId = (soloId === s.id) ? null : s.id;
-        q('.card-solo').classList.toggle('on', soloId === s.id);
+        q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
         applyAllVols(); refreshSoloVis();
       });
+      q('.card-rev').addEventListener('click', e => {
+        e.stopPropagation();
+        s.setReverse(!s.reversed);
+        e.target.classList.toggle('act', s.reversed);
+      });
       q('.card-pitch').addEventListener('input', e => {
-        const v = parseInt(e.target.value);
-        q('.cval-pitch').textContent = v + ' st';
-        s.setPitch(v);
+        s.setPitch(parseInt(e.target.value));
       });
-      q('.card-start').addEventListener('input', e => {
-        const newStart = Math.min(parseFloat(e.target.value), s.loopEnd - 0.005);
-        s.setLoopBounds(newStart, s.loopEnd);
-        e.target.value = s.loopStart;
-        q('.cval-start').textContent = s.loopStart.toFixed(3);
-        updateLoopReg();
-      });
-      q('.card-end').addEventListener('input', e => {
-        if (s.gridSync) { e.target.value = s.loopEnd; return; }
-        const newEnd = Math.max(parseFloat(e.target.value), s.loopStart + 0.005);
-        s.setLoopBounds(s.loopStart, newEnd);
-        e.target.value = s.loopEnd;
-        q('.cval-end').textContent = s.loopEnd.toFixed(3);
-        updateLoopReg();
+      q('.card-stretch').addEventListener('input', e => {
+        s.setStretch(parseInt(e.target.value));
       });
       q('.card-grid').addEventListener('click', e => {
         e.stopPropagation();
         s.gridSync = !s.gridSync;
-        q('.card-grid').classList.toggle('on', s.gridSync);
+        q('.card-grid').classList.toggle('act', s.gridSync);
         if (s.gridSync) snapEndToSubdiv();
         setGridUI(s.gridSync); s._renderTile();
         if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.player.loop = false; if (s.gridSync) s.playGrid(); else s.play(); }
       });
       q('.card-subdiv').addEventListener('change', e => {
         e.stopPropagation();
-        s.subdiv = parseInt(e.target.value);
+        s.subdiv = parseFloat(e.target.value);
         if (s.gridSync) snapEndToSubdiv();
         if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
       });
-      q('.card-overflow').addEventListener('change', e => { e.stopPropagation(); s.overflow = e.target.value; });
+      function setSubdivMod(factor) {
+        s.subdivFactor = (s.subdivFactor === factor) ? 1 : factor;
+        q('.card-dot-btn').classList.toggle('act', s.subdivFactor === 1.5);
+        q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
+        if (s.gridSync) snapEndToSubdiv();
+        if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+      }
+      q('.card-dot-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(1.5); });
+      q('.card-tri-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(2 / 3); });
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSample(s.id); });
 
       ['attack', 'release', 'xfade'].forEach(key => {
@@ -2349,14 +2573,14 @@
           const prop = key === 'xfade' ? 'crossfadeTime' : key + 'Time';
           if (key === 'xfade' && v > 0) {
             s.attackTime = 0; s.releaseTime = 0;
-            q('.card-attack').value = 0; q('.card-release').value = 0;
-            q('.cval-attack').textContent = fmtFade(0); q('.cval-release').textContent = fmtFade(0);
+            setFadeSl('card-attack', 0); setFadeSl('card-release', 0);
           } else if (key !== 'xfade' && v > 0) {
             s.crossfadeTime = 0;
-            q('.card-xfade').value = 0; q('.cval-xfade').textContent = fmtFade(0);
+            setFadeSl('card-xfade', 0);
           }
           s[prop] = v; s._fadedBuf = null;
-          q('.cval-' + key).textContent = fmtFade(v);
+          const lbl = e.target.closest('.cslider')?.querySelector('.cslider-lbl');
+          if (lbl) lbl.textContent = fmtFade(v);
           updateFadeDisabled(); drawWave(); updateLoopReg();
           if (s.playing && !s.gridSync) {
             clearTimeout(_fadeRestartTimer);
@@ -2364,6 +2588,119 @@
           }
         });
       });
+
+      // ── Custom envelope sliders ──
+      function setFadeSl(cls, val) {
+        const sl = q('.' + cls);
+        if (!sl) return;
+        sl.value = val;
+        const wrap = sl.closest('.cslider');
+        if (wrap) {
+          if (wrap._syncPos) wrap._syncPos();
+          const lbl = wrap.querySelector('.cslider-lbl');
+          if (lbl) lbl.textContent = fmtFade(val);
+        }
+      }
+
+      function initCslider(wrap, fmt) {
+        if (!fmt) fmt = fmtFade;
+        const native = wrap.querySelector('input[type=range]');
+        const thumb = wrap.querySelector('.cslider-thumb');
+        const lbl = wrap.querySelector('.cslider-lbl');
+        const edit = wrap.querySelector('.cslider-edit');
+
+        function syncPos() {
+          const min = parseFloat(native.min), max = parseFloat(native.max);
+          const val = parseFloat(native.value);
+          const norm = max > min ? (val - min) / (max - min) : 0;
+          thumb.style.left = (Math.max(0, Math.min(1, norm)) * 100) + '%';
+          lbl.textContent = fmt(val);
+        }
+        wrap._syncPos = syncPos;
+        native.addEventListener('input', syncPos);
+        syncPos();
+
+        wrap.addEventListener('mousedown', e => {
+          if (wrap.classList.contains('editing') || native.disabled) return;
+          e.preventDefault(); e.stopPropagation();
+          const rect = wrap.getBoundingClientRect();
+          function update(ev) {
+            const min = parseFloat(native.min), max = parseFloat(native.max);
+            const step = parseFloat(native.step) || 0.001;
+            const t = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+            const raw = min + t * (max - min);
+            const stepped = Math.round(raw / step) * step;
+            native.value = Math.max(min, Math.min(max, stepped));
+            native.dispatchEvent(new Event('input'));
+          }
+          update(e);
+          const mm = ev => update(ev);
+          const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+          document.addEventListener('mousemove', mm);
+          document.addEventListener('mouseup', mu);
+        });
+
+        thumb.addEventListener('dblclick', e => {
+          e.stopPropagation();
+          if (native.disabled) return;
+          wrap.classList.add('editing');
+          edit.value = parseFloat(native.value).toFixed(3);
+          edit.focus(); edit.select();
+        });
+
+        edit.addEventListener('keydown', e => {
+          e.stopPropagation();
+          if (e.key === 'Enter' || e.key === 'Escape') edit.blur();
+        });
+        edit.addEventListener('blur', () => {
+          wrap.classList.remove('editing');
+          const v = parseFloat(edit.value);
+          if (!isNaN(v)) {
+            const min = parseFloat(native.min), max = parseFloat(native.max);
+            native.value = Math.max(min, Math.min(max, v));
+            native.dispatchEvent(new Event('input'));
+          }
+        });
+        edit.addEventListener('click', e => e.stopPropagation());
+        edit.addEventListener('mousedown', e => e.stopPropagation());
+      }
+
+      const fmtST = v => (v >= 0 ? '+' : '') + Math.round(v) + ' st';
+      initCslider(q('.card-pitch').closest('.cslider'), fmtST);
+      initCslider(q('.card-stretch').closest('.cslider'), fmtST);
+      initCslider(q('.card-attack').closest('.cslider'));
+      initCslider(q('.card-release').closest('.cslider'));
+      initCslider(q('.card-xfade').closest('.cslider'));
+
+      // ── Editable range fields (min/max) for each slider ──
+      function wireRangeFields(sliderSel) {
+        const slider = q(sliderSel);
+        if (!slider) return;
+        const fields = Array.from(slider.closest('.crow').querySelectorAll('.rng-field'));
+        if (fields.length < 2) return;
+        const [minF, maxF] = fields;
+        [minF, maxF].forEach((f, i) => {
+          f.addEventListener('mousedown', e => e.stopPropagation());
+          f.addEventListener('click', e => e.stopPropagation());
+          f.addEventListener('keydown', e => { if (e.key === 'Enter') f.blur(); e.stopPropagation(); });
+          f.addEventListener('change', () => {
+            const v = parseFloat(f.value);
+            if (isNaN(v)) { f.value = i === 0 ? slider.min : slider.max; return; }
+            if (i === 0) {
+              slider.min = v;
+              if (parseFloat(slider.value) < v) { slider.value = v; slider.dispatchEvent(new Event('input')); }
+            } else {
+              slider.max = v;
+              if (parseFloat(slider.value) > v) { slider.value = v; slider.dispatchEvent(new Event('input')); }
+            }
+          });
+        });
+      }
+      wireRangeFields('.card-pitch');
+      wireRangeFields('.card-stretch');
+      wireRangeFields('.card-attack');
+      wireRangeFields('.card-release');
+      wireRangeFields('.card-xfade');
 
       return cardEl;
     }
