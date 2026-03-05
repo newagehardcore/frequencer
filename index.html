@@ -414,7 +414,7 @@
     }
 
     .sample-card.open {
-      max-height: 860px;
+      max-height: 1400px;
       opacity: 1;
       pointer-events: all;
     }
@@ -680,6 +680,106 @@
       padding: 3px 0 0;
       font-family: 'Courier New', monospace;
       letter-spacing: 0.05em;
+    }
+
+    /* ═══ FX CHAIN SECTION ═══ */
+    .fx-section {
+      border-top: 1px solid #1a1a1a;
+    }
+
+    .fx-btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 6px 8px;
+      border-bottom: 1px solid #111;
+    }
+
+    .fx-btn {
+      flex: 1;
+      background: none;
+      border: 1px solid #333;
+      font-family: 'Courier New', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #666;
+      cursor: pointer;
+      padding: 3px 6px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .fx-btn:hover {
+      color: #aaa;
+      border-color: #555;
+    }
+
+    .fx-panel-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .fx-panel-remove {
+      background: none;
+      border: none;
+      color: #333;
+      cursor: pointer;
+      font-size: 9px;
+      padding: 2px 4px;
+      transition: color 0.15s;
+    }
+
+    .fx-panel-remove:hover {
+      color: #888;
+    }
+
+    .fx-panel {
+      border-bottom: 1px solid #111;
+    }
+
+    .fx-panel-hdr {
+      padding: 4px 10px 0;
+    }
+
+    .fx-panel-lbl {
+      font-family: 'Courier New', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fx-color, #555);
+    }
+
+    .fx-body-inner {
+      padding: 6px 10px 10px;
+      border-top: 1px solid #111;
+      background: #050505;
+    }
+
+    .fx-body-inner .crow {
+      margin-bottom: 4px;
+    }
+
+    .fx-body-inner .clbl {
+      color: #333;
+      font-size: 8px;
+      width: 50px;
+      min-width: 50px;
+    }
+
+    .fx-body-inner .clbl.on {
+      color: var(--fx-color, #888);
+    }
+
+    .fx-eq-body canvas {
+      display: block;
+      width: 100%;
+      cursor: crosshair;
+      background: #000;
+      border: 1px solid #1a1a1a;
+      margin-top: 2px;
     }
 
     .csec {
@@ -1301,9 +1401,24 @@
           if (b.type === 'peaking') f.gain.value = 0;
           return f;
         });
-        this.eqFilters[4].connect(this.pan);
         for (let i = 3; i >= 0; i--) this.eqFilters[i].connect(this.eqFilters[i + 1]);
         this.ps = new Tone.PitchShift(0).connect(this.eqFilters[0]);
+
+        // FX catalog (available types) + dynamic instance chain
+        this.fxCatalog = [
+          { id: 'eq',      name: 'EQ' },
+          { id: 'reverb',  name: 'Reverb' },
+          { id: 'delay',   name: 'Delay' },
+          { id: 'tremolo', name: 'Tremolo' },
+          { id: 'dist',    name: 'Distortion' },
+          { id: 'chorus',  name: 'Chorus' },
+          { id: 'phaser',  name: 'Phaser' },
+          { id: 'bitcrush',name: 'Bit Crush' },
+        ];
+        this.fxChain = []; // active instances: { uid, type, node, params }
+        this._fxUidCounter = 0;
+        this.rebuildFxChain();
+
         this.fadeGain = new Tone.Gain(1).connect(this.ps);
         this.player = new Tone.Player().connect(this.fadeGain);
         this._fadedBuf = null; // cached baked-fade buffer; null = needs rebuild
@@ -1817,6 +1932,100 @@
         f.frequency.value = b.freq;
         f.Q.value = b.q;
         if (b.type === 'peaking') f.gain.value = b.gain || 0;
+      }
+
+      rebuildFxChain() {
+        try { this.eqFilters[4].disconnect(); } catch(e) {}
+        for (const inst of this.fxChain) {
+          try { (inst.outputNode || inst.node).disconnect(); } catch(e) {}
+        }
+        let prev = this.eqFilters[4];
+        for (const inst of this.fxChain) {
+          if (!inst.node) continue;
+          prev.connect(inst.node);
+          prev = inst.outputNode || inst.node;
+        }
+        prev.connect(this.pan);
+      }
+
+      _fxDefaultParams(type) {
+        const d = {
+          reverb:    { decay: 2.5, preDelay: 0.01, wet: 0.4 },
+          delay:     { delayTime: 0.25, feedback: 0.35, wet: 0.4 },
+          tremolo:   { frequency: 4, depth: 0.7, wet: 1 },
+          dist:      { distortion: 0.4, wet: 0.8 },
+          chorus:    { frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 },
+          phaser:    { frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.6 },
+          bitcrush:  { bits: 8, wet: 0.8 },
+        };
+        return { ...(d[type] || {}) };
+      }
+
+      _createFxNode(type, params) {
+        switch(type) {
+          case 'reverb':   return new Tone.Reverb({ decay: params.decay, preDelay: params.preDelay, wet: params.wet });
+          case 'delay':    return new Tone.FeedbackDelay({ delayTime: params.delayTime, feedback: params.feedback, wet: params.wet });
+          case 'tremolo':  return new Tone.Tremolo({ frequency: params.frequency, depth: params.depth, wet: params.wet }).start();
+          case 'dist':     return new Tone.Distortion({ distortion: params.distortion, wet: params.wet });
+          case 'chorus':   return new Tone.Chorus({ frequency: params.frequency, delayTime: params.delayTime, depth: params.depth, wet: params.wet }).start();
+          case 'phaser':   return new Tone.Phaser({ frequency: params.frequency, octaves: params.octaves, baseFrequency: params.baseFrequency, wet: params.wet });
+          case 'bitcrush': return new Tone.BitCrusher({ bits: params.bits, wet: params.wet });
+          default: return null;
+        }
+      }
+
+      _createEqInstance() {
+        const defaultBands = [
+          { type: 'highpass', freq: 20,    q: 0.707 },
+          { type: 'peaking',  freq: 200,   gain: 0, q: 1 },
+          { type: 'peaking',  freq: 1000,  gain: 0, q: 1 },
+          { type: 'peaking',  freq: 8000,  gain: 0, q: 1 },
+          { type: 'lowpass',  freq: 22050, q: 0.707 },
+        ];
+        const bands = defaultBands.map(b => ({ ...b }));
+        const filters = bands.map(b => {
+          const f = new Tone.Filter({ type: b.type, frequency: b.freq, Q: b.q });
+          if (b.type === 'peaking') f.gain.value = 0;
+          return f;
+        });
+        for (let i = 3; i >= 0; i--) filters[i].connect(filters[i + 1]);
+        const applyBand = (i) => {
+          const f = filters[i], b = bands[i];
+          f.frequency.value = b.freq;
+          f.Q.value = b.q;
+          if (b.type === 'peaking') f.gain.value = b.gain || 0;
+        };
+        return { node: filters[0], outputNode: filters[4], bands, filters, applyBand };
+      }
+
+      addFxInstance(type) {
+        let inst;
+        if (type === 'eq') {
+          const eq = this._createEqInstance();
+          inst = { uid: ++this._fxUidCounter, type: 'eq', node: eq.node, outputNode: eq.outputNode, eqData: eq, params: {} };
+        } else {
+          const params = this._fxDefaultParams(type);
+          const node = this._createFxNode(type, params);
+          if (!node) return null;
+          inst = { uid: ++this._fxUidCounter, type, node, params };
+        }
+        this.fxChain.push(inst);
+        this.rebuildFxChain();
+        return inst;
+      }
+
+      removeFxInstance(uid) {
+        const idx = this.fxChain.findIndex(i => i.uid === uid);
+        if (idx < 0) return;
+        const inst = this.fxChain[idx];
+        if (inst.eqData) {
+          for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch(e) {} }
+        } else {
+          try { inst.node.disconnect(); } catch(e) {}
+          try { inst.node.dispose(); } catch(e) {}
+        }
+        this.fxChain.splice(idx, 1);
+        this.rebuildFxChain();
       }
 
       _renderTile() {
@@ -2405,14 +2614,7 @@
               <button class="cbtn ms-btn card-tri-btn">3let</button>
             </div>
           </div>
-          <div class="csec eq-sec">
-            <div class="crow" style="margin-bottom:5px">
-              <span class="clbl" style="flex:1">EQ</span>
-              <button class="cbtn card-eq-clear" style="flex:0 0 auto;padding:3px 8px;font-size:9px">Clear</button>
-            </div>
-            <canvas class="card-eq-canvas" height="80"></canvas>
-            <div class="eq-hint">drag bands · scroll = Q</div>
-          </div>
+          <div class="fx-section" id="fx-section-${s.id}"></div>
           <div class="csec" style="border:none">
             <div class="crow">
               <button class="cbtn danger card-remove">&#10005; Remove</button>
@@ -2783,69 +2985,6 @@
         }
       }
 
-      function initCslider(wrap, fmt) {
-        if (!fmt) fmt = fmtFade;
-        const native = wrap.querySelector('input[type=range]');
-        const thumb = wrap.querySelector('.cslider-thumb');
-        const lbl = wrap.querySelector('.cslider-lbl');
-        const edit = wrap.querySelector('.cslider-edit');
-
-        function syncPos() {
-          const min = parseFloat(native.min), max = parseFloat(native.max);
-          const val = parseFloat(native.value);
-          const norm = max > min ? (val - min) / (max - min) : 0;
-          thumb.style.left = (Math.max(0, Math.min(1, norm)) * 100) + '%';
-          lbl.textContent = fmt(val);
-        }
-        wrap._syncPos = syncPos;
-        native.addEventListener('input', syncPos);
-        syncPos();
-
-        wrap.addEventListener('mousedown', e => {
-          if (wrap.classList.contains('editing') || native.disabled) return;
-          e.preventDefault(); e.stopPropagation();
-          const rect = wrap.getBoundingClientRect();
-          function update(ev) {
-            const min = parseFloat(native.min), max = parseFloat(native.max);
-            const step = parseFloat(native.step) || 0.001;
-            const t = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
-            const raw = min + t * (max - min);
-            const stepped = Math.round(raw / step) * step;
-            native.value = Math.max(min, Math.min(max, stepped));
-            native.dispatchEvent(new Event('input'));
-          }
-          update(e);
-          const mm = ev => update(ev);
-          const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
-          document.addEventListener('mousemove', mm);
-          document.addEventListener('mouseup', mu);
-        });
-
-        thumb.addEventListener('dblclick', e => {
-          e.stopPropagation();
-          if (native.disabled) return;
-          wrap.classList.add('editing');
-          edit.value = parseFloat(native.value).toFixed(3);
-          edit.focus(); edit.select();
-        });
-
-        edit.addEventListener('keydown', e => {
-          e.stopPropagation();
-          if (e.key === 'Enter' || e.key === 'Escape') edit.blur();
-        });
-        edit.addEventListener('blur', () => {
-          wrap.classList.remove('editing');
-          const v = parseFloat(edit.value);
-          if (!isNaN(v)) {
-            const min = parseFloat(native.min), max = parseFloat(native.max);
-            native.value = Math.max(min, Math.min(max, v));
-            native.dispatchEvent(new Event('input'));
-          }
-        });
-        edit.addEventListener('click', e => e.stopPropagation());
-        edit.addEventListener('mousedown', e => e.stopPropagation());
-      }
-
       const fmtST = v => (v >= 0 ? '+' : '') + Math.round(v) + ' st';
       initCslider(q('.card-pitch').closest('.cslider'), fmtST);
       initCslider(q('.card-stretch').closest('.cslider'), fmtST);
@@ -2883,231 +3022,583 @@
       wireRangeFields('.card-release');
       wireRangeFields('.card-xfade');
 
-      // ── EQ Canvas ──
-      (function () {
-        const eqCanvas = q('.card-eq-canvas');
-        const eqCtx = eqCanvas.getContext('2d');
-        const MIN_F = 20, MAX_F = 20000, MAX_G = 18;
-        let dragBand = -1;
-
-        function fToX(f, W) {
-          return Math.log10(f / MIN_F) / Math.log10(MAX_F / MIN_F) * W;
-        }
-        function xToF(x, W) {
-          return MIN_F * Math.pow(MAX_F / MIN_F, Math.max(0, Math.min(1, x / W)));
-        }
-        function gToY(g, H) { return (MAX_G - g) / (MAX_G * 2) * H; }
-        function yToG(y, H) { return MAX_G - y / H * (MAX_G * 2); }
-
-        function initCanvas() {
-          eqCanvas.width = eqCanvas.offsetWidth || 264;
-          eqCanvas.height = 80;
-          draw();
-        }
-
-        function draw() {
-          const W = eqCanvas.width, H = eqCanvas.height;
-          if (!W || !H) return;
-          const ctx = eqCtx;
-          ctx.clearRect(0, 0, W, H);
-          ctx.fillStyle = '#000';
-          ctx.fillRect(0, 0, W, H);
-
-          // Grid
-          const y0 = gToY(0, H);
-          ctx.strokeStyle = '#1a1a1a';
-          ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
-          [100, 1000, 10000].forEach(f => {
-            const x = Math.round(fToX(f, W)) + 0.5;
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-          });
-
-          // Compute aggregate frequency response via temp BiquadFilterNodes
-          const ac = Tone.context.rawContext;
-          const freqs = new Float32Array(W);
-          for (let i = 0; i < W; i++) freqs[i] = xToF(i, W);
-          const totalDb = new Float32Array(W);
-          s.eqBands.forEach(band => {
-            const node = ac.createBiquadFilter();
-            node.type = band.type;
-            node.frequency.value = band.freq;
-            node.Q.value = band.q;
-            if (band.type === 'peaking') node.gain.value = band.gain || 0;
-            const mag = new Float32Array(W);
-            node.getFrequencyResponse(freqs, mag, new Float32Array(W));
-            for (let i = 0; i < W; i++) totalDb[i] += 20 * Math.log10(Math.max(1e-6, mag[i]));
-          });
-
-          // Fill between curve and 0dB
-          const col = s.color || '#ffffff';
-          ctx.beginPath();
-          ctx.moveTo(0, y0);
-          for (let i = 0; i < W; i++) ctx.lineTo(i, Math.max(0, Math.min(H, gToY(totalDb[i], H))));
-          ctx.lineTo(W, y0);
-          ctx.closePath();
-          ctx.fillStyle = col + '18';
-          ctx.fill();
-
-          // Response curve
-          ctx.beginPath();
-          ctx.strokeStyle = col;
-          ctx.lineWidth = 1.5;
-          for (let i = 0; i < W; i++) {
-            const y = Math.max(0, Math.min(H, gToY(totalDb[i], H)));
-            if (i === 0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
-          }
-          ctx.stroke();
-
-          // Freq labels
-          ctx.font = '8px Courier New';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
-          ctx.fillStyle = '#2a2a2a';
-          [[100, '100'], [1000, '1k'], [10000, '10k']].forEach(([f, l]) => {
-            ctx.fillText(l, fToX(f, W), H - 1);
-          });
-
-          // dB labels
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          [12, -12].forEach(db => {
-            ctx.fillText((db > 0 ? '+' : '') + db, 2, gToY(db, H));
-          });
-
-          // Band handles
-          s.eqBands.forEach((band, i) => {
-            const bx = Math.max(6, Math.min(W - 6, fToX(band.freq, W)));
-            const by = band.type === 'peaking'
-              ? Math.max(6, Math.min(H - 6, gToY(band.gain || 0, H)))
-              : H / 2;
-            const isHP = band.type === 'highpass';
-            const isLP = band.type === 'lowpass';
-            const isActive = isHP ? band.freq > 25
-              : isLP ? band.freq < 19000
-              : Math.abs(band.gain || 0) > 0.1;
-            const r = dragBand === i ? 7 : 5;
-
-            // HP: left-pointing arrow hint
-            if (isHP) {
-              ctx.beginPath();
-              ctx.moveTo(0, 0); ctx.lineTo(bx, 0); ctx.lineTo(bx, H); ctx.lineTo(0, H);
-              ctx.closePath();
-              ctx.fillStyle = isActive ? col + '12' : '#ffffff06';
-              ctx.fill();
-            }
-            // LP: right-pointing region hint
-            if (isLP) {
-              ctx.beginPath();
-              ctx.moveTo(bx, 0); ctx.lineTo(W, 0); ctx.lineTo(W, H); ctx.lineTo(bx, H);
-              ctx.closePath();
-              ctx.fillStyle = isActive ? col + '12' : '#ffffff06';
-              ctx.fill();
-            }
-
-            // Handle dot
-            ctx.beginPath();
-            ctx.arc(bx, by, r, 0, Math.PI * 2);
-            ctx.fillStyle = isActive ? (dragBand === i ? '#fff' : col) : '#1e1e1e';
-            ctx.fill();
-            ctx.strokeStyle = isActive ? (dragBand === i ? col : '#fff') : '#333';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            // HP/LP label
-            if (isHP || isLP) {
-              ctx.font = '7px Courier New';
-              ctx.textAlign = isHP ? 'right' : 'left';
-              ctx.textBaseline = 'middle';
-              ctx.fillStyle = isActive ? col : '#333';
-              const label = isHP ? 'HP' : 'LP';
-              ctx.fillText(label, isHP ? bx - r - 3 : bx + r + 3, by);
-            }
-          });
-        }
-
-        function getBandAt(mx, my) {
-          const W = eqCanvas.width, H = eqCanvas.height;
-          let best = -1, bestDist = Infinity;
-          s.eqBands.forEach((band, i) => {
-            const bx = Math.max(6, Math.min(W - 6, fToX(band.freq, W)));
-            const by = band.type === 'peaking'
-              ? Math.max(6, Math.min(H - 6, gToY(band.gain || 0, H)))
-              : H / 2;
-            const d = Math.hypot(mx - bx, my - by);
-            if (d < bestDist) { bestDist = d; best = i; }
-          });
-          return bestDist < 20 ? best : -1;
-        }
-
-        eqCanvas.addEventListener('mousedown', e => {
-          e.stopPropagation(); e.preventDefault();
-          const rect = eqCanvas.getBoundingClientRect();
-          const sx = eqCanvas.width / rect.width, sy = eqCanvas.height / rect.height;
-          const mx = (e.clientX - rect.left) * sx;
-          const my = (e.clientY - rect.top) * sy;
-          dragBand = getBandAt(mx, my);
-          if (dragBand < 0) return;
-          draw();
-
-          const W = eqCanvas.width, H = eqCanvas.height;
-          const onMove = ev => {
-            const mx2 = (ev.clientX - rect.left) * sx;
-            const my2 = (ev.clientY - rect.top) * sy;
-            const band = s.eqBands[dragBand];
-            band.freq = Math.max(MIN_F, Math.min(MAX_F, xToF(mx2, W)));
-            if (band.type === 'peaking') {
-              band.gain = Math.max(-MAX_G, Math.min(MAX_G, yToG(my2, H)));
-            }
-            s.applyEqBand(dragBand);
-            draw();
-          };
-          const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            dragBand = -1;
-            draw();
-          };
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-        });
-
-        eqCanvas.addEventListener('mousemove', e => {
-          if (dragBand >= 0) return;
-          const rect = eqCanvas.getBoundingClientRect();
-          const mx = (e.clientX - rect.left) * (eqCanvas.width / rect.width);
-          const my = (e.clientY - rect.top) * (eqCanvas.height / rect.height);
-          eqCanvas.style.cursor = getBandAt(mx, my) >= 0 ? 'grab' : 'crosshair';
-        });
-
-        eqCanvas.addEventListener('wheel', e => {
-          e.preventDefault();
-          const rect = eqCanvas.getBoundingClientRect();
-          const mx = (e.clientX - rect.left) * (eqCanvas.width / rect.width);
-          const my = (e.clientY - rect.top) * (eqCanvas.height / rect.height);
-          const bi = getBandAt(mx, my);
-          if (bi < 0 || s.eqBands[bi].type !== 'peaking') return;
-          const band = s.eqBands[bi];
-          band.q = Math.max(0.1, Math.min(20, band.q * (e.deltaY > 0 ? 1.25 : 0.8)));
-          s.applyEqBand(bi);
-          draw();
-        }, { passive: false });
-
-        q('.card-eq-clear').addEventListener('click', e => {
-          e.stopPropagation();
-          s.eqBands[0].freq = 20; s.eqBands[0].q = 0.707;
-          s.eqBands[1].freq = 200; s.eqBands[1].gain = 0; s.eqBands[1].q = 1;
-          s.eqBands[2].freq = 1000; s.eqBands[2].gain = 0; s.eqBands[2].q = 1;
-          s.eqBands[3].freq = 8000; s.eqBands[3].gain = 0; s.eqBands[3].q = 1;
-          s.eqBands[4].freq = 22050; s.eqBands[4].q = 0.707;
-          for (let i = 0; i < 5; i++) s.applyEqBand(i);
-          draw();
-        });
-
-        requestAnimationFrame(initCanvas);
-      })();
+      // ── FX Section ──
+      buildFxSection(cardEl, s);
 
       return cardEl;
+    }
+
+    function buildFxSection(cardEl, s) {
+      const fxSection = cardEl.querySelector('.fx-section');
+      if (!fxSection) return;
+
+      // Emit a full cslider row matching the existing card slider style
+      function sliderRow(label, cls, min, max, val, step) {
+        return `<div class="crow">
+          <span class="clbl">${label}</span>
+          <input type="text" class="rng-field" value="${min}">
+          <div class="cslider">
+            <input type="range" class="${cls}" min="${min}" max="${max}" step="${step}" value="${val}">
+            <div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div>
+          </div>
+          <input type="text" class="rng-field" value="${max}">
+        </div>`;
+      }
+
+      // Init all csliders in body and wire range-field inputs
+      function initFxSliders(body, fmtMap) {
+        body.querySelectorAll('.cslider').forEach(wrap => {
+          const native = wrap.querySelector('input[type=range]');
+          const cls = Array.from(native.classList).find(c => fmtMap[c]);
+          initCslider(wrap, cls ? fmtMap[cls] : (v => parseFloat(v).toFixed(2)));
+          const fields = Array.from(wrap.closest('.crow').querySelectorAll('.rng-field'));
+          if (fields.length < 2) return;
+          const [minF, maxF] = fields;
+          [minF, maxF].forEach((f, i) => {
+            f.addEventListener('mousedown', e => e.stopPropagation());
+            f.addEventListener('click', e => e.stopPropagation());
+            f.addEventListener('keydown', e => { if (e.key === 'Enter') f.blur(); e.stopPropagation(); });
+            f.addEventListener('change', () => {
+              const v = parseFloat(f.value);
+              if (isNaN(v)) { f.value = i === 0 ? native.min : native.max; return; }
+              if (i === 0) {
+                native.min = v;
+                if (parseFloat(native.value) < v) { native.value = v; native.dispatchEvent(new Event('input')); }
+              } else {
+                native.max = v;
+                if (parseFloat(native.value) > v) { native.value = v; native.dispatchEvent(new Event('input')); }
+              }
+              wrap._syncPos?.();
+            });
+          });
+        });
+      }
+
+      const fmt2 = v => parseFloat(v).toFixed(2);
+      const fmtHz = v => Math.round(parseFloat(v)) + 'Hz';
+      const fmtHz1 = v => parseFloat(v).toFixed(1) + 'Hz';
+      const fmtSec = v => parseFloat(v).toFixed(2) + 's';
+      const fmtMs = v => Math.round(parseFloat(v) * 1000) + 'ms';
+      const fmtInt = v => String(Math.round(parseFloat(v)));
+
+      const FX_PANELS = {
+        reverb: {
+          build(body, p, node) {
+            body.innerHTML =
+              sliderRow('Decay', 'fx-r-decay', 0.1, 30, p.decay, 0.1) +
+              sliderRow('Pre-Dly', 'fx-r-predly', 0, 0.5, p.preDelay, 0.001) +
+              sliderRow('Wet', 'fx-r-wet', 0, 1, p.wet, 0.01);
+            body.querySelector('.fx-r-decay').addEventListener('input', e => {
+              p.decay = parseFloat(e.target.value); node.decay = p.decay;
+            });
+            body.querySelector('.fx-r-predly').addEventListener('input', e => {
+              p.preDelay = parseFloat(e.target.value); node.preDelay = p.preDelay;
+            });
+            body.querySelector('.fx-r-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-r-decay': fmtSec, 'fx-r-predly': fmtMs, 'fx-r-wet': fmt2 });
+          }
+        },
+        delay: {
+          build(body, p, node) {
+            if (!p.syncMode) p.syncMode = false;
+            if (!p.subdivision) p.subdivision = '4n';
+            const subdivs = [
+              ['1n','1/1'], ['2n','1/2'], ['4n','1/4'], ['8n','1/8'],
+              ['8t','1/8T'], ['16n','1/16'], ['16t','1/16T'],
+            ];
+            body.innerHTML =
+              sliderRow('Time', 'fx-d-time', 0, 2, p.delayTime, 0.01) +
+              `<div class="crow fx-d-subdiv-row" style="display:none">
+                <span class="clbl" style="font-size:8px">Subdiv</span>
+                <div style="display:flex;gap:2px;flex-wrap:wrap">
+                  ${subdivs.map(([val, lbl]) => `<button class="cbtn fx-subdiv-btn" data-sub="${val}" style="font-size:8px;padding:2px 5px">${lbl}</button>`).join('')}
+                </div>
+              </div>` +
+              sliderRow('Feedback', 'fx-d-fb', 0, 0.99, p.feedback, 0.01) +
+              sliderRow('Wet', 'fx-d-wet', 0, 1, p.wet, 0.01) +
+              `<div class="crow" style="margin-top:2px">
+                <span class="clbl" style="font-size:8px">Sync</span>
+                <button class="cbtn fx-sync-toggle" style="font-size:8px;padding:2px 8px">FREE</button>
+              </div>`;
+
+            const timeRow = body.querySelector('.fx-d-time').closest('.crow');
+            const subdivRow = body.querySelector('.fx-d-subdiv-row');
+            const syncBtn = body.querySelector('.fx-sync-toggle');
+
+            const subdivBeats = { '1n':4, '2n':2, '4n':1, '8n':0.5, '8t':1/3, '16n':0.25, '16t':1/6 };
+
+            function applySubdiv(sub) {
+              p.subdivision = sub;
+              const sec = (60 / Tone.Transport.bpm.value) * (subdivBeats[sub] ?? 1);
+              node.delayTime.value = Math.min(sec, 2);
+              p.delayTime = node.delayTime.value;
+              body.querySelectorAll('.fx-subdiv-btn').forEach(b => {
+                const active = b.dataset.sub === sub;
+                b.style.color = active ? '#ccc' : '';
+                b.style.borderColor = active ? '#555' : '';
+              });
+            }
+
+            function setSyncMode(on) {
+              p.syncMode = on;
+              syncBtn.textContent = on ? 'TEMPO' : 'FREE';
+              timeRow.style.display = on ? 'none' : '';
+              subdivRow.style.display = on ? 'flex' : 'none';
+              if (on) applySubdiv(p.subdivision);
+            }
+
+            syncBtn.addEventListener('click', e => { e.stopPropagation(); setSyncMode(!p.syncMode); });
+            body.querySelectorAll('.fx-subdiv-btn').forEach(btn => {
+              btn.addEventListener('click', e => { e.stopPropagation(); applySubdiv(btn.dataset.sub); });
+            });
+            body.querySelector('.fx-d-time').addEventListener('input', e => {
+              p.delayTime = parseFloat(e.target.value); node.delayTime.value = p.delayTime;
+            });
+            body.querySelector('.fx-d-fb').addEventListener('input', e => {
+              p.feedback = parseFloat(e.target.value); node.feedback.value = p.feedback;
+            });
+            body.querySelector('.fx-d-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-d-time': fmtSec, 'fx-d-fb': fmt2, 'fx-d-wet': fmt2 });
+            setSyncMode(p.syncMode);
+          }
+        },
+        tremolo: {
+          build(body, p, node) {
+            body.innerHTML =
+              sliderRow('Rate', 'fx-tr-rate', 0.1, 20, p.frequency, 0.1) +
+              sliderRow('Depth', 'fx-tr-depth', 0, 1, p.depth, 0.01) +
+              sliderRow('Wet', 'fx-tr-wet', 0, 1, p.wet, 0.01);
+            body.querySelector('.fx-tr-rate').addEventListener('input', e => {
+              p.frequency = parseFloat(e.target.value); node.frequency.value = p.frequency;
+            });
+            body.querySelector('.fx-tr-depth').addEventListener('input', e => {
+              p.depth = parseFloat(e.target.value); node.depth.value = p.depth;
+            });
+            body.querySelector('.fx-tr-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-tr-rate': fmtHz1, 'fx-tr-depth': fmt2, 'fx-tr-wet': fmt2 });
+          }
+        },
+        dist: {
+          build(body, p, node) {
+            body.innerHTML =
+              sliderRow('Drive', 'fx-di-drive', 0, 1, p.distortion, 0.01) +
+              sliderRow('Wet', 'fx-di-wet', 0, 1, p.wet, 0.01);
+            body.querySelector('.fx-di-drive').addEventListener('input', e => {
+              p.distortion = parseFloat(e.target.value); node.distortion = p.distortion;
+            });
+            body.querySelector('.fx-di-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-di-drive': fmt2, 'fx-di-wet': fmt2 });
+          }
+        },
+        chorus: {
+          build(body, p, node) {
+            body.innerHTML =
+              sliderRow('Rate', 'fx-ch-rate', 0.1, 10, p.frequency, 0.1) +
+              sliderRow('Delay', 'fx-ch-dly', 2, 20, p.delayTime, 0.1) +
+              sliderRow('Depth', 'fx-ch-depth', 0, 1, p.depth, 0.01) +
+              sliderRow('Wet', 'fx-ch-wet', 0, 1, p.wet, 0.01);
+            body.querySelector('.fx-ch-rate').addEventListener('input', e => {
+              p.frequency = parseFloat(e.target.value); node.frequency.value = p.frequency;
+            });
+            body.querySelector('.fx-ch-dly').addEventListener('input', e => {
+              p.delayTime = parseFloat(e.target.value); node.delayTime = p.delayTime;
+            });
+            body.querySelector('.fx-ch-depth').addEventListener('input', e => {
+              p.depth = parseFloat(e.target.value); node.depth.value = p.depth;
+            });
+            body.querySelector('.fx-ch-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-ch-rate': fmtHz1, 'fx-ch-dly': v => parseFloat(v).toFixed(1) + 'ms', 'fx-ch-depth': fmt2, 'fx-ch-wet': fmt2 });
+          }
+        },
+        phaser: {
+          build(body, p, node) {
+            body.innerHTML =
+              sliderRow('Rate', 'fx-ph-rate', 0.1, 20, p.frequency, 0.1) +
+              sliderRow('Octaves', 'fx-ph-oct', 0, 8, p.octaves, 0.1) +
+              sliderRow('Base Hz', 'fx-ph-base', 100, 4000, p.baseFrequency, 1) +
+              sliderRow('Wet', 'fx-ph-wet', 0, 1, p.wet, 0.01);
+            body.querySelector('.fx-ph-rate').addEventListener('input', e => {
+              p.frequency = parseFloat(e.target.value); node.frequency.value = p.frequency;
+            });
+            body.querySelector('.fx-ph-oct').addEventListener('input', e => {
+              p.octaves = parseFloat(e.target.value); node.octaves = p.octaves;
+            });
+            body.querySelector('.fx-ph-base').addEventListener('input', e => {
+              p.baseFrequency = parseFloat(e.target.value); node.baseFrequency = p.baseFrequency;
+            });
+            body.querySelector('.fx-ph-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-ph-rate': fmtHz1, 'fx-ph-oct': fmt2, 'fx-ph-base': fmtHz, 'fx-ph-wet': fmt2 });
+          }
+        },
+        bitcrush: {
+          build(body, p, node) {
+            body.innerHTML =
+              sliderRow('Bits', 'fx-bc-bits', 1, 16, p.bits, 1) +
+              sliderRow('Wet', 'fx-bc-wet', 0, 1, p.wet, 0.01);
+            body.querySelector('.fx-bc-bits').addEventListener('input', e => {
+              p.bits = Math.round(parseFloat(e.target.value)); node.bits = p.bits;
+            });
+            body.querySelector('.fx-bc-wet').addEventListener('input', e => {
+              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
+            });
+            initFxSliders(body, { 'fx-bc-bits': fmtInt, 'fx-bc-wet': fmt2 });
+          }
+        },
+      };
+
+      const shortNames = { eq:'EQ', reverb:'REV', delay:'DLY', tremolo:'TRM', dist:'DST', chorus:'CHR', phaser:'PHS', bitcrush:'BIT' };
+
+      const btnRow = document.createElement('div');
+      btnRow.className = 'fx-btn-row';
+
+      const panelsEl = document.createElement('div');
+
+      for (const def of s.fxCatalog) {
+        const btn = document.createElement('button');
+        btn.className = 'fx-btn';
+        btn.style.setProperty('--fx-color', s.color);
+        btn.textContent = shortNames[def.id] || def.id.toUpperCase().slice(0, 3);
+        btnRow.appendChild(btn);
+
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const inst = s.addFxInstance(def.id);
+          if (!inst) return;
+          const panelEl = document.createElement('div');
+          panelEl.className = 'fx-panel';
+          panelEl.style.setProperty('--fx-color', s.color);
+          const hdr = document.createElement('div');
+          hdr.className = 'fx-panel-hdr';
+          hdr.innerHTML = `<span class="fx-panel-lbl">${def.name}</span>`;
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'fx-panel-remove';
+          removeBtn.textContent = '✕';
+          removeBtn.addEventListener('click', ev => {
+            ev.stopPropagation();
+            s.removeFxInstance(inst.uid);
+            panelEl.remove();
+          });
+          hdr.appendChild(removeBtn);
+          const body = document.createElement('div');
+          body.className = 'fx-body-inner';
+          panelEl.appendChild(hdr);
+          panelEl.appendChild(body);
+          if (def.id === 'eq') {
+            body.innerHTML = `
+              <div class="crow" style="margin-bottom:5px;justify-content:flex-end">
+                <button class="cbtn card-eq-clear" style="padding:3px 8px;font-size:9px">Clear</button>
+              </div>
+              <canvas class="card-eq-canvas" height="80" style="width:100%;display:block"></canvas>
+              <div class="eq-hint">drag bands · scroll = Q</div>`;
+            panelsEl.appendChild(panelEl);
+            const canvas = body.querySelector('.card-eq-canvas');
+            requestAnimationFrame(() => initEqCanvas(canvas, inst.eqData.bands, i => inst.eqData.applyBand(i), s.color));
+          } else {
+            FX_PANELS[def.id].build(body, inst.params, inst.node);
+            panelsEl.appendChild(panelEl);
+          }
+        });
+      }
+
+      fxSection.appendChild(btnRow);
+      fxSection.appendChild(panelsEl);
+    }
+
+    // ── EQ Canvas (shared, called from buildFxSection) ──
+    function initEqCanvas(eqCanvas, eqBands, applyBandFn, color) {
+      const eqCtx = eqCanvas.getContext('2d');
+      const MIN_F = 20, MAX_F = 20000, MAX_G = 18;
+      let dragBand = -1;
+
+      function fToX(f, W) {
+        return Math.log10(f / MIN_F) / Math.log10(MAX_F / MIN_F) * W;
+      }
+      function xToF(x, W) {
+        return MIN_F * Math.pow(MAX_F / MIN_F, Math.max(0, Math.min(1, x / W)));
+      }
+      function gToY(g, H) { return (MAX_G - g) / (MAX_G * 2) * H; }
+      function yToG(y, H) { return MAX_G - y / H * (MAX_G * 2); }
+
+      function initCanvas() {
+        eqCanvas.width = eqCanvas.offsetWidth || 264;
+        eqCanvas.height = 80;
+        draw();
+      }
+
+      function draw() {
+        const W = eqCanvas.width, H = eqCanvas.height;
+        if (!W || !H) return;
+        const ctx = eqCtx;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, W, H);
+
+        // Grid
+        const y0 = gToY(0, H);
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+        [100, 1000, 10000].forEach(f => {
+          const x = Math.round(fToX(f, W)) + 0.5;
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+        });
+
+        // Compute aggregate frequency response via temp BiquadFilterNodes
+        const ac = Tone.context.rawContext;
+        const freqs = new Float32Array(W);
+        for (let i = 0; i < W; i++) freqs[i] = xToF(i, W);
+        const totalDb = new Float32Array(W);
+        eqBands.forEach(band => {
+          const node = ac.createBiquadFilter();
+          node.type = band.type;
+          node.frequency.value = band.freq;
+          node.Q.value = band.q;
+          if (band.type === 'peaking') node.gain.value = band.gain || 0;
+          const mag = new Float32Array(W);
+          node.getFrequencyResponse(freqs, mag, new Float32Array(W));
+          for (let i = 0; i < W; i++) totalDb[i] += 20 * Math.log10(Math.max(1e-6, mag[i]));
+        });
+
+        // Fill between curve and 0dB
+        const col = color || '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, y0);
+        for (let i = 0; i < W; i++) ctx.lineTo(i, Math.max(0, Math.min(H, gToY(totalDb[i], H))));
+        ctx.lineTo(W, y0);
+        ctx.closePath();
+        ctx.fillStyle = col + '18';
+        ctx.fill();
+
+        // Response curve
+        ctx.beginPath();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < W; i++) {
+          const y = Math.max(0, Math.min(H, gToY(totalDb[i], H)));
+          if (i === 0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+        }
+        ctx.stroke();
+
+        // Freq labels
+        ctx.font = '8px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = '#2a2a2a';
+        [[100, '100'], [1000, '1k'], [10000, '10k']].forEach(([f, l]) => {
+          ctx.fillText(l, fToX(f, W), H - 1);
+        });
+
+        // dB labels
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        [12, -12].forEach(db => {
+          ctx.fillText((db > 0 ? '+' : '') + db, 2, gToY(db, H));
+        });
+
+        // Band handles
+        eqBands.forEach((band, i) => {
+          const bx = Math.max(6, Math.min(W - 6, fToX(band.freq, W)));
+          const by = band.type === 'peaking'
+            ? Math.max(6, Math.min(H - 6, gToY(band.gain || 0, H)))
+            : H / 2;
+          const isHP = band.type === 'highpass';
+          const isLP = band.type === 'lowpass';
+          const isActive = isHP ? band.freq > 25
+            : isLP ? band.freq < 19000
+            : Math.abs(band.gain || 0) > 0.1;
+          const r = dragBand === i ? 7 : 5;
+
+          if (isHP) {
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(bx, 0); ctx.lineTo(bx, H); ctx.lineTo(0, H);
+            ctx.closePath();
+            ctx.fillStyle = isActive ? col + '12' : '#ffffff06';
+            ctx.fill();
+          }
+          if (isLP) {
+            ctx.beginPath();
+            ctx.moveTo(bx, 0); ctx.lineTo(W, 0); ctx.lineTo(W, H); ctx.lineTo(bx, H);
+            ctx.closePath();
+            ctx.fillStyle = isActive ? col + '12' : '#ffffff06';
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(bx, by, r, 0, Math.PI * 2);
+          ctx.fillStyle = isActive ? (dragBand === i ? '#fff' : col) : '#1e1e1e';
+          ctx.fill();
+          ctx.strokeStyle = isActive ? (dragBand === i ? col : '#fff') : '#333';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          if (isHP || isLP) {
+            ctx.font = '7px Courier New';
+            ctx.textAlign = isHP ? 'right' : 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = isActive ? col : '#333';
+            const label = isHP ? 'HP' : 'LP';
+            ctx.fillText(label, isHP ? bx - r - 3 : bx + r + 3, by);
+          }
+        });
+      }
+
+      function getBandAt(mx, my) {
+        const W = eqCanvas.width, H = eqCanvas.height;
+        let best = -1, bestDist = Infinity;
+        eqBands.forEach((band, i) => {
+          const bx = Math.max(6, Math.min(W - 6, fToX(band.freq, W)));
+          const by = band.type === 'peaking'
+            ? Math.max(6, Math.min(H - 6, gToY(band.gain || 0, H)))
+            : H / 2;
+          const d = Math.hypot(mx - bx, my - by);
+          if (d < bestDist) { bestDist = d; best = i; }
+        });
+        return bestDist < 20 ? best : -1;
+      }
+
+      eqCanvas.addEventListener('mousedown', e => {
+        e.stopPropagation(); e.preventDefault();
+        const rect = eqCanvas.getBoundingClientRect();
+        const sx = eqCanvas.width / rect.width, sy = eqCanvas.height / rect.height;
+        const mx = (e.clientX - rect.left) * sx;
+        const my = (e.clientY - rect.top) * sy;
+        dragBand = getBandAt(mx, my);
+        if (dragBand < 0) return;
+        draw();
+
+        const W = eqCanvas.width, H = eqCanvas.height;
+        const onMove = ev => {
+          const mx2 = (ev.clientX - rect.left) * sx;
+          const my2 = (ev.clientY - rect.top) * sy;
+          const band = eqBands[dragBand];
+          band.freq = Math.max(MIN_F, Math.min(MAX_F, xToF(mx2, W)));
+          if (band.type === 'peaking') {
+            band.gain = Math.max(-MAX_G, Math.min(MAX_G, yToG(my2, H)));
+          }
+          applyBandFn(dragBand);
+          draw();
+        };
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          dragBand = -1;
+          draw();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      eqCanvas.addEventListener('mousemove', e => {
+        if (dragBand >= 0) return;
+        const rect = eqCanvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (eqCanvas.width / rect.width);
+        const my = (e.clientY - rect.top) * (eqCanvas.height / rect.height);
+        eqCanvas.style.cursor = getBandAt(mx, my) >= 0 ? 'grab' : 'crosshair';
+      });
+
+      eqCanvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const rect = eqCanvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (eqCanvas.width / rect.width);
+        const my = (e.clientY - rect.top) * (eqCanvas.height / rect.height);
+        const bi = getBandAt(mx, my);
+        if (bi < 0 || eqBands[bi].type !== 'peaking') return;
+        const band = eqBands[bi];
+        band.q = Math.max(0.1, Math.min(20, band.q * (e.deltaY > 0 ? 1.25 : 0.8)));
+        applyBandFn(bi);
+        draw();
+      }, { passive: false });
+
+      const clearBtn = eqCanvas.closest('.fx-body-inner')?.querySelector('.card-eq-clear');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          eqBands[0].freq = 20; eqBands[0].q = 0.707;
+          eqBands[1].freq = 200; eqBands[1].gain = 0; eqBands[1].q = 1;
+          eqBands[2].freq = 1000; eqBands[2].gain = 0; eqBands[2].q = 1;
+          eqBands[3].freq = 8000; eqBands[3].gain = 0; eqBands[3].q = 1;
+          eqBands[4].freq = 22050; eqBands[4].q = 0.707;
+          for (let i = 0; i < 5; i++) applyBandFn(i);
+          draw();
+        });
+      }
+
+      requestAnimationFrame(initCanvas);
+    }
+
+    function initCslider(wrap, fmt) {
+      if (!fmt) fmt = fmtFade;
+      const native = wrap.querySelector('input[type=range]');
+      const thumb = wrap.querySelector('.cslider-thumb');
+      const lbl = wrap.querySelector('.cslider-lbl');
+      const edit = wrap.querySelector('.cslider-edit');
+
+      function syncPos() {
+        const min = parseFloat(native.min), max = parseFloat(native.max);
+        const val = parseFloat(native.value);
+        const norm = max > min ? (val - min) / (max - min) : 0;
+        thumb.style.left = (Math.max(0, Math.min(1, norm)) * 100) + '%';
+        lbl.textContent = fmt(val);
+      }
+      wrap._syncPos = syncPos;
+      native.addEventListener('input', syncPos);
+      syncPos();
+
+      wrap.addEventListener('mousedown', e => {
+        if (wrap.classList.contains('editing') || native.disabled) return;
+        e.preventDefault(); e.stopPropagation();
+        const rect = wrap.getBoundingClientRect();
+        function update(ev) {
+          const min = parseFloat(native.min), max = parseFloat(native.max);
+          const step = parseFloat(native.step) || 0.001;
+          const t = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+          const raw = min + t * (max - min);
+          const stepped = Math.round(raw / step) * step;
+          native.value = Math.max(min, Math.min(max, stepped));
+          native.dispatchEvent(new Event('input'));
+        }
+        update(e);
+        const mm = ev => update(ev);
+        const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+
+      thumb.addEventListener('dblclick', e => {
+        e.stopPropagation();
+        if (native.disabled) return;
+        wrap.classList.add('editing');
+        edit.value = parseFloat(native.value).toFixed(3);
+        edit.focus(); edit.select();
+      });
+
+      edit.addEventListener('keydown', e => {
+        e.stopPropagation();
+        if (e.key === 'Enter' || e.key === 'Escape') edit.blur();
+      });
+      edit.addEventListener('blur', () => {
+        wrap.classList.remove('editing');
+        const v = parseFloat(edit.value);
+        if (!isNaN(v)) {
+          const min = parseFloat(native.min), max = parseFloat(native.max);
+          native.value = Math.max(min, Math.min(max, v));
+          native.dispatchEvent(new Event('input'));
+        }
+      });
+      edit.addEventListener('click', e => e.stopPropagation());
+      edit.addEventListener('mousedown', e => e.stopPropagation());
     }
 
     // Tile click opens/closes card for that sample

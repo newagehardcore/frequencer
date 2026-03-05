@@ -182,6 +182,29 @@ When grid sync is active, multiple synced samples snap to the same grid clock �
 
 **End handle locking:** When grid sync is turned on, the end loop handle automatically snaps to the subdivision boundary (start + one subdivision length) and becomes non-adjustable. This keeps the release fade and loop end perfectly aligned with the grid. The start handle remains freely movable; moving it re-snaps the end handle to the new position + subdivision. Changing the subdivision also re-snaps the end handle immediately.
 
+### FX Rack
+
+At the bottom of each edit card is a row of effect buttons. Click any button to add an instance of that effect to the chain. Effects are stacked in the order they were added — the chain runs left-to-right, top-to-bottom.
+
+| Button | Effect |
+|--------|--------|
+| **EQ** | 5-band parametric EQ (HP, 3× peaking, LP) |
+| **REV** | Reverb — Decay, Pre-delay, Wet |
+| **DLY** | Delay — Time or tempo-synced subdivision, Feedback, Wet |
+| **TRM** | Tremolo — Rate, Depth, Wet |
+| **DST** | Distortion — Drive, Wet |
+| **CHR** | Chorus — Rate, Delay, Depth, Wet |
+| **PHS** | Phaser — Rate, Octaves, Base Hz, Wet |
+| **BIT** | Bit Crusher — Bits (1–16), Wet |
+
+**Multiple instances:** clicking a button always adds a new instance at the end of the chain, regardless of whether one already exists. You can stack, e.g., two reverbs or three EQs.
+
+**Removing an instance:** click the **✕** in the top-right of any effect panel.
+
+**EQ panel:** drag the band handles horizontally to change frequency, vertically to change gain (peaking bands only). Scroll over a handle to adjust its Q. **Clear** resets all bands to flat. The frequency response curve updates in real time.
+
+**Delay sync:** in the Delay panel, click **FREE** to toggle to **TEMPO** mode. The Time slider is replaced by subdivision buttons (1/1 · 1/2 · 1/4 · 1/8 · 1/8T · 1/16 · 1/16T) that lock the delay time to the global BPM. Click **TEMPO** to switch back to FREE.
+
 ### Remove
 
 Permanently removes the sample from the session. The tile disappears and the audio chain is freed.
@@ -235,6 +258,17 @@ AudioBuffer
                                          Tone.PitchShift  (semitone shifting, ±24st)
                                                  │
                                                  ▼
+                                      5× Tone.Filter  (parametric EQ, always in chain)
+                                                 │
+                                                 ▼
+                                      FX chain  (dynamic, ordered by panel position)
+                                      ┌──────────────────────────────────────┐
+                                      │  Reverb / Delay / Tremolo / Dist /   │
+                                      │  Chorus / Phaser / BitCrusher / EQ   │
+                                      │  ... zero or more instances          │
+                                      └──────────────────────────────────────┘
+                                                 │
+                                                 ▼
                                          Tone.Panner  (stereo pan, –1 to +1)
                                                  │
                                                  ▼
@@ -282,7 +316,7 @@ npx serve .
 
 ```
 frequencer/
-├── index.html      ← The entire app (single file, ~2600 lines)
+├── index.html      ← The entire app (single file, ~3700 lines)
 ├── Tone.js         ← Audio engine (downloaded by setup script)
 ├── setup.sh        ← Mac/Linux setup & launch script
 ├── setup.bat       ← Windows setup & launch script
@@ -311,6 +345,8 @@ The app is entirely self-contained in `index.html`. If you want to share it or u
 
 **Solo monitoring:** Use the Solo toggle in the edit card to hear a single sample in isolation while you set its loop points precisely.
 
+**FX chaining:** Add effects in signal-flow order — EQ first to shape tone, then dynamics/time-based effects (reverb, delay), then modulation (chorus, phaser, tremolo). Stack multiple instances of the same effect for stronger processing. Use the ✕ button to remove any instance without affecting others.
+
 ---
 
 ## Limitations (v1)
@@ -319,7 +355,7 @@ The app is entirely self-contained in `index.html`. If you want to share it or u
 - **No audio export** — cannot bounce or record the output.
 - **No undo** — changes to loop points and pitch are immediate.
 - **No MIDI** — tempo and playback are not MIDI-syncable.
-- **No effects** — only pitch shift is available per-sample; no reverb, delay, EQ, etc.
+- **No effects persistence** — FX chain instances are not saved; reopening the page resets all effects.
 - **No automation** — volume and pan are set by position, not automatable over time.
 
 ---
