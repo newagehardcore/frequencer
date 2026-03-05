@@ -26,7 +26,7 @@
       --mid: #888888;
       --hi: #cccccc;
       --white: #ffffff;
-      --hdr: 40px;
+      --hdr: 0px;
       --ftr: 60px;
     }
 
@@ -58,22 +58,6 @@
       display: none;
     }
 
-    #unlock-logo {
-      font-family: Helvetica, Arial, sans-serif;
-      font-weight: 700;
-      font-size: 52px;
-      letter-spacing: -0.05em;
-      color: #fff;
-      line-height: 1;
-    }
-
-    #unlock-sub {
-      font-size: 13px;
-      color: var(--mid);
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
-    }
-
     #unlock-btn {
       background: #fff;
       border: none;
@@ -90,13 +74,6 @@
 
     #unlock-btn:hover {
       background: var(--hi);
-    }
-
-    #unlock-note {
-      font-size: 10px;
-      color: var(--b3);
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
     }
 
     /* ═══ DROP OVERLAY ═══ */
@@ -139,38 +116,24 @@
       text-transform: uppercase;
     }
 
-    /* ═══ HEADER ═══ */
-    #hdr {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: var(--hdr);
-      z-index: 100;
-      background: var(--surface);
-      border-bottom: 1px solid var(--b2);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 16px;
-    }
-
+    /* ═══ HEADER OVERLAYS ═══ */
     #logo {
+      position: fixed;
+      top: 12px;
+      left: 16px;
+      z-index: 100;
       font-size: 16px;
       font-weight: 700;
       letter-spacing: -0.03em;
       color: #fff;
-      flex-shrink: 0;
-    }
-
-    .hbar {
-      width: 1px;
-      height: 20px;
-      background: var(--b2);
-      flex-shrink: 0;
+      pointer-events: none;
     }
 
     #import-btn {
+      position: fixed;
+      top: 8px;
+      right: 16px;
+      z-index: 100;
       background: none;
       border: 1px solid var(--b2);
       color: var(--mid);
@@ -182,7 +145,6 @@
       padding: 5px 12px;
       cursor: pointer;
       transition: all 0.1s;
-      flex-shrink: 0;
     }
 
     #import-btn:hover {
@@ -190,12 +152,13 @@
       color: #fff;
     }
 
-    #hdr-hint {
-      font-size: 10px;
-      color: var(--b3);
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
-      margin-left: auto;
+    #master-vu {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 50;
+      image-rendering: pixelated;
+      pointer-events: none;
     }
 
     /* ═══ CANVAS ═══ */
@@ -1043,17 +1006,6 @@
       line-height: 1;
     }
 
-    #beat-pos {
-      font-size: 15px;
-      color: var(--mid);
-      font-family: 'Courier New', monospace;
-      letter-spacing: -0.03em;
-    }
-
-    #beat-pos b {
-      color: #fff;
-    }
-
     #metro-dot {
       width: 10px;
       height: 10px;
@@ -1195,10 +1147,7 @@
 
   <!-- UNLOCK SCREEN -->
   <div id="unlock">
-    <div id="unlock-logo">FREQUENCER</div>
-    <div id="unlock-sub">Multi-Sample Looper Canvas</div>
     <button id="unlock-btn">Initialize Audio</button>
-    <div id="unlock-note">Browser requires a click to unlock Web Audio API</div>
   </div>
 
   <!-- DROP OVERLAY -->
@@ -1209,13 +1158,9 @@
     </div>
   </div>
 
-  <!-- HEADER -->
-  <div id="hdr">
-    <div id="logo">FREQUENCER</div>
-    <div class="hbar"></div>
-    <button id="import-btn">+ Import</button>
-    <span id="hdr-hint">Drag audio to canvas · Y = volume · X = pan · Click = inspect · Right-click = options</span>
-  </div>
+  <!-- HEADER OVERLAY -->
+  <div id="logo">FREQUENCER</div>
+  <button id="import-btn">+ Import</button>
 
   <!-- CANVAS -->
   <div id="cv">
@@ -1225,9 +1170,8 @@
     <div class="albl" id="lbl-tr">+6 dB</div>
     <div class="albl" id="lbl-bl">-inf · L pan</div>
     <div class="albl" id="lbl-br">R pan · -inf</div>
-    <div id="empty">
-      <p>No samples loaded<br>Drag audio files or folders here<br>or use + Import above</p>
-    </div>
+    <div id="empty" class="gone"></div>
+    <canvas id="master-vu" width="40" height="200"></canvas>
   </div>
 
   <!-- REC DOWNLOAD MODAL -->
@@ -1264,16 +1208,9 @@
         <div id="bpm-val">120</div>
       </div>
     </div>
-    <div class="fsec">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-        <div class="flbl">Position</div>
-        <div id="beat-pos"><b>1</b>.1.00</div>
-      </div>
-    </div>
     <div class="fsec" style="gap:8px">
-      <div class="flbl">Metro</div>
+      <button class="tbtn" id="tog-metro">Metro</button>
       <div id="metro-dot"></div>
-      <div class="tog" id="tog-metro"></div>
     </div>
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-rec" title="Record stems + mix">
@@ -1302,6 +1239,7 @@
     let audioReady = false;
     let isPlaying = false;
     let metroOn = false;
+    let masterMeter = null;
 
     const WAVE_ZOOM_MAX = 32;
     let soloId = null;
@@ -1338,6 +1276,8 @@
         await Tone.start();
         // Start Transport immediately so grid scheduling works
         Tone.Transport.start();
+        masterMeter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
+        Tone.getDestination().connect(masterMeter);
         audioReady = true;
         isPlaying = true;
         document.getElementById('unlock').classList.add('gone');
@@ -1369,7 +1309,7 @@
         this.loopEnd = 1;
         this.muted = false;
         this.gridSync = false;
-        this.subdiv = 4;
+        this.subdiv = 1;
         this.subdivFactor = 1; // 1 = normal, 1.5 = dotted, 0.667 = triplet
 
         this.attackTime = 0;    // seconds
@@ -2261,6 +2201,12 @@
         } else cph.style.display = 'none';
       }
 
+      // Master VU meter
+      if (masterMeter) {
+        const mvc = document.getElementById('master-vu');
+        if (mvc) drawVU(mvc, { meter: masterMeter });
+      }
+
       // VU meters for open cards
       for (const [cid, cardInfo] of openCards) {
         const si = samples.get(cid);
@@ -2594,21 +2540,17 @@
             <div class="crow">
               <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
               <select class="card-subdiv" style="flex:1">
-                <optgroup label="— Long —">
-                  <option value="0.25">4 bars</option>
-                  <option value="0.333">3 bars</option>
-                  <option value="0.4">2.5 bars</option>
-                  <option value="0.5">2 bars</option>
-                  <option value="0.667">1.5 bars</option>
-                </optgroup>
-                <optgroup label="— Standard —">
-                  <option value="1">1 bar</option>
-                  <option value="2">1/2</option>
-                  <option value="4" selected>1/4</option>
-                  <option value="8">1/8</option>
-                  <option value="16">1/16</option>
-                  <option value="32">1/32</option>
-                </optgroup>
+                <option value="0.25">4 bars</option>
+                <option value="0.333">3 bars</option>
+                <option value="0.4">2.5 bars</option>
+                <option value="0.5">2 bars</option>
+                <option value="0.667">1.5 bars</option>
+                <option value="1" selected>1 bar</option>
+                <option value="2">1/2</option>
+                <option value="4">1/4</option>
+                <option value="8">1/8</option>
+                <option value="16">1/16</option>
+                <option value="32">1/32</option>
               </select>
               <button class="cbtn ms-btn card-dot-btn">Dot</button>
               <button class="cbtn ms-btn card-tri-btn">3let</button>
@@ -3647,7 +3589,7 @@
       Tone.Transport.stop();
       Tone.Transport.position = 0;
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
-      document.getElementById('beat-pos').innerHTML = '<b>1</b>.1.00';
+      // beat-pos removed
       cancelAnimationFrame(beatRaf);
     }
 
@@ -3659,8 +3601,6 @@
         const bar = (parseInt(p[0]) || 0) + 1;
         const beat = (parseInt(p[1]) || 0) + 1;
         const tick = parseInt(parseFloat(p[2] || 0));
-        document.getElementById('beat-pos').innerHTML =
-          `<b>${bar}</b>.${beat}.${String(tick).padStart(2, '0')}`;
         beatRaf = requestAnimationFrame(up);
       };
       beatRaf = requestAnimationFrame(up);
@@ -3689,7 +3629,7 @@
 
     document.getElementById('tog-metro').addEventListener('click', () => {
       metroOn = !metroOn;
-      document.getElementById('tog-metro').classList.toggle('on', metroOn);
+      document.getElementById('tog-metro').classList.toggle('playing', metroOn);
       if (metroOn && isPlaying) buildMetro();
       else if (!metroOn && metroPart) { metroPart.dispose(); metroPart = null; }
     });
