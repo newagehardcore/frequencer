@@ -413,7 +413,7 @@
     }
 
     .sample-card.open {
-      max-height: 620px;
+      max-height: 860px;
       opacity: 1;
       pointer-events: all;
     }
@@ -661,6 +661,24 @@
 
     .card-body {
       padding: 0;
+    }
+
+    /* ═══ EQ SECTION ═══ */
+    .eq-sec canvas {
+      display: block;
+      width: 100%;
+      cursor: crosshair;
+      background: #000;
+      border: 1px solid #1a1a1a;
+      margin-top: 2px;
+    }
+    .eq-hint {
+      font-size: 8px;
+      color: #2a2a2a;
+      text-align: center;
+      padding: 3px 0 0;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
     }
 
     .csec {
@@ -1133,12 +1151,28 @@
         this._gridEv = null;
         this._currentDb = 0;
 
-        // Audio chain: Player → fadeGain → PitchShift → Panner → Volume → Destination
+        // Audio chain: Player → fadeGain → PitchShift → EQ → Panner → Volume → Destination
         this.vol = new Tone.Volume(0).toDestination();
         this.meter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
         this.vol.connect(this.meter);
         this.pan = new Tone.Panner(0).connect(this.vol);
-        this.ps = new Tone.PitchShift(0).connect(this.pan);
+
+        // 5-band EQ: HP · Low bell · Mid bell · Hi bell · LP (always in chain, flat by default)
+        this.eqBands = [
+          { type: 'highpass', freq: 20,    q: 0.707 },
+          { type: 'peaking',  freq: 200,   gain: 0, q: 1 },
+          { type: 'peaking',  freq: 1000,  gain: 0, q: 1 },
+          { type: 'peaking',  freq: 8000,  gain: 0, q: 1 },
+          { type: 'lowpass',  freq: 22050, q: 0.707 },
+        ];
+        this.eqFilters = this.eqBands.map(b => {
+          const f = new Tone.Filter({ type: b.type, frequency: b.freq, Q: b.q });
+          if (b.type === 'peaking') f.gain.value = 0;
+          return f;
+        });
+        this.eqFilters[4].connect(this.pan);
+        for (let i = 3; i >= 0; i--) this.eqFilters[i].connect(this.eqFilters[i + 1]);
+        this.ps = new Tone.PitchShift(0).connect(this.eqFilters[0]);
         this.fadeGain = new Tone.Gain(1).connect(this.ps);
         this.player = new Tone.Player().connect(this.fadeGain);
         this._fadedBuf = null; // cached baked-fade buffer; null = needs rebuild
@@ -1606,6 +1640,7 @@
           try { this.fadeGain.dispose(); } catch (e) { }
           try { this.xfGain.dispose(); } catch (e) { }
           try { this.ps.dispose(); } catch (e) { }
+          if (this.eqFilters) this.eqFilters.forEach(f => { try { f.dispose(); } catch (e) {} });
           try { this.pan.dispose(); } catch (e) { }
           try { this.vol.dispose(); } catch (e) { }
           try { this.meter.dispose(); } catch (e) { }
@@ -1644,6 +1679,13 @@
         }
         this._hiPeaks = p;
         return p;
+      }
+
+      applyEqBand(i) {
+        const f = this.eqFilters[i], b = this.eqBands[i];
+        f.frequency.value = b.freq;
+        f.Q.value = b.q;
+        if (b.type === 'peaking') f.gain.value = b.gain || 0;
       }
 
       _renderTile() {
@@ -2232,6 +2274,14 @@
               <button class="cbtn ms-btn card-tri-btn">3let</button>
             </div>
           </div>
+          <div class="csec eq-sec">
+            <div class="crow" style="margin-bottom:5px">
+              <span class="clbl" style="flex:1">EQ</span>
+              <button class="cbtn card-eq-clear" style="flex:0 0 auto;padding:3px 8px;font-size:9px">Clear</button>
+            </div>
+            <canvas class="card-eq-canvas" height="80"></canvas>
+            <div class="eq-hint">drag bands · scroll = Q</div>
+          </div>
           <div class="csec" style="border:none">
             <div class="crow">
               <button class="cbtn danger card-remove">&#10005; Remove</button>
@@ -2701,6 +2751,230 @@
       wireRangeFields('.card-attack');
       wireRangeFields('.card-release');
       wireRangeFields('.card-xfade');
+
+      // ── EQ Canvas ──
+      (function () {
+        const eqCanvas = q('.card-eq-canvas');
+        const eqCtx = eqCanvas.getContext('2d');
+        const MIN_F = 20, MAX_F = 20000, MAX_G = 18;
+        let dragBand = -1;
+
+        function fToX(f, W) {
+          return Math.log10(f / MIN_F) / Math.log10(MAX_F / MIN_F) * W;
+        }
+        function xToF(x, W) {
+          return MIN_F * Math.pow(MAX_F / MIN_F, Math.max(0, Math.min(1, x / W)));
+        }
+        function gToY(g, H) { return (MAX_G - g) / (MAX_G * 2) * H; }
+        function yToG(y, H) { return MAX_G - y / H * (MAX_G * 2); }
+
+        function initCanvas() {
+          eqCanvas.width = eqCanvas.offsetWidth || 264;
+          eqCanvas.height = 80;
+          draw();
+        }
+
+        function draw() {
+          const W = eqCanvas.width, H = eqCanvas.height;
+          if (!W || !H) return;
+          const ctx = eqCtx;
+          ctx.clearRect(0, 0, W, H);
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, W, H);
+
+          // Grid
+          const y0 = gToY(0, H);
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+          [100, 1000, 10000].forEach(f => {
+            const x = Math.round(fToX(f, W)) + 0.5;
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+          });
+
+          // Compute aggregate frequency response via temp BiquadFilterNodes
+          const ac = Tone.context.rawContext;
+          const freqs = new Float32Array(W);
+          for (let i = 0; i < W; i++) freqs[i] = xToF(i, W);
+          const totalDb = new Float32Array(W);
+          s.eqBands.forEach(band => {
+            const node = ac.createBiquadFilter();
+            node.type = band.type;
+            node.frequency.value = band.freq;
+            node.Q.value = band.q;
+            if (band.type === 'peaking') node.gain.value = band.gain || 0;
+            const mag = new Float32Array(W);
+            node.getFrequencyResponse(freqs, mag, new Float32Array(W));
+            for (let i = 0; i < W; i++) totalDb[i] += 20 * Math.log10(Math.max(1e-6, mag[i]));
+          });
+
+          // Fill between curve and 0dB
+          const col = s.color || '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(0, y0);
+          for (let i = 0; i < W; i++) ctx.lineTo(i, Math.max(0, Math.min(H, gToY(totalDb[i], H))));
+          ctx.lineTo(W, y0);
+          ctx.closePath();
+          ctx.fillStyle = col + '18';
+          ctx.fill();
+
+          // Response curve
+          ctx.beginPath();
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.5;
+          for (let i = 0; i < W; i++) {
+            const y = Math.max(0, Math.min(H, gToY(totalDb[i], H)));
+            if (i === 0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+          }
+          ctx.stroke();
+
+          // Freq labels
+          ctx.font = '8px Courier New';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillStyle = '#2a2a2a';
+          [[100, '100'], [1000, '1k'], [10000, '10k']].forEach(([f, l]) => {
+            ctx.fillText(l, fToX(f, W), H - 1);
+          });
+
+          // dB labels
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          [12, -12].forEach(db => {
+            ctx.fillText((db > 0 ? '+' : '') + db, 2, gToY(db, H));
+          });
+
+          // Band handles
+          s.eqBands.forEach((band, i) => {
+            const bx = Math.max(6, Math.min(W - 6, fToX(band.freq, W)));
+            const by = band.type === 'peaking'
+              ? Math.max(6, Math.min(H - 6, gToY(band.gain || 0, H)))
+              : H / 2;
+            const isHP = band.type === 'highpass';
+            const isLP = band.type === 'lowpass';
+            const isActive = isHP ? band.freq > 25
+              : isLP ? band.freq < 19000
+              : Math.abs(band.gain || 0) > 0.1;
+            const r = dragBand === i ? 7 : 5;
+
+            // HP: left-pointing arrow hint
+            if (isHP) {
+              ctx.beginPath();
+              ctx.moveTo(0, 0); ctx.lineTo(bx, 0); ctx.lineTo(bx, H); ctx.lineTo(0, H);
+              ctx.closePath();
+              ctx.fillStyle = isActive ? col + '12' : '#ffffff06';
+              ctx.fill();
+            }
+            // LP: right-pointing region hint
+            if (isLP) {
+              ctx.beginPath();
+              ctx.moveTo(bx, 0); ctx.lineTo(W, 0); ctx.lineTo(W, H); ctx.lineTo(bx, H);
+              ctx.closePath();
+              ctx.fillStyle = isActive ? col + '12' : '#ffffff06';
+              ctx.fill();
+            }
+
+            // Handle dot
+            ctx.beginPath();
+            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.fillStyle = isActive ? (dragBand === i ? '#fff' : col) : '#1e1e1e';
+            ctx.fill();
+            ctx.strokeStyle = isActive ? (dragBand === i ? col : '#fff') : '#333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // HP/LP label
+            if (isHP || isLP) {
+              ctx.font = '7px Courier New';
+              ctx.textAlign = isHP ? 'right' : 'left';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = isActive ? col : '#333';
+              const label = isHP ? 'HP' : 'LP';
+              ctx.fillText(label, isHP ? bx - r - 3 : bx + r + 3, by);
+            }
+          });
+        }
+
+        function getBandAt(mx, my) {
+          const W = eqCanvas.width, H = eqCanvas.height;
+          let best = -1, bestDist = Infinity;
+          s.eqBands.forEach((band, i) => {
+            const bx = Math.max(6, Math.min(W - 6, fToX(band.freq, W)));
+            const by = band.type === 'peaking'
+              ? Math.max(6, Math.min(H - 6, gToY(band.gain || 0, H)))
+              : H / 2;
+            const d = Math.hypot(mx - bx, my - by);
+            if (d < bestDist) { bestDist = d; best = i; }
+          });
+          return bestDist < 20 ? best : -1;
+        }
+
+        eqCanvas.addEventListener('mousedown', e => {
+          e.stopPropagation(); e.preventDefault();
+          const rect = eqCanvas.getBoundingClientRect();
+          const sx = eqCanvas.width / rect.width, sy = eqCanvas.height / rect.height;
+          const mx = (e.clientX - rect.left) * sx;
+          const my = (e.clientY - rect.top) * sy;
+          dragBand = getBandAt(mx, my);
+          if (dragBand < 0) return;
+          draw();
+
+          const W = eqCanvas.width, H = eqCanvas.height;
+          const onMove = ev => {
+            const mx2 = (ev.clientX - rect.left) * sx;
+            const my2 = (ev.clientY - rect.top) * sy;
+            const band = s.eqBands[dragBand];
+            band.freq = Math.max(MIN_F, Math.min(MAX_F, xToF(mx2, W)));
+            if (band.type === 'peaking') {
+              band.gain = Math.max(-MAX_G, Math.min(MAX_G, yToG(my2, H)));
+            }
+            s.applyEqBand(dragBand);
+            draw();
+          };
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            dragBand = -1;
+            draw();
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+
+        eqCanvas.addEventListener('mousemove', e => {
+          if (dragBand >= 0) return;
+          const rect = eqCanvas.getBoundingClientRect();
+          const mx = (e.clientX - rect.left) * (eqCanvas.width / rect.width);
+          const my = (e.clientY - rect.top) * (eqCanvas.height / rect.height);
+          eqCanvas.style.cursor = getBandAt(mx, my) >= 0 ? 'grab' : 'crosshair';
+        });
+
+        eqCanvas.addEventListener('wheel', e => {
+          e.preventDefault();
+          const rect = eqCanvas.getBoundingClientRect();
+          const mx = (e.clientX - rect.left) * (eqCanvas.width / rect.width);
+          const my = (e.clientY - rect.top) * (eqCanvas.height / rect.height);
+          const bi = getBandAt(mx, my);
+          if (bi < 0 || s.eqBands[bi].type !== 'peaking') return;
+          const band = s.eqBands[bi];
+          band.q = Math.max(0.1, Math.min(20, band.q * (e.deltaY > 0 ? 1.25 : 0.8)));
+          s.applyEqBand(bi);
+          draw();
+        }, { passive: false });
+
+        q('.card-eq-clear').addEventListener('click', e => {
+          e.stopPropagation();
+          s.eqBands[0].freq = 20; s.eqBands[0].q = 0.707;
+          s.eqBands[1].freq = 200; s.eqBands[1].gain = 0; s.eqBands[1].q = 1;
+          s.eqBands[2].freq = 1000; s.eqBands[2].gain = 0; s.eqBands[2].q = 1;
+          s.eqBands[3].freq = 8000; s.eqBands[3].gain = 0; s.eqBands[3].q = 1;
+          s.eqBands[4].freq = 22050; s.eqBands[4].q = 0.707;
+          for (let i = 0; i < 5; i++) s.applyEqBand(i);
+          draw();
+        });
+
+        requestAnimationFrame(initCanvas);
+      })();
 
       return cardEl;
     }
