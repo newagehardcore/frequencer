@@ -131,11 +131,19 @@
       pointer-events: none;
     }
 
-    #import-btn {
+    #hdr-btns {
       position: fixed;
       top: 8px;
       right: 16px;
       z-index: 100;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #import-btn,
+    #save-btn,
+    #open-btn {
       background: none;
       border: 1px solid var(--b2);
       color: var(--mid);
@@ -149,7 +157,9 @@
       transition: all 0.1s;
     }
 
-    #import-btn:hover {
+    #import-btn:hover,
+    #save-btn:hover,
+    #open-btn:hover {
       border-color: #fff;
       color: #fff;
     }
@@ -1190,6 +1200,7 @@
 <body>
 
   <input type="file" id="file-input" multiple accept="audio/*" style="display:none">
+  <input type="file" id="project-input" accept=".json" style="display:none">
 
   <!-- UNLOCK SCREEN -->
   <div id="unlock">
@@ -1206,7 +1217,11 @@
 
   <!-- HEADER OVERLAY -->
   <div id="logo">FREQUENCER</div>
-  <button id="import-btn">+ Import</button>
+  <div id="hdr-btns">
+    <button id="open-btn">Open</button>
+    <button id="save-btn">Save</button>
+    <button id="import-btn">+ Import</button>
+  </div>
 
   <!-- CANVAS -->
   <div id="cv">
@@ -4004,6 +4019,169 @@
     }
 
     // ════════════════════════════════════════════════════
+    // PROJECT SAVE / LOAD
+    // ════════════════════════════════════════════════════
+    function audioBufferToWavBase64(buffer) {
+      const numCh = buffer.numberOfChannels;
+      const sr = buffer.sampleRate;
+      const len = buffer.length;
+      const byteRate = sr * numCh * 2;
+      const blockAlign = numCh * 2;
+      const dataSize = len * numCh * 2;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+      const ws = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+      ws(0, 'RIFF'); view.setUint32(4, 36 + dataSize, true);
+      ws(8, 'WAVE'); ws(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true); view.setUint32(24, sr, true);
+      view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      ws(36, 'data'); view.setUint32(40, dataSize, true);
+      let off = 44;
+      for (let i = 0; i < len; i++) {
+        for (let ch = 0; ch < numCh; ch++) {
+          const v = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+          view.setInt16(off, v < 0 ? v * 0x8000 : v * 0x7FFF, true);
+          off += 2;
+        }
+      }
+      const bytes = new Uint8Array(ab);
+      let bin = '';
+      const chunk = 8192;
+      for (let i = 0; i < bytes.length; i += chunk)
+        bin += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+      return btoa(bin);
+    }
+
+    function saveProject() {
+      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [] };
+      for (const [, s] of samples) {
+        if (!(s instanceof Sample)) continue;
+        const fxChainData = s.fxChain.map(inst => {
+          if (inst.type === 'eq') return { type: 'eq', bands: inst.eqData.bands.map(b => ({ ...b })) };
+          return { type: inst.type, params: { ...inst.params } };
+        });
+        projectData.samples.push({
+          name: s.name, x: s.x, y: s.y, color: s.color,
+          pitchST: s.pitchST, stretchST: s.stretchST, reversed: s.reversed,
+          loopStart: s.loopStart, loopEnd: s.loopEnd,
+          muted: s.muted, gridSync: s.gridSync, subdiv: s.subdiv,
+          subdivFactor: s.subdivFactor, gridMulti: s.gridMulti,
+          attackTime: s.attackTime, releaseTime: s.releaseTime,
+          crossfadeTime: s.crossfadeTime, clipGainDb: s.clipGainDb,
+          eqBands: s.eqBands.map(b => ({ ...b })),
+          fxChain: fxChainData,
+          audioB64: audioBufferToWavBase64(s.raw)
+        });
+      }
+      const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'frequencer-project.json';
+      a.click(); URL.revokeObjectURL(url);
+    }
+
+    function applyFxNodeParams(inst) {
+      const { type, node, params: p } = inst;
+      switch (type) {
+        case 'reverb':   node.decay = p.decay; node.preDelay = p.preDelay; node.wet.value = p.wet; break;
+        case 'delay':    node.delayTime.value = p.delayTime; node.feedback.value = p.feedback; node.wet.value = p.wet; break;
+        case 'tremolo':  node.frequency.value = p.frequency; node.depth.value = p.depth; node.wet.value = p.wet; break;
+        case 'dist':     node.distortion = p.distortion; node.wet.value = p.wet; break;
+        case 'chorus':   node.frequency.value = p.frequency; node.delayTime = p.delayTime; node.depth = p.depth; node.wet.value = p.wet; break;
+        case 'phaser':   node.frequency.value = p.frequency; node.octaves = p.octaves; node.baseFrequency = p.baseFrequency; node.wet.value = p.wet; break;
+        case 'bitcrush': node.bits = p.bits; node.wet.value = p.wet; break;
+      }
+    }
+
+    async function loadProject(jsonText) {
+      let data;
+      try { data = JSON.parse(jsonText); } catch (e) { alert('Invalid project file.'); return; }
+      if (!data.samples) { alert('Not a valid Frequencer project file.'); return; }
+
+      // Clear existing session
+      [...samples.keys()].forEach(id => removeSample(id));
+      soloId = null;
+
+      // Restore BPM
+      if (typeof data.bpm === 'number') {
+        Tone.Transport.bpm.value = data.bpm;
+        document.getElementById('bpm-val').textContent = Math.round(data.bpm);
+      }
+
+      // Restore samples
+      for (const sd of data.samples) {
+        if (!sd.audioB64) continue;
+        try {
+          const bin = atob(sd.audioB64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          const decoded = await new Promise((res, rej) =>
+            Tone.context.rawContext.decodeAudioData(bytes.buffer, res, rej)
+          );
+          const id = nextId++;
+          const s = new Sample(id, sd.name, decoded, sd.x, sd.y);
+
+          // Restore color
+          if (sd.color) s.color = sd.color;
+
+          // Restore settings via built-in setters
+          s.setPitch(sd.pitchST || 0);
+          s.setStretch(sd.stretchST || 0);
+          s.setClipGain(sd.clipGainDb || 0);
+          s.loopStart     = sd.loopStart     ?? 0;
+          s.loopEnd       = sd.loopEnd       ?? 1;
+          s.gridSync      = sd.gridSync      || false;
+          s.subdiv        = sd.subdiv        || 1;
+          s.subdivFactor  = sd.subdivFactor  || 1;
+          s.gridMulti     = sd.gridMulti     || 1;
+          s.attackTime    = sd.attackTime    || 0;
+          s.releaseTime   = sd.releaseTime   || 0;
+          s.crossfadeTime = sd.crossfadeTime || 0;
+          if (sd.reversed) s.setReverse(true);
+
+          // Restore main 5-band EQ
+          if (Array.isArray(sd.eqBands) && sd.eqBands.length === 5) {
+            sd.eqBands.forEach((b, i) => {
+              s.eqBands[i] = { ...b };
+              s.eqFilters[i].frequency.value = b.freq;
+              s.eqFilters[i].Q.value = b.q;
+              if (b.type === 'peaking') s.eqFilters[i].gain.value = b.gain || 0;
+            });
+          }
+
+          // Restore FX rack
+          if (Array.isArray(sd.fxChain)) {
+            for (const fxd of sd.fxChain) {
+              const inst = s.addFxInstance(fxd.type);
+              if (!inst) continue;
+              if (fxd.type === 'eq' && Array.isArray(fxd.bands)) {
+                fxd.bands.forEach((b, i) => {
+                  inst.eqData.bands[i] = { ...b };
+                  inst.eqData.applyBand(i);
+                });
+              } else if (fxd.params) {
+                Object.assign(inst.params, fxd.params);
+                applyFxNodeParams(inst);
+              }
+            }
+          }
+
+          // Restore mute (must come after vol init)
+          if (sd.muted) { s.muted = true; s.updateVol(); }
+
+          samples.set(id, s);
+          createTile(s);
+          startSample(s);
+        } catch (err) {
+          console.error('Failed to restore sample:', sd.name, err);
+        }
+      }
+      updateEmpty();
+    }
+
+    // ════════════════════════════════════════════════════
     // DRAG & DROP
     // ════════════════════════════════════════════════════
     let dn = 0;
@@ -4019,6 +4197,11 @@
       e.preventDefault(); dn = 0;
       document.getElementById('drop-overlay').classList.remove('active');
       if (!audioReady) { alert('Please click Initialize Audio first.'); return; }
+      const files = e.dataTransfer.files;
+      if (files.length === 1 && files[0].name.toLowerCase().endsWith('.json')) {
+        loadProject(await files[0].text());
+        return;
+      }
       const dropPos = { x: e.clientX, y: e.clientY };
       if (e.dataTransfer.items?.length) await importFromDT(e.dataTransfer.items, e.dataTransfer.files, dropPos);
       else importList(e.dataTransfer.files, dropPos);
@@ -4030,6 +4213,21 @@
     });
     document.getElementById('file-input').addEventListener('change', async e => {
       importList(e.target.files); e.target.value = '';
+    });
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      if (samples.size === 0) { alert('Nothing to save — load some samples first.'); return; }
+      saveProject();
+    });
+    document.getElementById('open-btn').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      document.getElementById('project-input').click();
+    });
+    document.getElementById('project-input').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (file) { loadProject(await file.text()); }
+      e.target.value = '';
     });
 
     // ════════════════════════════════════════════════════
