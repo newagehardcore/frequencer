@@ -1815,6 +1815,12 @@
         }
 
         // ── Non-crossfade grid mode (original scheduleRepeat approach) ──
+        // Ensure Transport is running — play() is Transport-independent but
+        // scheduleRepeat requires it. If the user stopped the transport while a
+        // free-running sample was still playing, grid mode would register the
+        // event but it would never fire.
+        if (Tone.Transport.state !== 'started') Tone.Transport.start();
+
         const firstFireAt = '+' + offsetToNext.toFixed(4);
         const fire = (time) => {
           try { this.player.stop(time); } catch (e) { }
@@ -1822,7 +1828,7 @@
           this._applyFadeGain(time, dur);
           try {
             this.player.start(time, this._revStart, dur);
-          } catch (e) { }
+          } catch (e) { console.warn('Grid fire: player.start failed', e); }
           Tone.Draw.schedule(() => {
             this._anchorAcTime    = time;
             this._anchorBufferPos = this._revStart;
