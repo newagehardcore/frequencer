@@ -46,7 +46,8 @@
       position: fixed;
       inset: 0;
       z-index: 3000;
-      background: #000;
+      background: transparent;
+      pointer-events: none;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -59,6 +60,7 @@
     }
 
     #unlock-btn {
+      pointer-events: all;
       background: #fff;
       border: none;
       color: #000;
@@ -431,10 +433,16 @@
       color: #fff;
     }
 
+    .card-wave-row {
+      display: flex;
+      align-items: stretch;
+      margin: 8px 8px 0;
+      height: 80px;
+    }
+
     .card-wave-wrap {
       position: relative;
-      height: 80px;
-      margin: 8px 8px 0;
+      flex: 1;
       background: #000;
       border: 1px solid #1a1a1a;
       overflow: hidden;
@@ -458,6 +466,33 @@
 
     .card-zoom-label.visible {
       opacity: 1;
+    }
+
+    .card-gain-strip {
+      position: relative;
+      width: 10px;
+      flex-shrink: 0;
+      cursor: ns-resize;
+    }
+
+    .card-gain-line {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      bottom: 4px;
+      width: 1px;
+      background: rgba(255,255,255,0.18);
+      pointer-events: none;
+    }
+
+    .card-gain-handle {
+      position: absolute;
+      left: 1px;
+      width: 8px;
+      height: 3px;
+      background: rgba(255,255,255,0.75);
+      transform: translateY(-50%);
+      pointer-events: none;
     }
 
     .card-wave-canvas {
@@ -985,6 +1020,17 @@
       height: 12px;
     }
 
+    #tog-metro {
+      width: auto;
+      height: auto;
+      padding: 4px 8px;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+    }
+
     .flbl {
       font-size: 9px;
       font-weight: 700;
@@ -1240,6 +1286,7 @@
     let isPlaying = false;
     let metroOn = false;
     let masterMeter = null;
+    const masterSamplesGain = new Tone.Gain(1).toDestination();
 
     const WAVE_ZOOM_MAX = 32;
     let soloId = null;
@@ -1277,7 +1324,7 @@
         // Start Transport immediately so grid scheduling works
         Tone.Transport.start();
         masterMeter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
-        Tone.getDestination().connect(masterMeter);
+        masterSamplesGain.connect(masterMeter);
         audioReady = true;
         isPlaying = true;
         document.getElementById('unlock').classList.add('gone');
@@ -1292,14 +1339,14 @@
     // SAMPLE CLASS
     // ════════════════════════════════════════════════════
     class Sample {
-      constructor(id, name, rawBuf) {
+      constructor(id, name, rawBuf, x = 0, y = 0) {
         this.id = id;
         this.name = name;
         this.raw = rawBuf;
         this.duration = rawBuf.duration;
         this.peaks = null;
 
-        this.x = 0; this.y = 0;
+        this.x = x; this.y = y;
         this.color = nextColor();
         this.pitchST = 0;
         this.stretchST = 0;
@@ -1311,10 +1358,12 @@
         this.gridSync = false;
         this.subdiv = 1;
         this.subdivFactor = 1; // 1 = normal, 1.5 = dotted, 0.667 = triplet
+        this.gridMulti = 1;   // 1 = every, 2 = every other, 3 = every 3rd
 
         this.attackTime = 0;    // seconds
         this.releaseTime = 0;   // seconds
         this.crossfadeTime = 0; // seconds
+        this.clipGainDb = 0;    // clip gain in dB, -12..+12
 
         this.playing = false;
         this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
@@ -1322,11 +1371,19 @@
         this._gridEv = null;
         this._currentDb = 0;
 
-        // Audio chain: Player → fadeGain → PitchShift → EQ → Panner → Volume → Destination
-        this.vol = new Tone.Volume(0).toDestination();
+        // Compute initial vol/pan from position so nodes never start at wrong defaults
+        const _ch = cv.clientHeight || 500;
+        const _cw = cv.clientWidth  || 800;
+        const _ratio = Math.max(0, Math.min(1, y / _ch));
+        const _initDb  = Math.max(-60, Math.min(6, 6 - Math.pow(_ratio / 0.88, 1.6) * 66));
+        const _initPan = Math.max(-1,  Math.min(1, (x / _cw) * 2 - 1));
+        this._currentDb = _initDb;
+
+        // Audio chain: Player → fadeGain → PitchShift → EQ → Panner → Volume → masterSamplesGain → Destination
+        this.vol = new Tone.Volume(_initDb).connect(masterSamplesGain);
         this.meter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
         this.vol.connect(this.meter);
-        this.pan = new Tone.Panner(0).connect(this.vol);
+        this.pan = new Tone.Panner(_initPan).connect(this.vol);
 
         // 5-band EQ: HP · Low bell · Mid bell · Hi bell · LP (always in chain, flat by default)
         this.eqBands = [
@@ -1359,7 +1416,8 @@
         this._fxUidCounter = 0;
         this.rebuildFxChain();
 
-        this.fadeGain = new Tone.Gain(1).connect(this.ps);
+        this.clipGain = new Tone.Gain(1).connect(this.ps);
+        this.fadeGain = new Tone.Gain(1).connect(this.clipGain);
         this.player = new Tone.Player().connect(this.fadeGain);
         this._fadedBuf = null; // cached baked-fade buffer; null = needs rebuild
         this._xfTimeout = null;
@@ -1426,6 +1484,11 @@
         const rate = Math.pow(2, st / 12);
         this.player.playbackRate = rate;
         this.xfPlayer.playbackRate = rate;
+      }
+
+      setClipGain(db) {
+        this.clipGainDb = Math.max(-12, Math.min(12, db));
+        this.clipGain.gain.value = Math.pow(10, this.clipGainDb / 20);
       }
 
       setReverse(val) {
@@ -1550,7 +1613,7 @@
       // from the loop beginning and fades in (equal-power) while A fades out.
       // At the crossfade midpoint both are playing simultaneously — constant amplitude.
       // After the fade, A is stopped and B takes its role; the cycle repeats.
-      _playCrossfadeLoop() {
+      _playCrossfadeLoop(startAt) {
         const ctx = Tone.context.rawContext;
         const pbRate = this._pbRate;
         const loopLen = this.lenSec / pbRate;
@@ -1569,7 +1632,7 @@
         this.player.loop = false;
         this.xfPlayer.loop = false;
 
-        const now = ctx.currentTime + 0.005;
+        const now = startAt !== undefined ? startAt : ctx.currentTime + 0.005;
 
         // Reset gains: current=1, incoming=0
         this.fadeGain.gain.cancelScheduledValues(now - 0.001);
@@ -1707,42 +1770,51 @@
         this._stopPlayer();
         this._stopXfLoop();
         this.player.loop = false;
-        // Restore source buffer in case a faded buffer was previously loaded
-        if (typeof this.player.buffer.set === 'function') {
-          this.player.buffer.set(this._srcBuf);
-        } else {
-          this.player.buffer._buffer = this._srcBuf;
-        }
+        this.xfPlayer.loop = false;
 
+        // Restore source buffer in case a faded buffer was previously loaded
+        const setBuf = (pl) => {
+          if (typeof pl.buffer.set === 'function') pl.buffer.set(this._srcBuf);
+          else pl.buffer._buffer = this._srcBuf;
+        };
+        setBuf(this.player);
+        setBuf(this.xfPlayer);
+
+        const ctx = Tone.context.rawContext;
         const bpm = Tone.Transport.bpm.value;
         const subdivSec = (60 / bpm) * (4 / this.subdiv) * this.subdivFactor;
+        const gridPeriod = subdivSec * this.gridMulti;
         this._loopLen = this.lenSec;
 
-        // Quantize the start to the next subdivision boundary in Transport time
-        // so multiple synced samples align together
+        // Quantize start to the next subdivision boundary
         const transportPos = Tone.Transport.seconds;
         const secsSinceBeat = transportPos % subdivSec;
         const offsetToNext = secsSinceBeat < 0.01 ? 0 : (subdivSec - secsSinceBeat);
-        const firstFireAt = '+' + offsetToNext.toFixed(4);
 
+        if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
+          // Snap the first iteration to the grid boundary, then run the exact same
+          // two-player crossfade loop as non-grid mode.
+          const firstFireAt = ctx.currentTime + offsetToNext + 0.005;
+          this._playCrossfadeLoop(firstFireAt);
+          return;
+        }
+
+        // ── Non-crossfade grid mode (original scheduleRepeat approach) ──
+        const firstFireAt = '+' + offsetToNext.toFixed(4);
         const fire = (time) => {
-          // 'time' is the AudioContext time passed by scheduleRepeat — use it directly
           try { this.player.stop(time); } catch (e) { }
           const dur = this.lenSec;
           this._applyFadeGain(time, dur);
           try {
             this.player.start(time, this._revStart, dur);
           } catch (e) { }
-          // Store the exact anchor time and buffer pos
           Tone.Draw.schedule(() => {
-            this._anchorAcTime = time;
+            this._anchorAcTime    = time;
             this._anchorBufferPos = this._revStart;
           }, time);
         };
 
-        // scheduleRepeat fires at every subdivision interval, starting at firstFireAt
-        this._gridEv = Tone.Transport.scheduleRepeat(fire, subdivSec, firstFireAt);
-
+        this._gridEv = Tone.Transport.scheduleRepeat(fire, gridPeriod, firstFireAt);
         this.playing = true;
         this._renderTile();
       }
@@ -1766,9 +1838,9 @@
         if (elapsed <= 0) return;
 
         let pos = this._anchorBufferPos + elapsed * this._pbRate;
-        if (!this.gridSync && pos >= this._revEnd) {
+        if ((!this.gridSync || this._xfTimeout !== null) && pos >= this._revEnd) {
           pos = this._revStart + ((pos - this._revStart) % this.lenSec);
-        } else if (this.gridSync && pos >= this._revEnd) {
+        } else if (this.gridSync && this._xfTimeout === null && pos >= this._revEnd) {
           pos = this._revEnd;
         }
         this._anchorAcTime = acNow;
@@ -1782,7 +1854,7 @@
         let pos = this._anchorBufferPos + elapsed * this._pbRate;
         const rStart = this._revStart, rEnd = this._revEnd;
 
-        if (this.gridSync) {
+        if (this.gridSync && this._xfTimeout === null) {
           pos = Math.min(pos, rEnd);
           const fwd = (pos - rStart) / this.lenSec;
           return this.reversed ? 1 - fwd : fwd;
@@ -1824,6 +1896,7 @@
           try { this.player.dispose(); } catch (e) { }
           try { this.xfPlayer.dispose(); } catch (e) { }
           try { this.fadeGain.dispose(); } catch (e) { }
+          try { this.clipGain.dispose(); } catch (e) { }
           try { this.xfGain.dispose(); } catch (e) { }
           try { this.ps.dispose(); } catch (e) { }
           if (this.eqFilters) this.eqFilters.forEach(f => { try { f.dispose(); } catch (e) {} });
@@ -2062,6 +2135,7 @@
       const range = endIdx - startIdx;
       const step = range / W;
 
+      const clipScale = Math.pow(10, s.clipGainDb / 20);
       for (let i = 0; i < W; i++) {
         const binStart = Math.floor(startIdx + i * step);
         const binEnd = Math.ceil(startIdx + (i + 1) * step);
@@ -2069,8 +2143,9 @@
         for (let b = binStart; b < binEnd && b < peaks.length; b++) {
           if (peaks[b] > amp) amp = peaks[b];
         }
-        const barH = Math.max(1, amp * drawH * 0.85);
-        ctx.fillStyle = hexToRgba(s.color, 0.25 + amp * 0.75);
+        const scaledAmp = Math.min(1, amp * clipScale);
+        const barH = Math.max(1, scaledAmp * drawH * 0.85);
+        ctx.fillStyle = hexToRgba(s.color, 0.25 + scaledAmp * 0.75);
         ctx.fillRect(i, mid - barH / 2, 1, barH);
       }
 
@@ -2298,11 +2373,8 @@
 
         if (stub.parentNode) stub.remove();
 
-        const s = new Sample(id, name, decoded);
-        s.x = x; s.y = y;
+        const s = new Sample(id, name, decoded, x, y);
         samples.set(id, s);
-        s.updateVol();
-        s.updatePan();
         createTile(s);
 
         // Auto-play immediately on load
@@ -2463,15 +2535,21 @@
           <div class="card-name">SAMPLE</div>
           <button class="card-close">✕</button>
         </div>
-        <div class="card-wave-wrap">
-          <canvas class="card-wave-canvas"></canvas>
-          <div class="card-loop-reg">
-            <div class="lh clh-s"></div>
-            <div class="lh clh-e"></div>
+        <div class="card-wave-row">
+          <div class="card-gain-strip">
+            <div class="card-gain-line"></div>
+            <div class="card-gain-handle"></div>
           </div>
-          <div class="card-ph"></div>
-          <div class="card-zoom-label"></div>
-          <canvas class="card-vu-canvas" width="20" height="80"></canvas>
+          <div class="card-wave-wrap">
+            <canvas class="card-wave-canvas"></canvas>
+            <div class="card-loop-reg">
+              <div class="lh clh-s"></div>
+              <div class="lh clh-e"></div>
+            </div>
+            <div class="card-ph"></div>
+            <div class="card-zoom-label"></div>
+            <canvas class="card-vu-canvas" width="20" height="80"></canvas>
+          </div>
         </div>
         <div class="card-times">
           <span class="ct-s">Start: 0.000s</span>
@@ -2554,6 +2632,8 @@
               </select>
               <button class="cbtn ms-btn card-dot-btn">Dot</button>
               <button class="cbtn ms-btn card-tri-btn">3let</button>
+              <button class="cbtn ms-btn card-skip2-btn">÷2</button>
+              <button class="cbtn ms-btn card-skip3-btn">÷3</button>
             </div>
           </div>
           <div class="fx-section" id="fx-section-${s.id}"></div>
@@ -2577,6 +2657,8 @@
       q('.card-subdiv').value = s.subdiv;
       q('.card-dot-btn').classList.toggle('act', s.subdivFactor === 1.5);
       q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
+      q('.card-skip2-btn').classList.toggle('act', s.gridMulti === 2);
+      q('.card-skip3-btn').classList.toggle('act', s.gridMulti === 3);
       q('.card-mute-btn').classList.toggle('mute-on', s.muted);
       q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
       q('.card-grid').classList.toggle('act', s.gridSync);
@@ -2590,6 +2672,10 @@
         sub.style.pointerEvents = on ? 'all' : 'none';
         q('.clh-e').style.pointerEvents = on ? 'none' : 'all';
         q('.clh-e').style.opacity = on ? '0.35' : '1';
+        ['.card-dot-btn', '.card-tri-btn', '.card-skip2-btn', '.card-skip3-btn'].forEach(sel => {
+          q(sel).style.opacity = on ? '1' : '0.4';
+          q(sel).style.pointerEvents = on ? 'all' : 'none';
+        });
       }
       setGridUI(s.gridSync);
 
@@ -2607,6 +2693,42 @@
       }
       updateFadeDisabled();
 
+      // ── Clip gain strip ──
+      function updateGainHandle() {
+        const handle = q('.card-gain-handle');
+        const strip = q('.card-gain-strip');
+        if (!handle || !strip) return;
+        const H = strip.clientHeight || 80;
+        // +12dB = top (norm 0), -12dB = bottom (norm 1)
+        const norm = (12 - s.clipGainDb) / 24;
+        handle.style.top = Math.round(norm * H) + 'px';
+      }
+
+      q('.card-gain-strip').addEventListener('mousedown', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const strip = q('.card-gain-strip');
+        const rect = strip.getBoundingClientRect();
+        const startY = e.clientY;
+        const startDb = s.clipGainDb;
+        const H = rect.height;
+        const mm = ev => {
+          const dy = ev.clientY - startY;
+          // full strip height = 24dB range; drag up = gain up
+          const dbDelta = -(dy / H) * 24;
+          s.setClipGain(startDb + dbDelta);
+          updateGainHandle();
+          drawWave();
+          refreshTileWave(s);
+        };
+        const mu = () => {
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+
       function drawWave() {
         const wrap = q('.card-wave-wrap');
         const W = (wrap.clientWidth || 284) - 20, H = wrap.clientHeight || 80;
@@ -2620,6 +2742,7 @@
         const endIdx = ve * peaks.length;
         const range = endIdx - startIdx;
         const step = range / W;
+        const clipScale = Math.pow(10, s.clipGainDb / 20);
         for (let i = 0; i < W; i++) {
           const binStart = Math.floor(startIdx + i * step);
           const binEnd = Math.ceil(startIdx + (i + 1) * step);
@@ -2627,8 +2750,9 @@
           for (let b = binStart; b < binEnd && b < peaks.length; b++) {
             if (peaks[b] > amp) amp = peaks[b];
           }
-          const barH = Math.max(1, amp * H * 0.88);
-          ctx.fillStyle = hexToRgba(s.color, 0.25 + amp * 0.75);
+          const scaledAmp = Math.min(1, amp * clipScale);
+          const barH = Math.max(1, scaledAmp * H * 0.88);
+          ctx.fillStyle = hexToRgba(s.color, 0.25 + scaledAmp * 0.75);
           ctx.fillRect(i, H / 2 - barH / 2, 1, barH);
         }
         ctx.fillStyle = hexToRgba(s.color, 0.15);
@@ -2723,7 +2847,7 @@
       tile.classList.add('active', 'expanded');
       document.body.appendChild(cardEl);
       requestAnimationFrame(() => cardEl.classList.add('open'));
-      requestAnimationFrame(() => { drawWave(); updateLoopReg(); });
+      requestAnimationFrame(() => { drawWave(); updateLoopReg(); updateGainHandle(); });
 
       // Store in openCards with references needed by phLoop
       openCards.set(s.id, { el: cardEl, getZView, phEl: () => q('.card-ph'), waveWrap: () => q('.card-wave-wrap'), vuCanvas: () => q('.card-vu-canvas') });
@@ -2889,6 +3013,14 @@
       }
       q('.card-dot-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(1.5); });
       q('.card-tri-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(2 / 3); });
+      function setGridMulti(n) {
+        s.gridMulti = (s.gridMulti === n) ? 1 : n;
+        q('.card-skip2-btn').classList.toggle('act', s.gridMulti === 2);
+        q('.card-skip3-btn').classList.toggle('act', s.gridMulti === 3);
+        if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+      }
+      q('.card-skip2-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(2); });
+      q('.card-skip3-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(3); });
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSample(s.id); });
 
       ['attack', 'release', 'xfade'].forEach(key => {
@@ -3046,17 +3178,22 @@
           build(body, p, node) {
             if (!p.syncMode) p.syncMode = false;
             if (!p.subdivision) p.subdivision = '4n';
-            const subdivs = [
-              ['1n','1/1'], ['2n','1/2'], ['4n','1/4'], ['8n','1/8'],
-              ['8t','1/8T'], ['16n','1/16'], ['16t','1/16T'],
+            const subdivBeats = {
+              '2n':2,    '2n.':3,      '2t':4/3,
+              '4n':1,    '4n.':1.5,    '4t':2/3,
+              '8n':0.5,  '8n.':0.75,   '8t':1/3,
+              '16n':0.25,'16n.':0.375, '16t':1/6,
+            };
+            // Sorted longest → shortest by beat duration
+            const subdivList = [
+              ['2n.','1/2·'], ['2n','1/2'],  ['4n.','1/4·'], ['2t','1/2T'],
+              ['4n','1/4'],   ['8n.','1/8·'], ['4t','1/4T'],  ['8n','1/8'],
+              ['16n.','1/16·'],['8t','1/8T'], ['16n','1/16'], ['16t','1/16T'],
             ];
             body.innerHTML =
               sliderRow('Time', 'fx-d-time', 0, 2, p.delayTime, 0.01) +
-              `<div class="crow fx-d-subdiv-row" style="display:none">
-                <span class="clbl" style="font-size:8px">Subdiv</span>
-                <div style="display:flex;gap:2px;flex-wrap:wrap">
-                  ${subdivs.map(([val, lbl]) => `<button class="cbtn fx-subdiv-btn" data-sub="${val}" style="font-size:8px;padding:2px 5px">${lbl}</button>`).join('')}
-                </div>
+              `<div class="fx-d-subdiv-row" style="display:none;flex-wrap:wrap;gap:2px;margin:0 -10px 8px;padding:4px 8px;border-top:1px solid #111;border-bottom:1px solid #111">
+                ${subdivList.map(([k,lbl]) => `<button class="cbtn fx-subdiv-btn" data-sub="${k}" style="background:none;font-size:8px;padding:3px 2px;min-width:0">${lbl}</button>`).join('')}
               </div>` +
               sliderRow('Feedback', 'fx-d-fb', 0, 0.99, p.feedback, 0.01) +
               sliderRow('Wet', 'fx-d-wet', 0, 1, p.wet, 0.01) +
@@ -3068,8 +3205,6 @@
             const timeRow = body.querySelector('.fx-d-time').closest('.crow');
             const subdivRow = body.querySelector('.fx-d-subdiv-row');
             const syncBtn = body.querySelector('.fx-sync-toggle');
-
-            const subdivBeats = { '1n':4, '2n':2, '4n':1, '8n':0.5, '8t':1/3, '16n':0.25, '16t':1/6 };
 
             function applySubdiv(sub) {
               p.subdivision = sub;
