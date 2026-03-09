@@ -18,13 +18,13 @@
 
     :root {
       --bg: #000000;
-      --surface: #0d0d0d;
-      --panel: #111111;
-      --b1: #1a1a1a;
-      --b2: #2a2a2a;
-      --b3: #444444;
-      --mid: #888888;
-      --hi: #cccccc;
+      --surface: #111111;
+      --panel: #161616;
+      --b1: #222222;
+      --b2: #333333;
+      --b3: #555555;
+      --mid: #aaaaaa;
+      --hi: #e0e0e0;
       --white: #ffffff;
       --hdr: 0px;
       --ftr: 60px;
@@ -181,7 +181,7 @@
       right: 0;
       bottom: var(--ftr);
       background: var(--bg);
-      background-image: radial-gradient(circle, #2a2a2a 1px, transparent 1px);
+      background-image: radial-gradient(circle, #333333 1px, transparent 1px);
       background-size: 24px 24px;
       overflow: hidden;
     }
@@ -378,8 +378,8 @@
       position: fixed;
       z-index: 400;
       width: 280px;
-      background: #0a0a0a;
-      border: 1px solid #333;
+      background: #0d0d0d;
+      border: 1px solid #404040;
       overflow: hidden;
       max-height: 0;
       opacity: 0;
@@ -400,8 +400,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #1a1a1a;
-      background: #111;
+      border-bottom: 1px solid #222222;
+      background: #161616;
     }
 
     .card-titlebar:active {
@@ -424,13 +424,15 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #ccc;
+      color: #e0e0e0;
     }
 
-    .card-close {
+    .card-close,
+    .card-dup,
+    .card-remove {
       background: none;
       border: none;
-      color: #555;
+      color: #686868;
       font-size: 13px;
       cursor: pointer;
       padding: 0 2px;
@@ -439,8 +441,17 @@
       font-family: inherit;
     }
 
-    .card-close:hover {
+    .card-close:hover,
+    .card-dup:hover {
       color: #fff;
+    }
+
+    .card-remove {
+      filter: grayscale(1) brightness(0.45);
+    }
+
+    .card-remove:hover {
+      filter: grayscale(1) brightness(10);
     }
 
     .card-wave-row {
@@ -454,7 +465,7 @@
       position: relative;
       flex: 1;
       background: #000;
-      border: 1px solid #1a1a1a;
+      border: 1px solid #222222;
       overflow: hidden;
       cursor: zoom-in;
     }
@@ -565,8 +576,8 @@
       width: 28px;
       height: 18px;
       background: #000;
-      border: 1px solid #1a1a1a;
-      color: #444;
+      border: 1px solid #222222;
+      color: #555555;
       font-family: 'Courier New', monospace;
       font-size: 8px;
       text-align: center;
@@ -576,8 +587,8 @@
     }
 
     .rng-field:focus {
-      border-color: #555;
-      color: #999;
+      border-color: #686868;
+      color: #b8b8b8;
     }
 
     /* ═══ CUSTOM ENVELOPE SLIDER ═══ */
@@ -600,8 +611,8 @@
       bottom: 0;
       transform: translateX(-50%);
       min-width: 46px;
-      background: #1a1a1a;
-      border: 1px solid #333;
+      background: #222222;
+      border: 1px solid #404040;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -616,7 +627,7 @@
     .cslider-lbl {
       font-size: 9px;
       font-family: 'Courier New', monospace;
-      color: #888;
+      color: #a6a6a6;
       pointer-events: none;
       white-space: nowrap;
     }
@@ -663,7 +674,7 @@
       justify-content: space-between;
       padding: 2px 8px 0;
       font-size: 8px;
-      color: #444;
+      color: #555555;
       font-family: 'Courier New', monospace;
       letter-spacing: -0.03em;
     }
@@ -678,12 +689,12 @@
       width: 100%;
       cursor: crosshair;
       background: #000;
-      border: 1px solid #1a1a1a;
+      border: 1px solid #222222;
       margin-top: 2px;
     }
     .eq-hint {
       font-size: 8px;
-      color: #2a2a2a;
+      color: #333333;
       text-align: center;
       padding: 3px 0 0;
       font-family: 'Courier New', monospace;
@@ -692,7 +703,7 @@
 
     /* ═══ FX CHAIN SECTION ═══ */
     .fx-section {
-      border-top: 1px solid #1a1a1a;
+      border-top: 1px solid #222222;
     }
 
     .fx-btn-row {
@@ -700,27 +711,27 @@
       flex-wrap: wrap;
       gap: 3px;
       padding: 6px 8px;
-      border-bottom: 1px solid #111;
+      border-bottom: 1px solid #161616;
     }
 
     .fx-btn {
       flex: 1;
       background: none;
-      border: 1px solid #333;
+      border: 1px solid #404040;
       font-family: 'Courier New', monospace;
       font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #666;
+      color: #7d7d7d;
       cursor: pointer;
       padding: 3px 6px;
       transition: color 0.15s, border-color 0.15s;
     }
 
     .fx-btn:hover {
-      color: #aaa;
-      border-color: #555;
+      color: #cccccc;
+      border-color: #686868;
     }
 
     .fx-panel-hdr {
@@ -732,7 +743,7 @@
     .fx-panel-remove {
       background: none;
       border: none;
-      color: #333;
+      color: #404040;
       cursor: pointer;
       font-size: 9px;
       padding: 2px 4px;
@@ -740,11 +751,11 @@
     }
 
     .fx-panel-remove:hover {
-      color: #888;
+      color: #a6a6a6;
     }
 
     .fx-panel {
-      border-bottom: 1px solid #111;
+      border-bottom: 1px solid #161616;
     }
 
     .fx-panel-hdr {
@@ -757,13 +768,13 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--fx-color, #555);
+      color: var(--fx-color, #686868);
     }
 
     .fx-body-inner {
       padding: 6px 10px 10px;
-      border-top: 1px solid #111;
-      background: #050505;
+      border-top: 1px solid #161616;
+      background: #080808;
     }
 
     .fx-body-inner .crow {
@@ -771,14 +782,14 @@
     }
 
     .fx-body-inner .clbl {
-      color: #333;
+      color: #404040;
       font-size: 8px;
       width: 50px;
       min-width: 50px;
     }
 
     .fx-body-inner .clbl.on {
-      color: var(--fx-color, #888);
+      color: var(--fx-color, #a6a6a6);
     }
 
     .fx-eq-body canvas {
@@ -786,12 +797,12 @@
       width: 100%;
       cursor: crosshair;
       background: #000;
-      border: 1px solid #1a1a1a;
+      border: 1px solid #222222;
       margin-top: 2px;
     }
 
     .csec {
-      border-bottom: 1px solid #111;
+      border-bottom: 1px solid #161616;
       padding: 7px 8px;
     }
 
@@ -819,7 +830,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: -0.03em;
-      color: #666;
+      color: #7d7d7d;
       width: 56px;
       flex-shrink: 0;
     }
@@ -837,8 +848,8 @@
       flex: 1;
       padding: 6px 0;
       background: #000;
-      border: 1px solid #2a2a2a;
-      color: #666;
+      border: 1px solid #333333;
+      color: #7d7d7d;
       font-family: Helvetica, Arial, sans-serif;
       font-size: 10px;
       font-weight: 700;
@@ -963,6 +974,46 @@
 
     .clh-e {
       right: -6px;
+    }
+
+    .card-fp {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 14px;
+      transform: translateX(-50%);
+      cursor: ew-resize;
+      pointer-events: all;
+      z-index: 6;
+    }
+
+    .card-fp::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 8px solid #fff;
+    }
+
+    .card-fp::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .card-fp:hover::before {
+      border-top-color: #fff;
+      filter: drop-shadow(0 0 3px rgba(255,255,255,0.8));
     }
 
 
@@ -1179,7 +1230,7 @@
 
     @keyframes rec-blink {
       0%, 100% { background: #cc2200; border-color: #ff3333; }
-      50%       { background: #1a1a1a; border-color: #ff3333; }
+      50%       { background: #222222; border-color: #ff3333; }
     }
 
     #rec-timer {
@@ -1369,6 +1420,7 @@
         this._revBuf = null;
         this.loopStart = 0;  // normalized 0..1
         this.loopEnd = 1;
+        this.filePosition = 0; // normalized 0..1, initial playback start within loop
         this.muted = false;
         this.gridSync = false;
         this.subdiv = 1;
@@ -1384,6 +1436,8 @@
         this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
         this._anchorBufferPos = 0; // Absolute buffer seconds tracking anchor
         this._gridEv = null;
+        this._filePosTimer = null;
+        this._pendingRestart = false; // set to restart on the next loop wrap boundary
         this._currentDb = 0;
 
         // Compute initial vol/pan from position so nodes never start at wrong defaults
@@ -1460,9 +1514,14 @@
       get startSec() { return this.loopStart * this.duration; }
       get endSec() { return this.loopEnd * this.duration; }
       get lenSec() { return Math.max(0.01, (this.loopEnd - this.loopStart) * this.duration); }
+      get filePosSec() { return this.filePosition * this.duration; }
       get _srcBuf() { return this.reversed ? this._revBuf : this.raw; }
       get _revStart() { return this.reversed ? (this.duration - this.endSec) : this.startSec; }
       get _revEnd() { return this.reversed ? (this.duration - this.startSec) : this.endSec; }
+      get _revFilePos() {
+        const raw = this.reversed ? (this.duration - this.filePosSec) : this.filePosSec;
+        return Math.max(0, Math.min(this._revEnd - 0.001, raw));
+      }
       get _pbRate() { return Math.pow(2, this.stretchST / 12); }
 
       // ── Volume / Pan from canvas position ──
@@ -1648,6 +1707,7 @@
         this.xfPlayer.loop = false;
 
         const now = startAt !== undefined ? startAt : ctx.currentTime + 0.005;
+        const firstStartSec = this._revFilePos; // first iteration may start offset from loop start
 
         // Reset gains: current=1, incoming=0
         this.fadeGain.gain.cancelScheduledValues(now - 0.001);
@@ -1659,31 +1719,32 @@
         let players = [this.player, this.xfPlayer];
         let gains = [this.fadeGain, this.xfGain];
 
-        // Start the first player
-        try { players[0].start(now, startSec); } catch (e) { console.warn('xf start', e); }
+        // Start the first player from filePosition
+        try { players[0].start(now, firstStartSec); } catch (e) { console.warn('xf start', e); }
 
         this._anchorAcTime = now;
-        this._anchorBufferPos = startSec;
+        this._anchorBufferPos = firstStartSec;
         this.playing = true;
         this._renderTile();
 
         // Schedule the repeating crossfade
-        const scheduleXf = (iterStartTime) => {
+        // iterLen/iterXfd allow the first (potentially shorter) iteration to differ from subsequent ones
+        const scheduleXf = (iterStartTime, iterLen, iterXfd) => {
           if (!this.playing) return;
 
-          const xfStartTime = iterStartTime + loopLen - xfdTime;
-          const xfEndTime   = iterStartTime + loopLen;
+          const xfStartTime = iterStartTime + iterLen - iterXfd;
+          const xfEndTime   = iterStartTime + iterLen;
 
           // Equal-power fade curves via N-step setValueAtTime
           const N = 32;
           for (let i = 0; i <= N; i++) {
             const t   = i / N;
-            const tAc = xfStartTime + t * xfdTime;
+            const tAc = xfStartTime + t * iterXfd;
             gains[0].gain.setValueAtTime(Math.cos(t * 0.5 * Math.PI), tAc); // 1 → 0
             gains[1].gain.setValueAtTime(Math.sin(t * 0.5 * Math.PI), tAc); // 0 → 1
           }
 
-          // Start incoming player at the crossfade start point
+          // Incoming player always starts from the loop start (not filePos)
           try { players[1].start(xfStartTime, startSec); } catch (e) { console.warn('xf incoming start', e); }
 
           // After fade completes: stop old player, swap roles, schedule next iteration
@@ -1700,12 +1761,15 @@
             [players[0], players[1]] = [players[1], players[0]];
             [gains[0], gains[1]] = [gains[1], gains[0]];
 
-            // The new current started at xfStartTime; schedule next crossfade from there
-            scheduleXf(xfStartTime);
+            // Subsequent iterations use the full loop length
+            scheduleXf(xfStartTime, loopLen, xfdTime);
           }, swapDelay);
         };
 
-        scheduleXf(now);
+        // First iteration may be shorter if filePos is inside the loop
+        const firstLen = (this._revEnd - firstStartSec) / pbRate;
+        const firstXfd = Math.min(xfdTime, firstLen * 0.45);
+        scheduleXf(now, firstLen, firstXfd);
       }
 
       // ── Internal: cancel any pending grid schedule event ──
@@ -1721,6 +1785,9 @@
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
+        clearTimeout(this._filePosTimer);
+        this._filePosTimer = null;
+        this._pendingRestart = false;
 
         // True crossfade: two overlapping players — only when no attack/release
         if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
@@ -1730,8 +1797,11 @@
 
         const hasFades = this.attackTime > 0 || this.releaseTime > 0;
         const startAt = Tone.context.rawContext.currentTime + 0.005;
+        // If filePosition is before loopStart, the initial pass plays pre-loop content —
+        // we must use the source buffer directly so native loopStart acts as the wrap point.
+        const filePosBeforeLoop = this._revFilePos < this._revStart;
 
-        if (hasFades) {
+        if (hasFades && !filePosBeforeLoop) {
           // Bake fades directly into a copy of the loop region buffer,
           // then use native player.loop = true for a perfectly seamless loop.
           if (!this._fadedBuf) this._fadedBuf = this._buildFadedLoopBuffer();
@@ -1745,10 +1815,11 @@
             this.player.loopStart = 0;
             this.player.loopEnd = fb.duration;
             this.player.loop = true;
+            const fileOffset = Math.max(0, Math.min(fb.duration - 0.001, this._revFilePos - this._revStart));
             try {
-              this.player.start(startAt, 0);
+              this.player.start(startAt, fileOffset);
               this._anchorAcTime = startAt;
-              this._anchorBufferPos = this._revStart;
+              this._anchorBufferPos = this._revStart + fileOffset;
               this.playing = true;
             } catch (e) { console.warn('play() failed', e); }
             this._renderTile();
@@ -1767,9 +1838,9 @@
         this.player.loopEnd = this._revEnd;
         this.player.loop = true;
         try {
-          this.player.start(startAt, this._revStart);
+          this.player.start(startAt, this._revFilePos);
           this._anchorAcTime = startAt;
-          this._anchorBufferPos = this._revStart;
+          this._anchorBufferPos = this._revFilePos;
           this.playing = true;
         } catch (e) { console.warn('play() failed', e); }
         this._renderTile();
@@ -1824,14 +1895,14 @@
         const firstFireAt = '+' + offsetToNext.toFixed(4);
         const fire = (time) => {
           try { this.player.stop(time); } catch (e) { }
-          const dur = this.lenSec;
+          const dur = Math.max(0.01, this._revEnd - this._revFilePos);
           this._applyFadeGain(time, dur);
           try {
-            this.player.start(time, this._revStart, dur);
+            this.player.start(time, this._revFilePos, dur);
           } catch (e) { console.warn('Grid fire: player.start failed', e); }
           Tone.Draw.schedule(() => {
             this._anchorAcTime    = time;
-            this._anchorBufferPos = this._revStart;
+            this._anchorBufferPos = this._revFilePos;
           }, time);
         };
 
@@ -1844,6 +1915,9 @@
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
+        clearTimeout(this._filePosTimer);
+        this._filePosTimer = null;
+        this._pendingRestart = false;
         this.playing = false;
         this._anchorAcTime = null;
         const now = Tone.context.rawContext.currentTime;
@@ -1888,6 +1962,13 @@
             this._anchorAcTime = acNow;
             this._anchorBufferPos = pos;
           }
+          // Loop boundary crossed — fire any pending restart now
+          if (this._pendingRestart) {
+            this._pendingRestart = false;
+            clearTimeout(this._filePosTimer);
+            this._filePosTimer = null;
+            this.play();
+          }
         }
         const fwd = (pos - rStart) / this.lenSec;
         return this.reversed ? 1 - fwd : fwd;
@@ -1900,6 +1981,9 @@
         this.loopEnd = end;
         this._fadedBuf = null; // invalidate — bounds changed, need fresh bake
 
+        // Only clamp filePosition at the upper end (it can be below loopStart for pre-loop playthrough)
+        if (this.filePosition >= end) this.filePosition = Math.max(0, end - 0.001 / Math.max(0.001, this.duration));
+
         if (!this.gridSync) {
           const hasFades = this.attackTime > 0 || this.releaseTime > 0 || this.crossfadeTime > 0;
           if (!hasFades) {
@@ -1909,6 +1993,38 @@
           }
           // With fades: play() will be called on mouseup to rebuild the baked buffer
         }
+      }
+
+      // Set file position (normalized 0..1), restarting on the next loop wrap boundary
+      setFilePosition(norm) {
+        clearTimeout(this._filePosTimer);
+        this._pendingRestart = false;
+        this.filePosition = Math.max(0, Math.min(this.loopEnd - 0.001 / Math.max(0.001, this.duration), norm));
+        if (!this.playing) return;
+
+        if (this.gridSync) {
+          // Grid: just restart on the next grid tick
+          const pos = this.playheadPos();
+          const fwd = pos !== null ? (this.reversed ? 1 - pos : pos) : 1;
+          const remaining = Math.max(0, (1 - fwd) * this.lenSec / this._pbRate);
+          this._filePosTimer = setTimeout(() => {
+            if (this.playing && this.gridSync) { this._cancelGrid(); this._stopPlayer(); this.playGrid(); }
+          }, remaining * 1000);
+          return;
+        }
+
+        // Non-grid: flag a restart to fire at the next loop wrap (detected in playheadPos)
+        this._pendingRestart = true;
+        // Safety-net: fire a fallback if the RAF-based detection somehow misses the wrap
+        const pos = this.playheadPos();
+        const fwd = pos !== null ? (this.reversed ? 1 - pos : pos) : 1;
+        const remaining = Math.max(0, (1 - fwd) * this.lenSec / this._pbRate);
+        this._filePosTimer = setTimeout(() => {
+          if (this.playing && !this.gridSync && this._pendingRestart) {
+            this._pendingRestart = false;
+            this.play();
+          }
+        }, remaining * 1000 + 300); // generous buffer so RAF fires first
       }
 
       dispose() {
@@ -2338,7 +2454,7 @@
         const normalized = (db + 60) / 66;
         const barH = Math.round(normalized * (H - 2));
         const x = ch === 0 ? 0 : barW + gap;
-        ctx.fillStyle = '#111';
+        ctx.fillStyle = '#161616';
         ctx.fillRect(x, 1, barW, H - 2);
         if (barH > 0) {
           let color;
@@ -2381,7 +2497,7 @@
       stub.id = 'stub' + id;
       stub.style.cssText = `left:${x - TW / 2}px;top:${y - TH / 2}px;
     display:flex;align-items:center;justify-content:center;opacity:0.3;`;
-      stub.innerHTML = `<div style="font-size:9px;color:#444;letter-spacing:.1em;font-weight:700;text-transform:uppercase">Decoding…</div>`;
+      stub.innerHTML = `<div style="font-size:9px;color:#555555;letter-spacing:.1em;font-weight:700;text-transform:uppercase">Decoding…</div>`;
       cv.appendChild(stub);
       samples.set(id, { id, name, x, y, playing: false, muted: false, gridSync: false });
       updateEmpty();
@@ -2487,6 +2603,75 @@
       updateEmpty();
     }
 
+    function duplicateSample(src) {
+      const id = nextId++;
+      const offset = 24;
+      const s = new Sample(id, src.name, src.raw, src.x + offset, src.y + offset);
+
+      // Copy all settings
+      s.color         = src.color;
+      s.loopStart     = src.loopStart;
+      s.loopEnd       = src.loopEnd;
+      s.filePosition  = src.filePosition;
+      s.reversed      = src.reversed;
+      if (src.reversed && src._revBuf) s._revBuf = src._revBuf; // share reversed buffer
+      s.setPitch(src.pitchST);
+      s.setStretch(src.stretchST);
+      s.setClipGain(src.clipGainDb);
+      s.gridSync      = src.gridSync;
+      s.subdiv        = src.subdiv;
+      s.subdivFactor  = src.subdivFactor;
+      s.gridMulti     = src.gridMulti;
+      s.attackTime    = src.attackTime;
+      s.releaseTime   = src.releaseTime;
+      s.crossfadeTime = src.crossfadeTime;
+      s.muted         = src.muted;
+
+      // Copy EQ bands
+      src.eqBands.forEach((b, i) => {
+        s.eqBands[i] = { ...b };
+        s.eqFilters[i].frequency.value = b.freq;
+        s.eqFilters[i].Q.value = b.q;
+        if (b.type === 'peaking') s.eqFilters[i].gain.value = b.gain || 0;
+      });
+
+      // Copy FX chain
+      src.fxChain.forEach(inst => {
+        const copy = s.addFxInstance(inst.type);
+        if (!copy) return;
+        if (inst.type === 'eq' && inst.eqData) {
+          inst.eqData.bands.forEach((b, i) => {
+            copy.eqData.bands[i] = { ...b };
+            copy.eqData.applyBand(i);
+          });
+        } else if (inst.params) {
+          Object.assign(copy.params, inst.params);
+          applyFxNodeParams(copy);
+        }
+      });
+
+      s.updateVol();
+      s.updatePan();
+      samples.set(id, s);
+      createTile(s);
+      startSample(s);
+      updateEmpty();
+      openCard(id);
+
+      // Reposition the new card so it's visibly offset from the source card
+      const srcInfo = openCards.get(src.id);
+      const newInfo = openCards.get(id);
+      if (srcInfo && newInfo) {
+        const ox = parseFloat(srcInfo.el.style.left) || 0;
+        const oy = parseFloat(srcInfo.el.style.top)  || 0;
+        const step = 30;
+        const nx = Math.max(8, Math.min(window.innerWidth  - 288, ox + step));
+        const ny = Math.max(48, Math.min(window.innerHeight - 480, oy + step));
+        newInfo.el.style.left = nx + 'px';
+        newInfo.el.style.top  = ny + 'px';
+      }
+    }
+
     function updateEmpty() {
       document.getElementById('empty').classList.toggle('gone', samples.size > 0);
       document.getElementById('sc').textContent = samples.size;
@@ -2513,6 +2698,7 @@
         return;
       }
 
+      if (!tile) tile = document.getElementById('t' + id);
       createCardForSample(s, tile);
     }
 
@@ -2532,7 +2718,6 @@
       let waveZoom = 1.0;
       let waveZoomCenter = 0.5;
       let _cardDragged = false;
-      let _fadeRestartTimer = null;
 
       function getZView() {
         const w = 1 / waveZoom;
@@ -2554,6 +2739,8 @@
         <div class="card-titlebar">
           <div class="card-color-dot"></div>
           <div class="card-name">SAMPLE</div>
+          <button class="card-dup" title="Duplicate">⧉</button>
+          <button class="card-remove" title="Remove">🗑</button>
           <button class="card-close">✕</button>
         </div>
         <div class="card-wave-row">
@@ -2567,6 +2754,7 @@
               <div class="lh clh-s"></div>
               <div class="lh clh-e"></div>
             </div>
+            <div class="card-fp"></div>
             <div class="card-ph"></div>
             <div class="card-zoom-label"></div>
             <canvas class="card-vu-canvas" width="20" height="80"></canvas>
@@ -2575,6 +2763,15 @@
         <div class="card-times">
           <span class="ct-s">Start: 0.000s</span>
           <span class="ct-e">End: 0.000s</span>
+        </div>
+        <div class="csec tight" style="padding:4px 8px 2px">
+          <div class="crow">
+            <span class="clbl">File Pos</span>
+            <div class="cslider">
+              <input type="range" class="card-filepos" min="0" max="1" step="0.0001" value="0">
+              <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
+            </div>
+          </div>
         </div>
         <div class="card-body">
           <div class="csec">
@@ -2660,7 +2857,6 @@
           <div class="fx-section" id="fx-section-${s.id}"></div>
           <div class="csec" style="border:none">
             <div class="crow">
-              <button class="cbtn danger card-remove">&#10005; Remove</button>
             </div>
           </div>
         </div>`;
@@ -2780,6 +2976,7 @@
         ctx.fillRect(0, H / 2, W, 1);
         const vw = ve - vs;
         const toX = norm => (norm - vs) / vw * W;
+
         if (s.attackTime > 0) {
           const atkEndNorm = Math.min(s.loopEnd, s.loopStart + s.attackTime / s.duration);
           const x0 = Math.max(0, toX(s.loopStart));
@@ -2829,6 +3026,18 @@
         }
       }
 
+      function updateFpHandle() {
+        const fpEl = q('.card-fp');
+        if (!fpEl) return;
+        const W = (q('.card-wave-wrap').clientWidth || 284) - 20;
+        const { start: vs, width: vw } = getZView();
+        const fpX = (s.filePosition - vs) / vw * W;
+        // Show whenever it's within view (can be left of loop region now)
+        const inView = fpX >= -7 && fpX <= W + 7;
+        fpEl.style.display = inView ? '' : 'none';
+        if (inView) fpEl.style.left = Math.round(fpX) + 'px';
+      }
+
       function updateLoopReg() {
         const W = (q('.card-wave-wrap').clientWidth || 284) - 20;
         const { start: vs, width: vw } = getZView();
@@ -2841,6 +3050,8 @@
         q('.ct-e').textContent = 'End: ' + s.endSec.toFixed(3) + 's';
         drawWave();
         refreshTileWave(s);
+        updateFpHandle();
+        if (typeof updateFilePosSlider === 'function') updateFilePosSlider();
       }
 
       function snapEndToSubdiv() {
@@ -2854,7 +3065,7 @@
       function bringToFront() { cardEl.style.zIndex = ++cardZTop; }
 
       // Position near tile
-      const tileRect = tile.getBoundingClientRect();
+      const tileRect = tile ? tile.getBoundingClientRect() : { left: window.innerWidth / 2 - 140, top: 80 };
       const CW = 280, CH = 420;
       const margin = 8;
       let cx = tileRect.left + TW / 2 - CW / 2;
@@ -2865,7 +3076,7 @@
       cardEl.style.top = cy + 'px';
       cardEl.style.zIndex = ++cardZTop;
 
-      tile.classList.add('active', 'expanded');
+      if (tile) tile.classList.add('active', 'expanded');
       document.body.appendChild(cardEl);
       requestAnimationFrame(() => cardEl.classList.add('open'));
       requestAnimationFrame(() => { drawWave(); updateLoopReg(); updateGainHandle(); });
@@ -2875,7 +3086,7 @@
 
       // ── Titlebar drag ──
       q('.card-titlebar').addEventListener('mousedown', e => {
-        if (e.button !== 0 || e.target.classList.contains('card-close')) return;
+        if (e.button !== 0 || e.target.classList.contains('card-close') || e.target.classList.contains('card-dup') || e.target.classList.contains('card-remove')) return;
         e.preventDefault(); e.stopPropagation();
         bringToFront();
         _cardDragged = false;
@@ -2903,11 +3114,12 @@
       });
 
       q('.card-titlebar').addEventListener('click', e => {
-        if (e.target.classList.contains('card-close')) return;
+        if (e.target.classList.contains('card-close') || e.target.classList.contains('card-dup') || e.target.classList.contains('card-remove')) return;
         if (!_cardDragged) closeCard(s.id);
       });
 
       q('.card-close').addEventListener('click', e => { e.stopPropagation(); closeCard(s.id); });
+      q('.card-dup').addEventListener('click', e => { e.stopPropagation(); duplicateSample(s); });
       cardEl.addEventListener('mousedown', () => bringToFront());
 
       // ── Loop handles ──
@@ -2931,11 +3143,24 @@
           };
           const mu = () => {
             document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
-            if (isStart && s.gridSync) { snapEndToSubdiv(); if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); } return; }
+            if (isStart && s.gridSync) { snapEndToSubdiv(); return; } // next grid tick picks up new bounds
             if (s.playing && !s.gridSync) {
               const hasFades = s.attackTime > 0 || s.releaseTime > 0 || s.crossfadeTime > 0;
-              if (hasFades) { s._fadedBuf = null; s.play(); }
-              else if (isStart) { const seekTo = s.startSec; const startAt = Tone.context.rawContext.currentTime + 0.005; s.player.seek(seekTo, startAt); s._anchorAcTime = startAt; s._anchorBufferPos = seekTo; }
+              if (hasFades) {
+                // Flag restart at next loop wrap boundary (detected in playheadPos)
+                clearTimeout(s._filePosTimer);
+                s._pendingRestart = true;
+                const pos = s.playheadPos();
+                const fwd = pos !== null ? (s.reversed ? 1 - pos : pos) : 1;
+                const remaining = Math.max(0, (1 - fwd) * s.lenSec / s._pbRate);
+                s._filePosTimer = setTimeout(() => {
+                  if (s.playing && !s.gridSync && s._pendingRestart) {
+                    s._pendingRestart = false;
+                    s.play();
+                  }
+                }, remaining * 1000 + 300);
+              }
+              // No fades: native loopStart/loopEnd updated live in setLoopBounds — no jump needed
             }
           };
           document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
@@ -2944,7 +3169,7 @@
 
       // ── Waveform zoom/pan ──
       q('.card-wave-wrap').addEventListener('mousedown', e => {
-        if (e.button !== 0 || e.target.closest('.lh')) return;
+        if (e.button !== 0 || e.target.closest('.lh') || e.target.closest('.card-fp')) return;
         e.preventDefault(); e.stopPropagation();
         const wrap = q('.card-wave-wrap');
         const rect = wrap.getBoundingClientRect(), W = rect.width - 20;
@@ -2973,7 +3198,7 @@
       });
 
       q('.card-wave-wrap').addEventListener('dblclick', e => {
-        if (e.target.closest('.lh')) return;
+        if (e.target.closest('.lh') || e.target.closest('.card-fp')) return;
         waveZoom = 1.0; waveZoomCenter = 0.5;
         drawWave(); updateLoopReg(); updateZoomLbl();
       });
@@ -3061,8 +3286,18 @@
           if (lbl) lbl.textContent = fmtFade(v);
           updateFadeDisabled(); drawWave(); updateLoopReg();
           if (s.playing && !s.gridSync) {
-            clearTimeout(_fadeRestartTimer);
-            _fadeRestartTimer = setTimeout(() => { s.play(); }, 60);
+            // Apply on next loop boundary — no position jump
+            s._pendingRestart = true;
+            clearTimeout(s._filePosTimer);
+            const _pos = s.playheadPos();
+            const _fwd = _pos !== null ? (s.reversed ? 1 - _pos : _pos) : 1;
+            const _rem = Math.max(0, (1 - _fwd) * s.lenSec / s._pbRate);
+            s._filePosTimer = setTimeout(() => {
+              if (s.playing && !s.gridSync && s._pendingRestart) {
+                s._pendingRestart = false;
+                s.play();
+              }
+            }, _rem * 1000 + 300);
           }
         });
       });
@@ -3086,6 +3321,65 @@
       initCslider(q('.card-attack').closest('.cslider'));
       initCslider(q('.card-release').closest('.cslider'));
       initCslider(q('.card-xfade').closest('.cslider'));
+
+      // ── File Position slider ──
+      const fmtPos = v => (+v).toFixed(3) + 's';
+      const fpSlider = q('.card-filepos');
+      fpSlider.min = 0;
+      fpSlider.max = s.endSec;
+      fpSlider.step = Math.max(0.001, s.duration / 10000);
+      fpSlider.value = s.filePosition * s.duration;
+      initCslider(fpSlider.closest('.cslider'), fmtPos);
+
+      function updateFilePosSlider() {
+        // min=0 so user can drag before the start handle; max=loopEnd
+        fpSlider.min = 0;
+        fpSlider.max = s.endSec;
+        fpSlider.value = s.filePosition * s.duration;
+        const wrap = fpSlider.closest('.cslider');
+        if (wrap?._syncPos) wrap._syncPos();
+        updateFpHandle();
+      }
+      updateFilePosSlider();
+
+      fpSlider.addEventListener('input', e => {
+        e.stopPropagation();
+        const sec = parseFloat(e.target.value);
+        s.setFilePosition(sec / s.duration);
+        updateFpHandle();
+        const lbl = e.target.closest('.cslider')?.querySelector('.cslider-lbl');
+        if (lbl) lbl.textContent = fmtPos(sec);
+      });
+
+      // ── File position handle drag (triangle on waveform) ──
+      q('.card-fp').addEventListener('mousedown', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const wrap = q('.card-wave-wrap');
+        const rect = wrap.getBoundingClientRect();
+        const W = rect.width - 20;
+        const mm = ev => {
+          const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
+          const { start: vs, width: vw } = getZView();
+          const norm = Math.max(0, Math.min(s.loopEnd, vs + relView * vw));
+          // Set directly (no restart scheduling during drag)
+          s.filePosition = norm;
+          updateFpHandle();
+          // Sync the slider
+          fpSlider.value = norm * s.duration;
+          if (fpSlider.closest('.cslider')?._syncPos) fpSlider.closest('.cslider')._syncPos();
+          const lbl = fpSlider.closest('.cslider')?.querySelector('.cslider-lbl');
+          if (lbl) lbl.textContent = fmtPos(norm * s.duration);
+        };
+        const mu = () => {
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+          // On release, apply with restart-scheduling behaviour
+          s.setFilePosition(s.filePosition);
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
 
       // ── Editable range fields (min/max) for each slider ──
       function wireRangeFields(sliderSel) {
@@ -3213,7 +3507,7 @@
             ];
             body.innerHTML =
               sliderRow('Time', 'fx-d-time', 0, 2, p.delayTime, 0.01) +
-              `<div class="fx-d-subdiv-row" style="display:none;flex-wrap:wrap;gap:2px;margin:0 -10px 8px;padding:4px 8px;border-top:1px solid #111;border-bottom:1px solid #111">
+              `<div class="fx-d-subdiv-row" style="display:none;flex-wrap:wrap;gap:2px;margin:0 -10px 8px;padding:4px 8px;border-top:1px solid #161616;border-bottom:1px solid #161616">
                 ${subdivList.map(([k,lbl]) => `<button class="cbtn fx-subdiv-btn" data-sub="${k}" style="background:none;font-size:8px;padding:3px 2px;min-width:0">${lbl}</button>`).join('')}
               </div>` +
               sliderRow('Feedback', 'fx-d-fb', 0, 0.99, p.feedback, 0.01) +
@@ -3234,8 +3528,8 @@
               p.delayTime = node.delayTime.value;
               body.querySelectorAll('.fx-subdiv-btn').forEach(b => {
                 const active = b.dataset.sub === sub;
-                b.style.color = active ? '#ccc' : '';
-                b.style.borderColor = active ? '#555' : '';
+                b.style.color = active ? '#e0e0e0' : '';
+                b.style.borderColor = active ? '#686868' : '';
               });
             }
 
@@ -3445,7 +3739,7 @@
 
         // Grid
         const y0 = gToY(0, H);
-        ctx.strokeStyle = '#1a1a1a';
+        ctx.strokeStyle = '#222222';
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
         [100, 1000, 10000].forEach(f => {
@@ -3493,7 +3787,7 @@
         ctx.font = '8px Courier New';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle = '#2a2a2a';
+        ctx.fillStyle = '#333333';
         [[100, '100'], [1000, '1k'], [10000, '10k']].forEach(([f, l]) => {
           ctx.fillText(l, fToX(f, W), H - 1);
         });
@@ -3535,9 +3829,9 @@
 
           ctx.beginPath();
           ctx.arc(bx, by, r, 0, Math.PI * 2);
-          ctx.fillStyle = isActive ? (dragBand === i ? '#fff' : col) : '#1e1e1e';
+          ctx.fillStyle = isActive ? (dragBand === i ? '#fff' : col) : '#262626';
           ctx.fill();
-          ctx.strokeStyle = isActive ? (dragBand === i ? col : '#fff') : '#333';
+          ctx.strokeStyle = isActive ? (dragBand === i ? col : '#fff') : '#404040';
           ctx.lineWidth = 1;
           ctx.stroke();
 
@@ -3545,7 +3839,7 @@
             ctx.font = '7px Courier New';
             ctx.textAlign = isHP ? 'right' : 'left';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = isActive ? col : '#333';
+            ctx.fillStyle = isActive ? col : '#404040';
             const label = isHP ? 'HP' : 'LP';
             ctx.fillText(label, isHP ? bx - r - 3 : bx + r + 3, by);
           }
@@ -4071,7 +4365,7 @@
         projectData.samples.push({
           name: s.name, x: s.x, y: s.y, color: s.color,
           pitchST: s.pitchST, stretchST: s.stretchST, reversed: s.reversed,
-          loopStart: s.loopStart, loopEnd: s.loopEnd,
+          loopStart: s.loopStart, loopEnd: s.loopEnd, filePosition: s.filePosition,
           muted: s.muted, gridSync: s.gridSync, subdiv: s.subdiv,
           subdivFactor: s.subdivFactor, gridMulti: s.gridMulti,
           attackTime: s.attackTime, releaseTime: s.releaseTime,
@@ -4138,6 +4432,7 @@
           s.setClipGain(sd.clipGainDb || 0);
           s.loopStart     = sd.loopStart     ?? 0;
           s.loopEnd       = sd.loopEnd       ?? 1;
+          s.filePosition  = sd.filePosition  ?? s.loopStart;
           s.gridSync      = sd.gridSync      || false;
           s.subdiv        = sd.subdiv        || 1;
           s.subdivFactor  = sd.subdivFactor  || 1;
