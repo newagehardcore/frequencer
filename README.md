@@ -41,7 +41,9 @@ Click a tile to open its floating edit card. Multiple cards can be open at once.
 
 **Timestretch** — ±24 semitones of playback rate (changes speed and pitch together).
 
-**Loop Points** — drag white handles on the waveform or use sliders (0.0–1.0). The waveform can be zoomed and panned by dragging (drag vertically to zoom, horizontally to pan; double-click to reset).
+**Loop Points** — drag white handles on the waveform, or use the **Start** and **End** sliders (full file range, in seconds). The waveform can be zoomed and panned by dragging (drag vertically to zoom, horizontally to pan; double-click to reset).
+
+**File Position** — sets where playback begins each loop iteration. In free mode it acts as a one-time start offset, applied on the next loop boundary. In Grid Sync mode it shifts the playhead start within the grid period without interrupting playback — the new value is picked up silently on the next subdivision trigger.
 
 **Fades** — Attack, Release, or Crossfade (equal-power). Crossfade and Attack/Release are mutually exclusive.
 
@@ -51,6 +53,7 @@ Click a tile to open its floating edit card. Multiple cards can be open at once.
 - Grid multiplier: `÷2` fires every other hit, `÷3` every third
 - Overflow: `Wait` or `Cut`
 - End handle auto-snaps to the subdivision boundary when sync is on
+- Loop point and file position changes take effect on the next subdivision — playback is never interrupted mid-loop
 
 **FX Rack** — add unlimited instances of any effect; click ✕ to remove.
 
@@ -99,7 +102,7 @@ Click a tile to open its floating edit card. Multiple cards can be open at once.
 AudioBuffer → Player(s) → PitchShift → EQ (5 bands) → FX chain → Panner → Volume → Output
 ```
 
-A second player is active only during crossfade transitions. Fades without crossfade are baked into the buffer directly.
+A second player (`xfPlayer`) handles crossfade transitions and, in Grid Sync mode, the wrapped portion of a loop when File Position is offset from the loop start. Fades without crossfade are baked into the buffer directly.
 
 ---
 

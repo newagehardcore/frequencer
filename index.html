@@ -1606,7 +1606,7 @@
         const atk = Math.min(this.attackTime, dur * 0.45);
         const rel = Math.min(this.releaseTime, dur * 0.45);
         const fg = this.fadeGain.gain;
-        fg.cancelScheduledValues(time - 0.0001);
+        fg.cancelScheduledValues(time);
         if (atk > 0) {
           fg.setValueAtTime(0, time);
           fg.linearRampToValueAtTime(1, time + atk);
@@ -1710,9 +1710,9 @@
         const firstStartSec = this._revFilePos; // first iteration may start offset from loop start
 
         // Reset gains: current=1, incoming=0
-        this.fadeGain.gain.cancelScheduledValues(now - 0.001);
+        this.fadeGain.gain.cancelScheduledValues(now);
         this.fadeGain.gain.setValueAtTime(1, now);
-        this.xfGain.gain.cancelScheduledValues(now - 0.001);
+        this.xfGain.gain.cancelScheduledValues(now);
         this.xfGain.gain.setValueAtTime(0, now);
 
         // players[0]/gains[0] = currently audible, players[1]/gains[1] = next to fade in
@@ -1895,14 +1895,33 @@
         const firstFireAt = '+' + offsetToNext.toFixed(4);
         const fire = (time) => {
           try { this.player.stop(time); } catch (e) { }
-          const dur = Math.max(0.01, this._revEnd - this._revFilePos);
+          try { this.xfPlayer.stop(time); } catch (e) { }
+          // Reset gains at the fire boundary — cancel any future-scheduled values and force to clean state
+          this.xfGain.gain.cancelScheduledValues(time);
+          this.xfGain.gain.setValueAtTime(0, time);
+          this.fadeGain.gain.cancelScheduledValues(time);
+          this.fadeGain.gain.setValueAtTime(1, time);
+
+          const startPos  = this._revFilePos;
+          const dur       = Math.max(0.01, this.lenSec / this._pbRate);
+          // Seg1: filePos → loopEnd (one-shot via player / fadeGain)
+          const seg1Dur   = Math.max(0.001, (this._revEnd - startPos) / this._pbRate);
+          // Seg2: loopStart → fill remaining grid period (via xfPlayer / xfGain)
+          const seg2Dur   = dur - seg1Dur;
+
           this._applyFadeGain(time, dur);
-          try {
-            this.player.start(time, this._revFilePos, dur);
-          } catch (e) { console.warn('Grid fire: player.start failed', e); }
+          this.player.loop = false;
+          try { this.player.start(time, startPos, seg1Dur); } catch (e) { console.warn('Grid seg1 failed', e); }
+
+          if (seg2Dur > 0.001) {
+            this.xfGain.gain.setValueAtTime(1, time + seg1Dur);
+            this.xfPlayer.loop = false;
+            try { this.xfPlayer.start(time + seg1Dur, this._revStart, seg2Dur); } catch (e) { console.warn('Grid seg2 failed', e); }
+          }
+
           Tone.Draw.schedule(() => {
             this._anchorAcTime    = time;
-            this._anchorBufferPos = this._revFilePos;
+            this._anchorBufferPos = startPos;
           }, time);
         };
 
@@ -1928,15 +1947,15 @@
 
       updateBufferAnchor() {
         if (!this.playing || this._anchorAcTime === null) return;
+        // Grid mode: fire() resets the anchor authoritatively via Tone.Draw.schedule — don't clobber it
+        if (this.gridSync && this._xfTimeout === null) return;
         const acNow = Tone.context.rawContext.currentTime;
         let elapsed = acNow - this._anchorAcTime;
         if (elapsed <= 0) return;
 
         let pos = this._anchorBufferPos + elapsed * this._pbRate;
-        if ((!this.gridSync || this._xfTimeout !== null) && pos >= this._revEnd) {
+        if (pos >= this._revEnd) {
           pos = this._revStart + ((pos - this._revStart) % this.lenSec);
-        } else if (this.gridSync && this._xfTimeout === null && pos >= this._revEnd) {
-          pos = this._revEnd;
         }
         this._anchorAcTime = acNow;
         this._anchorBufferPos = pos;
@@ -1950,8 +1969,20 @@
         const rStart = this._revStart, rEnd = this._revEnd;
 
         if (this.gridSync && this._xfTimeout === null) {
-          pos = Math.min(pos, rEnd);
-          const fwd = (pos - rStart) / this.lenSec;
+          // Mirror the two-segment fire() logic: seg1 plays filePos→loopEnd, seg2 plays loopStart→remainder
+          const startPos = this._anchorBufferPos; // = filePos captured at fire time via Tone.Draw.schedule
+          const gridDur  = Math.max(0.01, this.lenSec / this._pbRate);
+          const seg1Dur  = Math.max(0.001, (rEnd - startPos) / this._pbRate);
+          // Clamp elapsed to one grid period so the playhead never overshoots between fires
+          const t = Math.min(elapsed, gridDur);
+          let visPos;
+          if (t <= seg1Dur) {
+            visPos = Math.min(startPos + t * this._pbRate, rEnd);
+          } else {
+            visPos = rStart + (t - seg1Dur) * this._pbRate;
+            visPos = Math.min(visPos, rEnd);
+          }
+          const fwd = Math.max(0, Math.min(1, (visPos - rStart) / this.lenSec));
           return this.reversed ? 1 - fwd : fwd;
         }
 
@@ -1970,7 +2001,7 @@
             this.play();
           }
         }
-        const fwd = (pos - rStart) / this.lenSec;
+        const fwd = Math.max(0, Math.min(1, (pos - rStart) / this.lenSec));
         return this.reversed ? 1 - fwd : fwd;
       }
 
@@ -2002,16 +2033,7 @@
         this.filePosition = Math.max(0, Math.min(this.loopEnd - 0.001 / Math.max(0.001, this.duration), norm));
         if (!this.playing) return;
 
-        if (this.gridSync) {
-          // Grid: just restart on the next grid tick
-          const pos = this.playheadPos();
-          const fwd = pos !== null ? (this.reversed ? 1 - pos : pos) : 1;
-          const remaining = Math.max(0, (1 - fwd) * this.lenSec / this._pbRate);
-          this._filePosTimer = setTimeout(() => {
-            if (this.playing && this.gridSync) { this._cancelGrid(); this._stopPlayer(); this.playGrid(); }
-          }, remaining * 1000);
-          return;
-        }
+        if (this.gridSync) return; // fire() reads _revFilePos fresh each tick — no restart needed
 
         // Non-grid: flag a restart to fire at the next loop wrap (detected in playheadPos)
         this._pendingRestart = true;
@@ -2766,6 +2788,20 @@
         </div>
         <div class="csec tight" style="padding:4px 8px 2px">
           <div class="crow">
+            <span class="clbl">Start</span>
+            <div class="cslider">
+              <input type="range" class="card-loopstart" min="0" max="1" step="0.0001" value="0">
+              <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
+            </div>
+          </div>
+          <div class="crow">
+            <span class="clbl">End</span>
+            <div class="cslider">
+              <input type="range" class="card-loopend" min="0" max="1" step="0.0001" value="1">
+              <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
+            </div>
+          </div>
+          <div class="crow">
             <span class="clbl">File Pos</span>
             <div class="cslider">
               <input type="range" class="card-filepos" min="0" max="1" step="0.0001" value="0">
@@ -3052,6 +3088,7 @@
         refreshTileWave(s);
         updateFpHandle();
         if (typeof updateFilePosSlider === 'function') updateFilePosSlider();
+        if (typeof updateBoundSliders === 'function') updateBoundSliders();
       }
 
       function snapEndToSubdiv() {
@@ -3322,19 +3359,52 @@
       initCslider(q('.card-release').closest('.cslider'));
       initCslider(q('.card-xfade').closest('.cslider'));
 
-      // ── File Position slider ──
+      // ── Loop Start / End sliders ──
       const fmtPos = v => (+v).toFixed(3) + 's';
+      const lsSlider = q('.card-loopstart');
+      const leSlider = q('.card-loopend');
+      lsSlider.min = leSlider.min = 0;
+      lsSlider.max = leSlider.max = s.duration;
+      lsSlider.step = leSlider.step = Math.max(0.001, s.duration / 10000);
+      lsSlider.value = s.loopStart * s.duration;
+      leSlider.value = s.loopEnd * s.duration;
+      initCslider(lsSlider.closest('.cslider'), fmtPos);
+      initCslider(leSlider.closest('.cslider'), fmtPos);
+
+      function updateBoundSliders() {
+        lsSlider.max = leSlider.max = s.duration;
+        lsSlider.value = s.loopStart * s.duration;
+        leSlider.value = s.loopEnd * s.duration;
+        lsSlider.closest('.cslider')?._syncPos?.();
+        leSlider.closest('.cslider')?._syncPos?.();
+      }
+      updateBoundSliders();
+
+      lsSlider.addEventListener('input', e => {
+        e.stopPropagation();
+        const sec = Math.min(parseFloat(e.target.value), s.loopEnd * s.duration - 0.005);
+        s.setLoopBounds(sec / s.duration, s.loopEnd);
+        updateLoopReg();
+      });
+
+      leSlider.addEventListener('input', e => {
+        e.stopPropagation();
+        const sec = Math.max(parseFloat(e.target.value), s.loopStart * s.duration + 0.005);
+        s.setLoopBounds(s.loopStart, sec / s.duration);
+        updateLoopReg();
+      });
+
+      // ── File Position slider ──
       const fpSlider = q('.card-filepos');
       fpSlider.min = 0;
-      fpSlider.max = s.endSec;
+      fpSlider.max = s.duration;
       fpSlider.step = Math.max(0.001, s.duration / 10000);
       fpSlider.value = s.filePosition * s.duration;
       initCslider(fpSlider.closest('.cslider'), fmtPos);
 
       function updateFilePosSlider() {
-        // min=0 so user can drag before the start handle; max=loopEnd
         fpSlider.min = 0;
-        fpSlider.max = s.endSec;
+        fpSlider.max = s.duration;
         fpSlider.value = s.filePosition * s.duration;
         const wrap = fpSlider.closest('.cslider');
         if (wrap?._syncPos) wrap._syncPos();
