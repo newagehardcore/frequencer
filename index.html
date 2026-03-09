@@ -2925,6 +2925,8 @@
         sub.style.pointerEvents = on ? 'all' : 'none';
         q('.clh-e').style.pointerEvents = on ? 'none' : 'all';
         q('.clh-e').style.opacity = on ? '0.35' : '1';
+        const leRow = q('.card-loopend')?.closest('.crow');
+        if (leRow) { leRow.style.opacity = on ? '0.35' : '1'; leRow.style.pointerEvents = on ? 'none' : 'all'; }
         ['.card-dot-btn', '.card-tri-btn', '.card-skip2-btn', '.card-skip3-btn'].forEach(sel => {
           q(sel).style.opacity = on ? '1' : '0.4';
           q(sel).style.pointerEvents = on ? 'all' : 'none';
