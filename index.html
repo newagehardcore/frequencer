@@ -1798,6 +1798,33 @@
       'card-ps': { prop: '_psSlider', min: 0, max: 100, label: 'PaulStr', setter: null, fmtVal: v => { const r = Math.pow(200, v / 100); return v < 0.25 ? 'Off' : (r < 10 ? r.toFixed(1) : Math.round(r)) + '×'; } },
       'card-vol': { prop: null, min: 0, max: 1, label: 'Volume', setter: 'setVolPos', fmtVal: v => Math.round(v * 100) + '%' },
       'card-pan': { prop: null, min: -1, max: 1, label: 'Pan', setter: 'setPanPos', fmtVal: v => v < -0.01 ? 'L' + Math.round(-v * 100) : v > 0.01 ? 'R' + Math.round(v * 100) : 'C' },
+      // FX & EQ
+      'fx-r-decay': { prop: 'decay', min: 0.1, max: 30, label: 'Decay', isFx: true },
+      'fx-r-predly': { prop: 'preDelay', min: 0, max: 0.5, label: 'Pre-Dly', isFx: true },
+      'fx-r-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'fx-d-time': { prop: 'delayTime', min: 0, max: 2, label: 'Time', isFx: true },
+      'fx-d-fb': { prop: 'feedback', min: 0, max: 0.99, label: 'Feedback', isFx: true },
+      'fx-d-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'fx-tr-rate': { prop: 'frequency', min: 0.1, max: 20, label: 'Rate', isFx: true },
+      'fx-tr-depth': { prop: 'depth', min: 0, max: 1, label: 'Depth', isFx: true },
+      'fx-tr-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'fx-di-drive': { prop: 'distortion', min: 0, max: 1, label: 'Drive', isFx: true },
+      'fx-di-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'fx-ch-rate': { prop: 'frequency', min: 0.1, max: 10, label: 'Rate', isFx: true },
+      'fx-ch-dly': { prop: 'delayTime', min: 2, max: 20, label: 'Delay', isFx: true },
+      'fx-ch-depth': { prop: 'depth', min: 0, max: 1, label: 'Depth', isFx: true },
+      'fx-ch-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'fx-ph-rate': { prop: 'frequency', min: 0.1, max: 20, label: 'Rate', isFx: true },
+      'fx-ph-oct': { prop: 'octaves', min: 0, max: 8, label: 'Octaves', isFx: true },
+      'fx-ph-base': { prop: 'baseFrequency', min: 100, max: 4000, label: 'Base Hz', isFx: true },
+      'fx-ph-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'fx-bc-bits': { prop: 'bits', min: 1, max: 16, label: 'Bits', isFx: true },
+      'fx-bc-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      'eq-hp-freq': { prop: 'freq', min: 20, max: 20000, label: 'HP Freq', isEq: true, bandIdx: 0 },
+      'eq-pk1-freq': { prop: 'freq', min: 40, max: 10000, label: 'Pk1 Freq', isEq: true, bandIdx: 1 },
+      'eq-pk2-freq': { prop: 'freq', min: 100, max: 18000, label: 'Pk2 Freq', isEq: true, bandIdx: 2 },
+      'eq-pk3-freq': { prop: 'freq', min: 200, max: 20000, label: 'Pk3 Freq', isEq: true, bandIdx: 3 },
+      'eq-lp-freq': { prop: 'freq', min: 20, max: 20000, label: 'LP Freq', isEq: true, bandIdx: 4 },
     };
 
     // LFO preset shape generators (return breakpoint arrays [{x:0..1, y:0..1}])
@@ -1879,22 +1906,22 @@
         }
       }
 
-      addDestination(sampleId, param, min, max) {
+      addDestination(sampleId, param, min, max, fxUid) {
         // Don't duplicate
-        if (this.destinations.find(d => d.sampleId === sampleId && d.param === param)) return;
-        this.destinations.push({ sampleId, param, min, max });
+        if (this.destinations.find(d => d.sampleId === sampleId && d.param === param && d.fxUid === fxUid)) return;
+        this.destinations.push({ sampleId, param, min, max, fxUid });
       }
 
-      removeDestination(sampleId, param) {
-        this.destinations = this.destinations.filter(d => !(d.sampleId === sampleId && d.param === param));
+      removeDestination(sampleId, param, fxUid) {
+        this.destinations = this.destinations.filter(d => !(d.sampleId === sampleId && d.param === param && d.fxUid === fxUid));
       }
     }
 
     // Check if a parameter is being modulated by any LFO
-    function isParamModulated(sampleId, paramClass) {
+    function isParamModulated(sampleId, paramClass, fxUid = null) {
       for (const [, lfo] of lfos) {
         for (const d of lfo.destinations) {
-          if (d.sampleId === sampleId && d.param === paramClass) return lfo;
+          if (d.sampleId === sampleId && d.param === paramClass && d.fxUid === fxUid) return lfo;
         }
       }
       return null;
@@ -4534,6 +4561,7 @@
           if (!inst) return;
           const panelEl = document.createElement('div');
           panelEl.className = 'fx-panel';
+          panelEl.dataset.fxUid = inst.uid;
           panelEl.style.setProperty('--fx-color', s.color);
           const hdr = document.createElement('div');
           hdr.className = 'fx-panel-hdr';
@@ -4791,6 +4819,7 @@
         });
       }
 
+      eqCanvas._redraw = draw;
       requestAnimationFrame(initCanvas);
     }
 
@@ -5937,10 +5966,20 @@
           const s = samples.get(d.sampleId);
           const pInfo = LFO_PARAM_MAP[d.param];
           if (!s || !pInfo) continue;
+
+          let targetLbl = pInfo.label;
+          if (d.fxUid) {
+            const inst = s.fxChain.find(i => i.uid === d.fxUid);
+            if (inst) {
+              const fxName = (s.fxCatalog.find(f => f.id === inst.type)?.name || inst.type).toUpperCase().slice(0, 3);
+              targetLbl = `${fxName} · ${pInfo.label}`;
+            }
+          }
+
           const item = document.createElement('div');
           item.className = 'lfo-dest-item';
           item.innerHTML = `
-            <span class="lfo-dest-name">${s.name.substring(0, 10)} · ${pInfo.label}</span>
+            <span class="lfo-dest-name" title="${s.name} · ${targetLbl}">${s.name.substring(0, 8)}: ${targetLbl}</span>
             <input class="lfo-dest-field lfo-dest-min" type="text" value="${d.min}" title="Min">
             <input class="lfo-dest-field lfo-dest-max" type="text" value="${d.max}" title="Max">
             <button class="lfo-dest-unlink" title="Unlink">✕</button>
@@ -5964,8 +6003,8 @@
           });
           item.querySelector('.lfo-dest-unlink').addEventListener('click', e => {
             e.stopPropagation();
-            lfo.removeDestination(d.sampleId, d.param);
-            unlinkParamOverride(d.sampleId, d.param);
+            lfo.removeDestination(d.sampleId, d.param, d.fxUid);
+            unlinkParamOverride(d.sampleId, d.param, d.fxUid);
             updateDestList();
             updateLfoWires();
           });
@@ -6015,39 +6054,57 @@
           sl.style.outline = '';
         });
 
-        // Check if dropped on a cslider
+        // Check if dropped on a target
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
         if (!target) return;
         const sliderWrap = target.closest('.cslider');
-        if (!sliderWrap) return;
-        const cardEl = sliderWrap.closest('.sample-card');
+        const eqCanvas = target.classList.contains('card-eq-canvas') ? target : target.closest('.card-eq-canvas');
+        if (!sliderWrap && !eqCanvas) return;
+
+        const cardEl = (sliderWrap || eqCanvas).closest('.sample-card');
         if (!cardEl) return;
 
-        // Find which parameter
-        const native = sliderWrap.querySelector('input[type=range]');
-        if (!native) return;
         let paramClass = null;
-        for (const cls of native.classList) {
-          if (LFO_PARAM_MAP[cls]) { paramClass = cls; break; }
+        if (sliderWrap) {
+          const native = sliderWrap.querySelector('input[type=range]');
+          if (native) {
+            for (const cls of native.classList) {
+              if (LFO_PARAM_MAP[cls]) { paramClass = cls; break; }
+            }
+          }
         }
-        // Also check FX sliders — they won't be in the map, skip for now
+
+        // Drop on EQ canvas?
+        if (!paramClass && eqCanvas) {
+          const rect = eqCanvas.getBoundingClientRect();
+          const mx = ev.clientX - rect.left;
+          const bandWidth = rect.width / 5;
+          const bandIdx = Math.floor(mx / bandWidth);
+          const eqParams = ['eq-hp-freq', 'eq-pk1-freq', 'eq-pk2-freq', 'eq-pk3-freq', 'eq-lp-freq'];
+          paramClass = eqParams[Math.max(0, Math.min(4, bandIdx))];
+        }
+
         if (!paramClass) return;
+
+        // Determine FX UID if it's an FX or EQ in an FX panel
+        const fxPanel = sliderWrap ? sliderWrap.closest('.fx-panel') : target.closest('.fx-panel');
+        const fxUid = fxPanel ? parseInt(fxPanel.dataset.fxUid) : null;
 
         // Find the sample
         const sampleId = findSampleIdFromCard(cardEl);
         if (!sampleId) return;
 
         // Check not already linked from another LFO
-        const existing = isParamModulated(sampleId, paramClass);
+        const existing = isParamModulated(sampleId, paramClass, fxUid);
         if (existing) {
-          existing.removeDestination(sampleId, paramClass);
+          existing.removeDestination(sampleId, paramClass, fxUid);
           const existNode = lfoNodes.get(existing.id);
           if (existNode) existNode.updateDestList();
         }
 
         const pInfo = LFO_PARAM_MAP[paramClass];
-        lfo.addDestination(sampleId, paramClass, pInfo.min, pInfo.max);
-        applyParamOverride(sampleId, paramClass, lfo);
+        lfo.addDestination(sampleId, paramClass, pInfo.min, pInfo.max, fxUid);
+        applyParamOverride(sampleId, paramClass, lfo, fxUid);
         lfoNodes.get(lfo.id)?.updateDestList();
         updateLfoWires();
       };
@@ -6083,9 +6140,24 @@
           // Find the target slider on an open card
           const cardInfo = openCards.get(d.sampleId);
           if (!cardInfo) continue;
-          const slider = cardInfo.el.querySelector('.' + d.param);
-          if (!slider) continue;
-          const targetEl = slider.closest('.cslider') || slider;
+
+          let targetEl = null;
+          const pInfo = LFO_PARAM_MAP[d.param];
+          if (pInfo && pInfo.isEq && !d.fxUid) {
+            // Main EQ canvas
+            targetEl = cardInfo.el.querySelector('.card-eq-canvas');
+          } else if (d.fxUid) {
+            const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${d.fxUid}"]`);
+            if (panel) {
+              if (pInfo && pInfo.isEq) targetEl = panel.querySelector('.card-eq-canvas');
+              else targetEl = panel.querySelector('.' + d.param)?.closest('.cslider');
+            }
+          } else {
+            const slider = cardInfo.el.querySelector('.' + d.param);
+            if (slider) targetEl = slider.closest('.cslider') || slider;
+          }
+
+          if (!targetEl) continue;
           const sliderRect = targetEl.getBoundingClientRect();
           const ex = sliderRect.left + sliderRect.width / 2 - cvRect.left;
           const ey = sliderRect.top + sliderRect.height / 2 - cvRect.top;
@@ -6102,36 +6174,64 @@
     }
 
     // ── Apply/remove override styling on a slider ──
-    function applyParamOverride(sampleId, paramClass, lfo) {
+    function applyParamOverride(sampleId, paramClass, lfo, fxUid = null) {
       const cardInfo = openCards.get(sampleId);
       if (!cardInfo) return;
-      const slider = cardInfo.el.querySelector('.' + paramClass);
-      if (!slider) return;
-      const wrap = slider.closest('.cslider');
-      if (!wrap) return;
-      wrap.classList.add('lfo-override');
-      wrap.style.setProperty('--lfo-color', lfo.color);
-      // Add badge if not present
-      const row = wrap.closest('.crow');
-      if (row && !row.querySelector('.lfo-badge')) {
-        const badge = document.createElement('span');
-        badge.className = 'lfo-badge';
-        badge.textContent = 'LFO';
-        badge.style.setProperty('color', lfo.color);
-        row.appendChild(badge);
+      let targetWrap = null;
+      const pInfo = LFO_PARAM_MAP[paramClass];
+
+      if (fxUid) {
+        const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${fxUid}"]`);
+        if (panel) {
+          if (pInfo.isEq) targetWrap = panel.querySelector('.card-eq-canvas');
+          else targetWrap = panel.querySelector('.' + paramClass)?.closest('.cslider');
+        }
+      } else if (pInfo && pInfo.isEq) {
+        targetWrap = cardInfo.el.querySelector('.card-eq-canvas');
+      } else {
+        const slider = cardInfo.el.querySelector('.' + paramClass);
+        if (slider) targetWrap = slider.closest('.cslider');
+      }
+
+      if (!targetWrap) return;
+      targetWrap.classList.add('lfo-override');
+      targetWrap.style.setProperty('--lfo-color', lfo.color);
+      // Add badge if not present and not a canvas
+      if (targetWrap.classList.contains('cslider')) {
+        const row = targetWrap.closest('.crow');
+        if (row && !row.querySelector('.lfo-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'lfo-badge';
+          badge.textContent = 'LFO';
+          badge.style.setProperty('color', lfo.color);
+          row.appendChild(badge);
+        }
       }
     }
 
-    function unlinkParamOverride(sampleId, paramClass) {
+    function unlinkParamOverride(sampleId, paramClass, fxUid = null) {
       const cardInfo = openCards.get(sampleId);
       if (!cardInfo) return;
-      const slider = cardInfo.el.querySelector('.' + paramClass);
-      if (!slider) return;
-      const wrap = slider.closest('.cslider');
-      if (!wrap) return;
-      wrap.classList.remove('lfo-override');
-      wrap.style.removeProperty('--lfo-color');
-      const row = wrap.closest('.crow');
+      let targetWrap = null;
+      const pInfo = LFO_PARAM_MAP[paramClass];
+
+      if (fxUid) {
+        const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${fxUid}"]`);
+        if (panel) {
+          if (pInfo.isEq) targetWrap = panel.querySelector('.card-eq-canvas');
+          else targetWrap = panel.querySelector('.' + paramClass)?.closest('.cslider');
+        }
+      } else if (pInfo && pInfo.isEq) {
+        targetWrap = cardInfo.el.querySelector('.card-eq-canvas');
+      } else {
+        const slider = cardInfo.el.querySelector('.' + paramClass);
+        if (slider) targetWrap = slider.closest('.cslider');
+      }
+
+      if (!targetWrap) return;
+      targetWrap.classList.remove('lfo-override');
+      targetWrap.style.removeProperty('--lfo-color');
+      const row = targetWrap.closest('.crow');
       if (row) {
         const badge = row.querySelector('.lfo-badge');
         if (badge) badge.remove();
@@ -6143,7 +6243,7 @@
       for (const [, lfo] of lfos) {
         for (const d of lfo.destinations) {
           if (d.sampleId === sampleId) {
-            applyParamOverride(sampleId, d.param, lfo);
+            applyParamOverride(sampleId, d.param, lfo, d.fxUid);
           }
         }
       }
@@ -6176,8 +6276,31 @@
 
           const modVal = d.min + val * (d.max - d.min);
 
-          // Apply the value to the sample
-          if (pInfo.setter && typeof s[pInfo.setter] === 'function') {
+          // Apply to Sample / FX / EQ
+          if (d.fxUid) {
+            const inst = s.fxChain.find(i => i.uid === d.fxUid);
+            if (inst) {
+              if (pInfo.isEq) {
+                const band = inst.eqData.bands[pInfo.bandIdx];
+                band[pInfo.prop] = modVal;
+                inst.eqData.applyBand(pInfo.bandIdx);
+              } else {
+                inst.params[pInfo.prop] = modVal;
+                const nodeParam = inst.node[pInfo.prop];
+                if (nodeParam && typeof nodeParam === 'object' && 'value' in nodeParam) {
+                  nodeParam.value = modVal;
+                } else {
+                  inst.node[pInfo.prop] = modVal;
+                }
+              }
+            }
+          } else if (pInfo.isEq) {
+            const band = s.eqBands[pInfo.bandIdx];
+            band[pInfo.prop] = modVal;
+            const filter = s.eqFilters[pInfo.bandIdx];
+            if (pInfo.prop === 'freq') filter.frequency.value = modVal;
+            else if (pInfo.prop === 'gain') filter.gain.value = modVal;
+          } else if (pInfo.setter && typeof s[pInfo.setter] === 'function') {
             s[pInfo.setter](modVal);
           } else if (pInfo.prop === '_psSlider') {
             const ratio = modVal < 0.25 ? 1 : Math.pow(200, modVal / 100);
@@ -6189,14 +6312,22 @@
             }
           }
 
-          // Update slider position on open card
+          // Update open card UI
           const cardInfo = openCards.get(d.sampleId);
           if (cardInfo) {
-            const sliderEl = cardInfo.el.querySelector('.' + d.param);
-            if (sliderEl) {
-              sliderEl.value = modVal;
-              const wrap = sliderEl.closest('.cslider');
-              if (wrap?._syncPos) wrap._syncPos();
+            let context = cardInfo.el;
+            if (d.fxUid) context = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${d.fxUid}"]`) || cardInfo.el;
+
+            if (pInfo.isEq) {
+              const canvas = context.querySelector('.card-eq-canvas');
+              if (canvas && canvas._redraw) canvas._redraw();
+            } else {
+              const slider = context.querySelector('.' + d.param);
+              if (slider) {
+                slider.value = modVal;
+                const wrap = slider.closest('.cslider');
+                if (wrap?._syncPos) wrap._syncPos();
+              }
             }
           }
         }
