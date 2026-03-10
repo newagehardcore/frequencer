@@ -72,6 +72,20 @@ Click a tile to open its floating edit card. Multiple cards can be open at once.
 
 ---
 
+## LFO Modulator System
+
+Add LFOs to your canvas to modulate any sample parameter (Pitch, Stretch, Volume, Pan, Loop Points, or FX parameters).
+
+- **Presets** — Sine, Square, Triangle, Random, and Blank (flat line).
+- **Custom Shapes** — Click to add breakpoints, Shift + Click to remove. Drag to reshape.
+- **Modulation Wires** — Drag from the LFO port onto any parameter slider in a sample card to create a link.
+- **Range Control** — Set Min/Max boundaries for each modulation target.
+- **Sync** — Free-running (seconds) or locked to the project grid (bars/subdivisions).
+- **Organization** — Minimize (compact tile view), Duplicate (clone all settings), or Delete.
+- **Visual Feedback** — Sample tiles physically move across the canvas when Volume or Pan are modulated (while cards are closed).
+
+---
+
 ## Transport
 
 | Control | Function | Key |
