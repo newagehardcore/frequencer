@@ -542,6 +542,54 @@
       pointer-events: none;
     }
 
+    /* Tile M/S buttons */
+    .tile-mbtn,
+    .tile-sbtn {
+      position: absolute;
+      right: 12px;
+      width: 14px;
+      height: 14px;
+      background: #222;
+      border: 1px solid #444;
+      color: #888;
+      font-size: 8px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      padding: 0;
+      line-height: 1;
+      transition: all 0.1s;
+    }
+
+    .tile-mbtn {
+      top: 4px;
+    }
+
+    .tile-sbtn {
+      top: 20px;
+    }
+
+    .tile-mbtn:hover,
+    .tile-sbtn:hover {
+      border-color: #fff;
+      color: #fff;
+    }
+
+    .tile-mbtn.mute-on {
+      background: #ccaa00;
+      color: #000;
+      border-color: #ccaa00;
+    }
+
+    .tile-sbtn.solo-on {
+      background: #cc2200;
+      color: #fff;
+      border-color: #cc2200;
+    }
+
     /* M / S buttons */
     .ms-btn {
       flex: 0 0 26px !important;
@@ -2934,6 +2982,16 @@
         t.classList.toggle('playing', this.playing);
         t.classList.toggle('muted', this.muted);
         t.classList.toggle('grid-on', this.gridSync);
+
+        const mbtn = t.querySelector('.tile-mbtn');
+        if (mbtn) mbtn.classList.toggle('mute-on', this.muted);
+
+        if (openCards.has(this.id)) {
+          const card = openCards.get(this.id).el;
+          const cardM = card.querySelector('.card-mute-btn');
+          if (cardM) cardM.classList.toggle('mute-on', this.muted);
+        }
+
         // Color-aware border: full color when playing, dimmed at rest
         t.style.borderColor = this.playing ? this.color : (this.color + '55');
         refreshSoloVis();
@@ -2977,6 +3035,32 @@
       lb.className = 'tile-lbl';
       lb.textContent = s.name;
       t.appendChild(lb);
+
+      const mbtn = document.createElement('button');
+      mbtn.className = 'tile-mbtn';
+      mbtn.textContent = 'M';
+      mbtn.title = 'Mute';
+      if (s.muted) mbtn.classList.add('mute-on');
+      mbtn.onclick = (e) => {
+        e.stopPropagation();
+        s.muted = !s.muted;
+        s.vol.volume.value = s._effectiveDb();
+        s._renderTile();
+      };
+      t.appendChild(mbtn);
+
+      const sbtn = document.createElement('button');
+      sbtn.className = 'tile-sbtn';
+      sbtn.textContent = 'S';
+      sbtn.title = 'Solo';
+      if (soloId === s.id) sbtn.classList.add('solo-on');
+      sbtn.onclick = (e) => {
+        e.stopPropagation();
+        soloId = (soloId === s.id) ? null : s.id;
+        applyAllVols();
+        refreshSoloVis();
+      };
+      t.appendChild(sbtn);
 
       requestAnimationFrame(() => drawTileWave(wc, s));
 
@@ -3339,6 +3423,15 @@
         if (!t) continue;
         t.classList.toggle('soloed', soloId !== null && id === soloId);
         t.classList.toggle('solo-dim', soloId !== null && id !== soloId);
+        const sbtn = t.querySelector('.tile-sbtn');
+        if (sbtn) sbtn.classList.toggle('solo-on', soloId === id);
+
+        // Sync card if open
+        if (openCards.has(id)) {
+          const card = openCards.get(id).el;
+          const btn = card.querySelector('.card-solo-btn');
+          if (btn) btn.classList.toggle('solo-on', soloId === id);
+        }
       }
     }
 
