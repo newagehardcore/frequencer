@@ -120,11 +120,3 @@ AudioBuffer → Player(s) → PitchShift → EQ (5 bands) → FX chain → Panne
 
 A second player (`xfPlayer`) handles crossfade transitions and, in Grid Sync mode, the wrapped portion of a loop when File Position is offset from the loop start. Fades without crossfade are baked into the buffer directly.
 
----
-
-## Notes
-
-- No session save/load — refreshing clears everything.
-- No undo.
-- No MIDI sync.
-- Single `index.html` + `Tone.js`. No build step.

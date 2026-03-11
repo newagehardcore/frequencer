@@ -18,13 +18,13 @@
 
     :root {
       --bg: #000000;
-      --surface: #111111;
-      --panel: #161616;
-      --b1: #222222;
-      --b2: #333333;
-      --b3: #555555;
-      --mid: #aaaaaa;
-      --hi: #e0e0e0;
+      --surface: #000000;
+      --panel: #000000;
+      --b1: #0c0c0c;
+      --b2: rgba(255,255,255,0.08);
+      --b3: rgba(255,255,255,0.22);
+      --mid: rgba(255,255,255,0.5);
+      --hi: #ffffff;
       --white: #ffffff;
       --hdr: 0px;
       --ftr: 60px;
@@ -145,7 +145,7 @@
     #save-btn,
     #open-btn {
       background: none;
-      border: 1px solid var(--b2);
+      border: 1px solid #444;
       color: var(--mid);
       font-family: Helvetica, Arial, sans-serif;
       font-size: 11px;
@@ -181,39 +181,13 @@
       right: 0;
       bottom: var(--ftr);
       background: var(--bg);
-      background-image: radial-gradient(circle, #333333 1px, transparent 1px);
+      background-image: radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px);
       background-size: 24px 24px;
       overflow: hidden;
     }
 
-    #cv-gv {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      background: rgba(255, 255, 255, 0.05);
-      pointer-events: none;
-    }
-
-    #cv-gh {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.05);
-      pointer-events: none;
-    }
-
-    .albl {
-      position: absolute;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.12);
-      pointer-events: none;
+    #cv-gv, #cv-gh, .albl {
+      display: none;
     }
 
     #lbl-tl {
@@ -340,7 +314,7 @@
       font-weight: 700;
       letter-spacing: -0.03em;
       text-transform: uppercase;
-      color: var(--b3);
+      color: rgba(255,255,255,0.45);
       background: rgba(0, 0, 0, 0.8);
       white-space: nowrap;
       overflow: hidden;
@@ -378,8 +352,8 @@
       position: fixed;
       z-index: 400;
       width: 280px;
-      background: #0d0d0d;
-      border: 1px solid #404040;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.2);
       overflow: hidden;
       max-height: 0;
       opacity: 0;
@@ -400,8 +374,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #222222;
-      background: #161616;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: #000;
     }
 
     .card-titlebar:active {
@@ -465,7 +439,7 @@
       position: relative;
       flex: 1;
       background: #000;
-      border: 1px solid #222222;
+      border: 1px solid rgba(255,255,255,0.12);
       overflow: hidden;
       cursor: zoom-in;
     }
@@ -579,15 +553,15 @@
     }
 
     .tile-mbtn.mute-on {
-      background: #ccaa00;
+      background: #fff;
       color: #000;
-      border-color: #ccaa00;
+      border-color: #fff;
     }
 
     .tile-sbtn.solo-on {
-      background: #cc2200;
-      color: #fff;
-      border-color: #cc2200;
+      background: #fff;
+      color: #000;
+      border-color: #fff;
     }
 
     /* M / S buttons */
@@ -599,25 +573,25 @@
     }
 
     .cbtn.mute-on {
-      background: #ccaa00;
+      background: #fff;
       color: #000;
-      border-color: #ccaa00;
+      border-color: #fff;
     }
 
     .cbtn.mute-on:hover {
-      background: #ffcc00;
-      border-color: #ffcc00;
+      background: #fff;
+      border-color: #fff;
     }
 
     .cbtn.solo-on {
-      background: #cc2200;
-      color: #fff;
-      border-color: #cc2200;
+      background: #fff;
+      color: #000;
+      border-color: #fff;
     }
 
     .cbtn.solo-on:hover {
-      background: #ff4422;
-      border-color: #ff4422;
+      background: #fff;
+      border-color: #fff;
     }
 
     /* Editable range-field inputs flanking sliders */
@@ -625,8 +599,8 @@
       width: 28px;
       height: 18px;
       background: #000;
-      border: 1px solid #222222;
-      color: #555555;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.4);
       font-family: 'Courier New', monospace;
       font-size: 8px;
       text-align: center;
@@ -636,8 +610,8 @@
     }
 
     .rng-field:focus {
-      border-color: #686868;
-      color: #b8b8b8;
+      border-color: rgba(255,255,255,0.35);
+      color: #fff;
     }
 
     /* ═══ CUSTOM ENVELOPE SLIDER ═══ */
@@ -660,8 +634,8 @@
       bottom: 0;
       transform: translateX(-50%);
       min-width: 46px;
-      background: #222222;
-      border: 1px solid #404040;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.25);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -676,7 +650,7 @@
     .cslider-lbl {
       font-size: 9px;
       font-family: 'Courier New', monospace;
-      color: #a6a6a6;
+      color: rgba(255,255,255,0.5);
       pointer-events: none;
       white-space: nowrap;
     }
@@ -732,7 +706,7 @@
       justify-content: space-between;
       padding: 2px 8px 0;
       font-size: 8px;
-      color: #555555;
+      color: rgba(255,255,255,0.3);
       font-family: 'Courier New', monospace;
       letter-spacing: -0.03em;
     }
@@ -747,13 +721,13 @@
       width: 100%;
       cursor: crosshair;
       background: #000;
-      border: 1px solid #222222;
+      border: 1px solid rgba(255,255,255,0.12);
       margin-top: 2px;
     }
 
     .eq-hint {
       font-size: 8px;
-      color: #333333;
+      color: rgba(255,255,255,0.2);
       text-align: center;
       padding: 3px 0 0;
       font-family: 'Courier New', monospace;
@@ -762,7 +736,7 @@
 
     /* ═══ FX CHAIN SECTION ═══ */
     .fx-section {
-      border-top: 1px solid #222222;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     .fx-btn-row {
@@ -770,27 +744,27 @@
       flex-wrap: wrap;
       gap: 3px;
       padding: 6px 8px;
-      border-bottom: 1px solid #161616;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     .fx-btn {
       flex: 1;
       background: none;
-      border: 1px solid #404040;
+      border: 1px solid rgba(255,255,255,0.18);
       font-family: 'Courier New', monospace;
       font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #7d7d7d;
+      color: rgba(255,255,255,0.45);
       cursor: pointer;
       padding: 3px 6px;
       transition: color 0.15s, border-color 0.15s;
     }
 
     .fx-btn:hover {
-      color: #cccccc;
-      border-color: #686868;
+      color: #fff;
+      border-color: rgba(255,255,255,0.5);
     }
 
     .fx-panel-hdr {
@@ -802,7 +776,7 @@
     .fx-panel-remove {
       background: none;
       border: none;
-      color: #404040;
+      color: rgba(255,255,255,0.25);
       cursor: pointer;
       font-size: 9px;
       padding: 2px 4px;
@@ -810,11 +784,11 @@
     }
 
     .fx-panel-remove:hover {
-      color: #a6a6a6;
+      color: #fff;
     }
 
     .fx-panel {
-      border-bottom: 1px solid #161616;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
 
     .fx-panel-hdr {
@@ -827,13 +801,13 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--fx-color, #686868);
+      color: rgba(255,255,255,0.6);
     }
 
     .fx-body-inner {
       padding: 6px 10px 10px;
-      border-top: 1px solid #161616;
-      background: #080808;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: #000;
     }
 
     .fx-body-inner .crow {
@@ -841,14 +815,14 @@
     }
 
     .fx-body-inner .clbl {
-      color: #404040;
+      color: rgba(255,255,255,0.3);
       font-size: 8px;
       width: 50px;
       min-width: 50px;
     }
 
     .fx-body-inner .clbl.on {
-      color: var(--fx-color, #a6a6a6);
+      color: rgba(255,255,255,0.7);
     }
 
     .fx-eq-body canvas {
@@ -856,12 +830,12 @@
       width: 100%;
       cursor: crosshair;
       background: #000;
-      border: 1px solid #222222;
+      border: 1px solid rgba(255,255,255,0.12);
       margin-top: 2px;
     }
 
     .csec {
-      border-bottom: 1px solid #161616;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       padding: 7px 8px;
     }
 
@@ -930,8 +904,8 @@
     }
 
     .cbtn.danger:hover {
-      border-color: #ff3333;
-      color: #ff3333;
+      border-color: #fff;
+      color: #fff;
     }
 
 
@@ -1084,7 +1058,7 @@
       height: var(--ftr);
       z-index: 300;
       background: var(--surface);
-      border-top: 1px solid var(--b2);
+      border-top: 1px solid #333;
       display: flex;
       align-items: center;
       padding: 0 12px;
@@ -1102,14 +1076,11 @@
       border-left: 1px solid var(--b1);
     }
 
-    /* transport buttons — 90s raised look */
     .tbtn {
       width: 32px;
       height: 32px;
       background: var(--b1);
-      border: 1px solid var(--b3);
-      border-right-color: #000;
-      border-bottom-color: #000;
+      border: 1px solid #444;
       color: var(--mid);
       cursor: pointer;
       display: flex;
@@ -1120,13 +1091,12 @@
 
     .tbtn:hover {
       color: #fff;
-      border-color: var(--b3);
+      border-color: #666;
     }
 
     .tbtn:active {
-      border-color: #000;
-      border-right-color: var(--b3);
-      border-bottom-color: var(--b3);
+      background: #fff;
+      color: #000;
     }
 
     .tbtn.playing {
@@ -1281,9 +1251,9 @@
 
     /* ═══ RECORD BUTTON ═══ */
     .tbtn.recording {
-      background: #cc2200;
-      border-color: #ff3333;
-      color: #fff;
+      background: #fff;
+      border-color: #fff;
+      color: #000;
       animation: rec-blink 1s step-start infinite;
     }
 
@@ -1291,13 +1261,15 @@
 
       0%,
       100% {
-        background: #cc2200;
-        border-color: #ff3333;
+        background: #fff;
+        border-color: #fff;
+        color: #000;
       }
 
       50% {
-        background: #222222;
-        border-color: #ff3333;
+        background: #000;
+        border-color: rgba(255,255,255,0.4);
+        color: #fff;
       }
     }
 
@@ -1311,7 +1283,7 @@
     }
 
     #rec-timer.active {
-      color: #ff4422;
+      color: rgba(255,255,255,0.8);
     }
 
     /* ═══ PAULSTRETCH LOADING OVERLAY ═══ */
@@ -1353,8 +1325,8 @@
     .lfo-node {
       position: absolute;
       width: 220px;
-      background: #0d0d0d;
-      border: 1px solid #404040;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.2);
       z-index: 200;
       cursor: default;
       user-select: none;
@@ -1369,8 +1341,8 @@
       align-items: center;
       gap: 8px;
       padding: 5px 8px;
-      border-bottom: 1px solid #222;
-      background: #161616;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: #000;
       cursor: grab;
     }
 
@@ -1394,7 +1366,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #e0e0e0;
+      color: #fff;
     }
 
     .lfo-min,
@@ -1402,7 +1374,7 @@
     .lfo-remove {
       background: none;
       border: none;
-      color: #686868;
+      color: rgba(255,255,255,0.4);
       font-size: 13px;
       cursor: pointer;
       padding: 0 2px;
@@ -1422,7 +1394,7 @@
       margin: 6px 8px;
       height: 60px;
       background: #000;
-      border: 1px solid #222;
+      border: 1px solid rgba(255,255,255,0.12);
       cursor: crosshair;
     }
 
@@ -1456,7 +1428,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: -0.03em;
-      color: #7d7d7d;
+      color: rgba(255,255,255,0.45);
       padding-left: 6px;
       line-height: 16px;
     }
@@ -1489,21 +1461,21 @@
     .lfo-preset-btn {
       flex: 1;
       background: none;
-      border: 1px solid #404040;
+      border: 1px solid rgba(255,255,255,0.18);
       font-family: 'Courier New', monospace;
       font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #7d7d7d;
+      color: rgba(255,255,255,0.45);
       cursor: pointer;
       padding: 3px 4px;
       transition: color 0.15s, border-color 0.15s;
     }
 
     .lfo-preset-btn:hover {
-      color: #ccc;
-      border-color: #686868;
+      color: #fff;
+      border-color: rgba(255,255,255,0.5);
     }
 
     .lfo-preset-btn.act {
@@ -1532,7 +1504,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: -0.03em;
-      color: #7d7d7d;
+      color: rgba(255,255,255,0.45);
       width: 36px;
       flex-shrink: 0;
     }
@@ -1543,15 +1515,15 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #333;
-      border: 2px solid #555;
+      background: #000;
+      border: 2px solid rgba(255,255,255,0.4);
       cursor: crosshair;
       transition: border-color 0.15s, background 0.15s;
     }
 
     .lfo-wire-port:hover {
       border-color: #fff;
-      background: #555;
+      background: #1a1a1a;
     }
 
     .lfo-dest-list {
@@ -1565,9 +1537,9 @@
       align-items: center;
       gap: 4px;
       padding: 3px 0;
-      border-bottom: 1px solid #161616;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       font-size: 8px;
-      color: #a6a6a6;
+      color: rgba(255,255,255,0.55);
       font-family: 'Courier New', monospace;
     }
 
@@ -1589,8 +1561,8 @@
       width: 32px;
       height: 14px;
       background: #000;
-      border: 1px solid #222;
-      color: #7d7d7d;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.4);
       font-family: 'Courier New', monospace;
       font-size: 7px;
       text-align: center;
@@ -1599,14 +1571,14 @@
     }
 
     .lfo-dest-field:focus {
-      border-color: #686868;
-      color: #b8b8b8;
+      border-color: rgba(255,255,255,0.35);
+      color: #fff;
     }
 
     .lfo-dest-unlink {
       background: none;
       border: none;
-      color: #404040;
+      color: rgba(255,255,255,0.25);
       cursor: pointer;
       font-size: 10px;
       padding: 0 2px;
@@ -1615,24 +1587,30 @@
     }
 
     .lfo-dest-unlink:hover {
-      color: #ff4422;
+      color: #fff;
     }
 
     #lfo-wires {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       pointer-events: none;
-      z-index: 199;
+      z-index: 500;
       overflow: visible;
     }
 
     .lfo-wire-line {
       fill: none;
       stroke-width: 2;
-      opacity: 0.6;
+    }
+    .lfo-wire-under {
+      stroke-dasharray: 5 4;
+      opacity: 0.38;
+    }
+    .lfo-wire-over {
+      opacity: 0.8;
     }
 
     .lfo-wire-temp {
@@ -1650,7 +1628,7 @@
     }
 
     .cslider.lfo-override .cslider-thumb {
-      border-color: var(--lfo-color, #00cccc);
+      border-color: rgba(255,255,255,0.7);
     }
 
     .lfo-badge {
@@ -1659,9 +1637,15 @@
       font-family: 'Courier New', monospace;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--lfo-color, #00cccc);
+      color: rgba(255,255,255,0.7);
       flex-shrink: 0;
       margin-left: 2px;
+    }
+
+    /* Force color dots to white in B&W theme */
+    .card-color-dot,
+    .lfo-color-dot {
+      background: #fff !important;
     }
 
     .lfo-grid-row {
@@ -1715,8 +1699,9 @@
     <div class="albl" id="lbl-br">R pan · -inf</div>
     <div id="empty" class="gone"></div>
     <canvas id="master-vu" width="40" height="200"></canvas>
-    <svg id="lfo-wires"></svg>
   </div>
+  <!-- Wire SVG lives at body level so it can stack above fixed sample cards -->
+  <svg id="lfo-wires"></svg>
 
   <!-- REC DOWNLOAD MODAL -->
   <div id="rec-modal">
@@ -2977,13 +2962,14 @@
       }
 
       _renderTile() {
-        const t = document.getElementById('t' + this.id);
-        if (!t) return;
-        t.classList.toggle('playing', this.playing);
-        t.classList.toggle('muted', this.muted);
-        t.classList.toggle('grid-on', this.gridSync);
+        const tile = document.getElementById('t' + this.id);
+        if (!tile) return;
+        tile.style.setProperty('--card-color', this.color);
+        tile.classList.toggle('playing', this.playing);
+        tile.classList.toggle('muted', this.muted);
+        tile.classList.toggle('grid-on', this.gridSync);
 
-        const mbtn = t.querySelector('.tile-mbtn');
+        const mbtn = tile.querySelector('.tile-mbtn');
         if (mbtn) mbtn.classList.toggle('mute-on', this.muted);
 
         if (openCards.has(this.id)) {
@@ -2993,7 +2979,7 @@
         }
 
         // Color-aware border: full color when playing, dimmed at rest
-        t.style.borderColor = this.playing ? this.color : (this.color + '55');
+        tile.style.borderColor = this.playing ? this.color : (this.color + '55');
         refreshSoloVis();
       }
     }
@@ -3116,11 +3102,11 @@
         }
         const scaledAmp = Math.min(1, amp * clipScale);
         const barH = Math.max(1, scaledAmp * drawH * 0.85);
-        ctx.fillStyle = hexToRgba(s.color, 0.25 + scaledAmp * 0.75);
+        ctx.fillStyle = `rgba(255,255,255,${0.25 + scaledAmp * 0.75})`;
         ctx.fillRect(i, mid - barH / 2, 1, barH);
       }
 
-      ctx.fillStyle = hexToRgba(s.color, 0.15);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.fillRect(0, mid, W, 1);
 
       // ── Fade overlays on tile ──
@@ -3150,12 +3136,12 @@
         const xfdPx = Math.min(W * 0.45, (s.crossfadeTime / _tileDur) / loopRange * W);
         if (xfdPx > 0) {
           const ge = ctx.createLinearGradient(W - xfdPx, 0, W, 0);
-          ge.addColorStop(0, hexToRgba(s.color, 0));
-          ge.addColorStop(1, hexToRgba(s.color, 0.38));
+          ge.addColorStop(0, 'rgba(255,255,255,0)');
+          ge.addColorStop(1, 'rgba(255,255,255,0.38)');
           ctx.fillStyle = ge; ctx.fillRect(W - xfdPx, 0, xfdPx, drawH);
           const gs = ctx.createLinearGradient(0, 0, xfdPx, 0);
-          gs.addColorStop(0, hexToRgba(s.color, 0.38));
-          gs.addColorStop(1, hexToRgba(s.color, 0));
+          gs.addColorStop(0, 'rgba(255,255,255,0.38)');
+          gs.addColorStop(1, 'rgba(255,255,255,0)');
           ctx.fillStyle = gs; ctx.fillRect(0, 0, xfdPx, drawH);
         }
       }
@@ -3294,15 +3280,10 @@
         const normalized = (db + 60) / 66;
         const barH = Math.round(normalized * (H - 2));
         const x = ch === 0 ? 0 : barW + gap;
-        ctx.fillStyle = '#161616';
+        ctx.fillStyle = '#111';
         ctx.fillRect(x, 1, barW, H - 2);
         if (barH > 0) {
-          let color;
-          if (db > 0) color = '#ff3333';
-          else if (db > -6) color = '#ccaa00';
-          else if (db > -18) color = '#00bb55';
-          else color = '#006633';
-          ctx.fillStyle = color;
+          ctx.fillStyle = '#fff';
           ctx.fillRect(x, H - 1 - barH, barW, barH);
         }
       }
@@ -3356,6 +3337,7 @@
 
         // Auto-play immediately on load
         startSample(s);
+        openCard(id);
 
       } catch (err) {
         console.error('Import failed:', file.name, err.message || err);
@@ -3576,6 +3558,7 @@
     function createCardForSample(s, tile) {
       const cardEl = document.createElement('div');
       cardEl.className = 'sample-card';
+      cardEl.style.setProperty('--card-color', s.color);
 
       let waveZoom = 1.0;
       let waveZoomCenter = 0.5;
@@ -3884,10 +3867,10 @@
           }
           const scaledAmp = Math.min(1, amp * clipScale);
           const barH = Math.max(1, scaledAmp * H * 0.88);
-          ctx.fillStyle = hexToRgba(s.color, 0.25 + scaledAmp * 0.75);
+          ctx.fillStyle = `rgba(255,255,255,${0.25 + scaledAmp * 0.75})`;
           ctx.fillRect(i, H / 2 - barH / 2, 1, barH);
         }
-        ctx.fillStyle = hexToRgba(s.color, 0.15);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
         ctx.fillRect(0, H / 2, W, 1);
         const vw = ve - vs;
         const toX = norm => (norm - vs) / vw * W;
@@ -3923,23 +3906,23 @@
           const sxOut = toX(s.loopStart - xfdNorm), sxMid = toX(s.loopStart), sxIn = toX(s.loopStart + xfdNorm);
           if (preAvail && sxMid > sxOut) {
             const g = ctx.createLinearGradient(Math.max(0, sxOut), 0, sxMid, 0);
-            g.addColorStop(0, hexToRgba(s.color, 0)); g.addColorStop(1, hexToRgba(s.color, 0.5));
+            g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,0.5)');
             ctx.fillStyle = g; ctx.fillRect(Math.max(0, sxOut), 0, sxMid - Math.max(0, sxOut), H);
           }
           if (sxIn > sxMid) {
             const g = ctx.createLinearGradient(sxMid, 0, Math.min(W, sxIn), 0);
-            g.addColorStop(0, hexToRgba(s.color, preAvail ? 0.5 : 0.35)); g.addColorStop(1, hexToRgba(s.color, 0));
+            g.addColorStop(0, preAvail ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
             ctx.fillStyle = g; ctx.fillRect(sxMid, 0, Math.min(W, sxIn) - sxMid, H);
           }
           const exIn = toX(s.loopEnd - xfdNorm), exMid = toX(s.loopEnd), exOut = toX(s.loopEnd + xfdNorm);
           if (exMid > exIn) {
             const g = ctx.createLinearGradient(Math.max(0, exIn), 0, exMid, 0);
-            g.addColorStop(0, hexToRgba(s.color, 0)); g.addColorStop(1, hexToRgba(s.color, postAvail ? 0.5 : 0.35));
+            g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, postAvail ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.35)');
             ctx.fillStyle = g; ctx.fillRect(Math.max(0, exIn), 0, exMid - Math.max(0, exIn), H);
           }
           if (postAvail && exOut > exMid) {
             const g = ctx.createLinearGradient(exMid, 0, Math.min(W, exOut), 0);
-            g.addColorStop(0, hexToRgba(s.color, 0.5)); g.addColorStop(1, hexToRgba(s.color, 0));
+            g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(1, 'rgba(255,255,255,0)');
             ctx.fillStyle = g; ctx.fillRect(exMid, 0, Math.min(W, exOut) - exMid, H);
           }
         }
@@ -4088,33 +4071,116 @@
       });
 
       // ── Waveform zoom/pan ──
+      // Cursor hint: crosshair over waveform bars, zoom-in over empty space
+      q('.card-wave-wrap').addEventListener('mousemove', e => {
+        if (e.buttons !== 0) return;
+        const wrap = q('.card-wave-wrap');
+        const rect = wrap.getBoundingClientRect();
+        const W = rect.width - 20, H = rect.height;
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        if (mx < 0 || mx >= W) return;
+        const { start: vs, width: vw } = getZView();
+        const norm = vs + (mx / W) * vw;
+        const peaks = s.getHiResPeaks();
+        const clipScale = Math.pow(10, s.clipGainDb / 20);
+        const idx = Math.max(0, Math.min(peaks.length - 1, Math.round(norm * peaks.length)));
+        const scaledAmp = Math.min(1, (peaks[idx] || 0) * clipScale);
+        const barH = Math.max(1, scaledAmp * H * 0.88);
+        const onBar = my >= H / 2 - barH / 2 && my <= H / 2 + barH / 2 && scaledAmp > 0.02;
+        wrap.style.cursor = onBar ? 'crosshair' : 'zoom-in';
+      });
+
       q('.card-wave-wrap').addEventListener('mousedown', e => {
         if (e.button !== 0 || e.target.closest('.lh') || e.target.closest('.card-fp')) return;
         e.preventDefault(); e.stopPropagation();
         const wrap = q('.card-wave-wrap');
-        const rect = wrap.getBoundingClientRect(), W = rect.width - 20;
-        const mouseViewX = Math.max(0, Math.min(1, (e.clientX - rect.left) / W));
-        const { start: vs0, width: vw0 } = getZView();
-        const mouseAbsPos = vs0 + mouseViewX * vw0;
-        const startX = e.clientX, startY = e.clientY, startZoom = waveZoom;
-        const mm = ev => {
-          const dx = ev.clientX - startX, dy = ev.clientY - startY;
-          wrap.style.cursor = 'all-scroll';
-          const newZoom = Math.max(1, Math.min(WAVE_ZOOM_MAX, startZoom * Math.pow(1.025, dy)));
-          waveZoom = newZoom;
-          const newVW = 1 / newZoom;
-          let newVS = mouseAbsPos - mouseViewX * newVW + (dx / W) * newVW;
-          newVS = Math.max(0, Math.min(1 - newVW, newVS));
-          waveZoomCenter = newVS + newVW / 2;
-          drawWave(); updateLoopReg(); updateZoomLbl();
-        };
-        const mu = () => {
-          wrap.style.cursor = '';
-          document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
-          const blockClick = ev => { ev.stopPropagation(); document.removeEventListener('click', blockClick, true); };
-          document.addEventListener('click', blockClick, true);
-        };
-        document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+        const rect = wrap.getBoundingClientRect();
+        const W = rect.width - 20, H = rect.height;
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        const mouseViewX = Math.max(0, Math.min(1, mx / W));
+        const { start: vs, end: ve, width: vw } = getZView();
+
+        // Detect whether click lands on a waveform bar
+        const norm = vs + mouseViewX * vw;
+        const peaks = s.getHiResPeaks();
+        const clipScale = Math.pow(10, s.clipGainDb / 20);
+        const idx = Math.max(0, Math.min(peaks.length - 1, Math.round(norm * peaks.length)));
+        const scaledAmp = Math.min(1, (peaks[idx] || 0) * clipScale);
+        const barH = Math.max(1, scaledAmp * H * 0.88);
+        const onWaveform = my >= H / 2 - barH / 2 && my <= H / 2 + barH / 2 && scaledAmp > 0.02;
+
+        if (onWaveform) {
+          // ── SELECTION MODE: drag to set loop region ──
+          wrap.style.cursor = 'crosshair';
+          let selStart = norm, selEnd = norm;
+
+          const drawSel = () => {
+            drawWave();
+            updateLoopReg();
+            const c = q('.card-wave-canvas');
+            const ctx = c.getContext('2d');
+            const { start: cvs, width: cvw } = getZView();
+            const x1 = (selStart - cvs) / cvw * W;
+            const x2 = (selEnd - cvs) / cvw * W;
+            const xL = Math.min(x1, x2), xR = Math.max(x1, x2);
+            if (xR > xL) {
+              ctx.fillStyle = 'rgba(255,255,255,0.12)';
+              ctx.fillRect(xL, 0, xR - xL, H);
+              ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(Math.round(xL) + 0.5, 0);
+              ctx.lineTo(Math.round(xL) + 0.5, H);
+              ctx.moveTo(Math.round(xR) + 0.5, 0);
+              ctx.lineTo(Math.round(xR) + 0.5, H);
+              ctx.stroke();
+            }
+          };
+
+          const mm = ev => {
+            const cur = vs + Math.max(0, Math.min(1, (ev.clientX - rect.left) / W)) * vw;
+            selStart = Math.min(norm, cur);
+            selEnd = Math.max(norm, cur);
+            drawSel();
+          };
+          const mu = () => {
+            wrap.style.cursor = '';
+            document.removeEventListener('mousemove', mm);
+            document.removeEventListener('mouseup', mu);
+            if (selEnd - selStart > 0.002) {
+              s.setLoopBounds(selStart, selEnd);
+              s.filePosition = selStart;
+              updateFpHandle();
+            }
+            updateLoopReg();
+            drawWave();
+          };
+          document.addEventListener('mousemove', mm);
+          document.addEventListener('mouseup', mu);
+
+        } else {
+          // ── ZOOM MODE: existing drag-to-zoom/pan ──
+          const mouseAbsPos = vs + mouseViewX * vw;
+          const startX = e.clientX, startY = e.clientY, startZoom = waveZoom;
+          const mm = ev => {
+            const dx = ev.clientX - startX, dy = ev.clientY - startY;
+            wrap.style.cursor = 'all-scroll';
+            const newZoom = Math.max(1, Math.min(WAVE_ZOOM_MAX, startZoom * Math.pow(1.025, dy)));
+            waveZoom = newZoom;
+            const newVW = 1 / newZoom;
+            let newVS = mouseAbsPos - mouseViewX * newVW + (dx / W) * newVW;
+            newVS = Math.max(0, Math.min(1 - newVW, newVS));
+            waveZoomCenter = newVS + newVW / 2;
+            drawWave(); updateLoopReg(); updateZoomLbl();
+          };
+          const mu = () => {
+            wrap.style.cursor = '';
+            document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+            const blockClick = ev => { ev.stopPropagation(); document.removeEventListener('click', blockClick, true); };
+            document.addEventListener('click', blockClick, true);
+          };
+          document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+        }
       });
 
       q('.card-wave-wrap').addEventListener('dblclick', e => {
@@ -4724,7 +4790,7 @@
 
         // Grid
         const y0 = gToY(0, H);
-        ctx.strokeStyle = '#222222';
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
         [100, 1000, 10000].forEach(f => {
@@ -4749,7 +4815,7 @@
         });
 
         // Fill between curve and 0dB
-        const col = color || '#ffffff';
+        const col = '#ffffff';
         ctx.beginPath();
         ctx.moveTo(0, y0);
         for (let i = 0; i < W; i++) ctx.lineTo(i, Math.max(0, Math.min(H, gToY(totalDb[i], H))));
@@ -4772,7 +4838,7 @@
         ctx.font = '8px Courier New';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle = '#333333';
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
         [[100, '100'], [1000, '1k'], [10000, '10k']].forEach(([f, l]) => {
           ctx.fillText(l, fToX(f, W), H - 1);
         });
@@ -4814,9 +4880,9 @@
 
           ctx.beginPath();
           ctx.arc(bx, by, r, 0, Math.PI * 2);
-          ctx.fillStyle = isActive ? (dragBand === i ? '#fff' : col) : '#262626';
+          ctx.fillStyle = isActive ? '#fff' : '#262626';
           ctx.fill();
-          ctx.strokeStyle = isActive ? (dragBand === i ? col : '#fff') : '#404040';
+          ctx.strokeStyle = isActive ? '#fff' : 'rgba(255,255,255,0.2)';
           ctx.lineWidth = 1;
           ctx.stroke();
 
@@ -4824,7 +4890,7 @@
             ctx.font = '7px Courier New';
             ctx.textAlign = isHP ? 'right' : 'left';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = isActive ? col : '#404040';
+            ctx.fillStyle = isActive ? '#fff' : 'rgba(255,255,255,0.2)';
             const label = isHP ? 'HP' : 'LP';
             ctx.fillText(label, isHP ? bx - r - 3 : bx + r + 3, by);
           }
@@ -5822,7 +5888,7 @@
         // Draw shape
         const pts = lfo.shape;
         if (pts.length >= 2) {
-          ctx.strokeStyle = lfo.color;
+          ctx.strokeStyle = '#fff';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(pts[0].x * W, (1 - pts[0].y) * H);
@@ -5832,7 +5898,7 @@
           ctx.stroke();
 
           // Fill under curve
-          ctx.fillStyle = hexToRgba(lfo.color, 0.08);
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
           ctx.beginPath();
           ctx.moveTo(pts[0].x * W, H);
           for (const p of pts) ctx.lineTo(p.x * W, (1 - p.y) * H);
@@ -6016,7 +6082,10 @@
       // Header click to toggle collapse (only if not moved)
       q('.lfo-titlebar').addEventListener('click', e => {
         if (e.target.closest('button')) return;
-        if (!titleMoved) el.classList.toggle('collapsed');
+        if (!titleMoved) {
+          e.stopPropagation();
+          el.classList.toggle('collapsed');
+        }
       });
 
       // ── Dragging & clicking when collapsed ──
@@ -6121,9 +6190,8 @@
 
       const port = lfoNodes.get(lfo.id)?.el.querySelector('.lfo-wire-port');
       const portRect = port.getBoundingClientRect();
-      const cvRect = cv.getBoundingClientRect();
-      const sx = portRect.left + portRect.width / 2 - cvRect.left;
-      const sy = portRect.top + portRect.height / 2 - cvRect.top;
+      const sx = portRect.left + portRect.width / 2;
+      const sy = portRect.top + portRect.height / 2;
 
       // Highlight potential targets
       document.querySelectorAll('.sample-card .cslider').forEach(sl => {
@@ -6131,8 +6199,8 @@
       });
 
       const mm = ev => {
-        const ex = ev.clientX - cvRect.left;
-        const ey = ev.clientY - cvRect.top;
+        const ex = ev.clientX;
+        const ey = ev.clientY;
         const cx1 = sx, cy1 = sy + 30;
         const cx2 = ex, cy2 = ey - 30;
         tempLine.setAttribute('d', `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`);
@@ -6214,30 +6282,70 @@
     }
 
     // ── Wire rendering ──
+    // SVG is position:fixed at (0,0) so all coordinates are raw viewport coords
     function updateLfoWires() {
       const wiresSvg = document.getElementById('lfo-wires');
-      // Remove old persistent wires
       wiresSvg.querySelectorAll('.lfo-wire-line').forEach(w => w.remove());
-      const cvRect = cv.getBoundingClientRect();
+
+      // ── Build SVG mask: white everywhere, black over each card ──
+      let defs = wiresSvg.querySelector('defs');
+      if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        wiresSvg.insertBefore(defs, wiresSvg.firstChild);
+      }
+      let mask = defs.querySelector('#wire-card-mask');
+      if (!mask) {
+        mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+        mask.id = 'wire-card-mask';
+        mask.setAttribute('maskUnits', 'userSpaceOnUse');
+        mask.setAttribute('x', '-9999');
+        mask.setAttribute('y', '-9999');
+        mask.setAttribute('width', '19998');
+        mask.setAttribute('height', '19998');
+        defs.appendChild(mask);
+      }
+      mask.innerHTML = '';
+      const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bg.setAttribute('x', '-9999'); bg.setAttribute('y', '-9999');
+      bg.setAttribute('width', '19998'); bg.setAttribute('height', '19998');
+      bg.setAttribute('fill', 'white');
+      mask.appendChild(bg);
+      document.querySelectorAll('.sample-card, .lfo-node').forEach(cardEl => {
+        const r = cardEl.getBoundingClientRect();
+        const mr = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        mr.setAttribute('x', r.left);
+        mr.setAttribute('y', r.top);
+        mr.setAttribute('width', r.width);
+        mr.setAttribute('height', r.height);
+        mr.setAttribute('fill', 'black');
+        mask.appendChild(mr);
+      });
 
       for (const [, lfo] of lfos) {
         const nodeInfo = lfoNodes.get(lfo.id);
         if (!nodeInfo) continue;
         const port = nodeInfo.el.querySelector('.lfo-wire-port');
         if (!port) continue;
-        const portRect = port.getBoundingClientRect();
-        const sx = portRect.left + portRect.width / 2 - cvRect.left;
-        const sy = portRect.top + portRect.height / 2 - cvRect.top;
+        // When collapsed the port is display:none — use the node's own center instead
+        let sx, sy;
+        if (nodeInfo.el.classList.contains('collapsed')) {
+          const elRect = nodeInfo.el.getBoundingClientRect();
+          sx = elRect.left + elRect.width / 2;
+          sy = elRect.top + elRect.height / 2;
+        } else {
+          const portRect = port.getBoundingClientRect();
+          sx = portRect.left + portRect.width / 2;
+          sy = portRect.top + portRect.height / 2;
+        }
 
         for (const d of lfo.destinations) {
-          // Find the target slider on an open card
+          // Find the target slider — works whether card is open or not
           const cardInfo = openCards.get(d.sampleId);
           if (!cardInfo) continue;
 
           let targetEl = null;
           const pInfo = LFO_PARAM_MAP[d.param];
           if (pInfo && pInfo.isEq && !d.fxUid) {
-            // Main EQ canvas
             targetEl = cardInfo.el.querySelector('.card-eq-canvas');
           } else if (d.fxUid) {
             const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${d.fxUid}"]`);
@@ -6252,16 +6360,27 @@
 
           if (!targetEl) continue;
           const sliderRect = targetEl.getBoundingClientRect();
-          const ex = sliderRect.left + sliderRect.width / 2 - cvRect.left;
-          const ey = sliderRect.top + sliderRect.height / 2 - cvRect.top;
+          const ex = sliderRect.left + sliderRect.width / 2;
+          const ey = sliderRect.top + sliderRect.height / 2;
 
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.classList.add('lfo-wire-line');
-          path.style.stroke = lfo.color;
           const cx1 = sx, cy1 = sy + 40;
           const cx2 = ex, cy2 = ey - 40;
-          path.setAttribute('d', `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`);
-          wiresSvg.appendChild(path);
+          const pathD = `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
+
+          // Dotted underlay — always drawn, shows through cards as a hint
+          const under = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          under.classList.add('lfo-wire-line', 'lfo-wire-under');
+          under.style.stroke = lfo.color;
+          under.setAttribute('d', pathD);
+          wiresSvg.appendChild(under);
+
+          // Solid overlay — masked out where cards sit
+          const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          over.classList.add('lfo-wire-line', 'lfo-wire-over');
+          over.style.stroke = lfo.color;
+          over.setAttribute('d', pathD);
+          over.setAttribute('mask', 'url(#wire-card-mask)');
+          wiresSvg.appendChild(over);
         }
       }
     }
