@@ -173,6 +173,30 @@
       pointer-events: none;
     }
 
+    #sample-list {
+      position: absolute;
+      bottom: 12px;
+      right: 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      pointer-events: auto;
+      z-index: 50;
+    }
+    .slist-item {
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      color: #555;
+      cursor: pointer;
+      transition: color 0.1s;
+      white-space: nowrap;
+      user-select: none;
+      line-height: 1.3;
+    }
+    .slist-item:hover { color: #aaa; }
+    .slist-item.open { color: #fff; }
+
     /* ═══ CANVAS ═══ */
     #cv {
       position: fixed;
@@ -784,6 +808,25 @@
     }
 
     .fx-panel-remove:hover {
+      color: #fff;
+    }
+
+    .fx-fader-btn {
+      background: none;
+      border: 1px solid #444;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      padding: 2px 5px;
+      text-transform: uppercase;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .fx-fader-btn.active {
+      border-color: #888;
       color: #fff;
     }
 
@@ -1699,6 +1742,7 @@
     <div class="albl" id="lbl-br">R pan · -inf</div>
     <div id="empty" class="gone"></div>
     <canvas id="master-vu" width="40" height="200"></canvas>
+    <div id="sample-list"></div>
   </div>
   <!-- Wire SVG lives at body level so it can stack above fixed sample cards -->
   <svg id="lfo-wires"></svg>
@@ -2869,16 +2913,29 @@
 
       rebuildFxChain() {
         try { this.eqFilters[4].disconnect(); } catch (e) { }
+        try { this.pan.disconnect(); } catch (e) { }
+        try { this.vol.disconnect(); } catch (e) { }
         for (const inst of this.fxChain) {
           try { (inst.outputNode || inst.node).disconnect(); } catch (e) { }
         }
+        const preFx = this.fxChain.filter(i => !i.postFader);
+        const postFx = this.fxChain.filter(i => i.postFader);
         let prev = this.eqFilters[4];
-        for (const inst of this.fxChain) {
+        for (const inst of preFx) {
           if (!inst.node) continue;
           prev.connect(inst.node);
           prev = inst.outputNode || inst.node;
         }
         prev.connect(this.pan);
+        this.pan.connect(this.vol);
+        prev = this.vol;
+        for (const inst of postFx) {
+          if (!inst.node) continue;
+          prev.connect(inst.node);
+          prev = inst.outputNode || inst.node;
+        }
+        prev.connect(masterSamplesGain);
+        this.vol.connect(this.meter);
       }
 
       _fxDefaultParams(type) {
@@ -2935,12 +2992,12 @@
         let inst;
         if (type === 'eq') {
           const eq = this._createEqInstance();
-          inst = { uid: ++this._fxUidCounter, type: 'eq', node: eq.node, outputNode: eq.outputNode, eqData: eq, params: {} };
+          inst = { uid: ++this._fxUidCounter, type: 'eq', node: eq.node, outputNode: eq.outputNode, eqData: eq, params: {}, postFader: true };
         } else {
           const params = this._fxDefaultParams(type);
           const node = this._createFxNode(type, params);
           if (!node) return null;
-          inst = { uid: ++this._fxUidCounter, type, node, params };
+          inst = { uid: ++this._fxUidCounter, type, node, params, postFader: true };
         }
         this.fxChain.push(inst);
         this.rebuildFxChain();
@@ -3490,6 +3547,10 @@
           Object.assign(copy.params, inst.params);
           applyFxNodeParams(copy);
         }
+        if (inst.postFader) {
+          copy.postFader = true;
+          s.rebuildFxChain();
+        }
       });
 
       s.updateVol();
@@ -3517,6 +3578,22 @@
     function updateEmpty() {
       document.getElementById('empty').classList.toggle('gone', samples.size > 0);
       document.getElementById('sc').textContent = samples.size;
+      updateSampleList();
+    }
+
+    function updateSampleList() {
+      const el = document.getElementById('sample-list');
+      el.innerHTML = '';
+      for (const [id, s] of samples) {
+        const item = document.createElement('div');
+        item.className = 'slist-item' + (openCards.has(id) ? ' open' : '');
+        item.textContent = s.name.length > 20 ? s.name.slice(0, 20) : s.name;
+        item.addEventListener('click', () => {
+          if (openCards.has(id)) { closeCard(id); } else { openCard(id); }
+          updateSampleList();
+        });
+        el.appendChild(item);
+      }
     }
 
     // ════════════════════════════════════════════════════
@@ -3544,6 +3621,7 @@
       createCardForSample(s, tile);
       // Reapply LFO overrides on the newly opened card
       requestAnimationFrame(() => applyCardOverrides(id));
+      updateSampleList();
     }
 
     function closeCard(id) {
@@ -3553,6 +3631,7 @@
       openCards.delete(id);
       const tile = document.getElementById('t' + id);
       if (tile) tile.classList.remove('active', 'expanded');
+      updateSampleList();
     }
 
     function createCardForSample(s, tile) {
@@ -4725,6 +4804,20 @@
           const hdr = document.createElement('div');
           hdr.className = 'fx-panel-hdr';
           hdr.innerHTML = `<span class="fx-panel-lbl">${def.name}</span>`;
+          const hdrRight = document.createElement('div');
+          hdrRight.style.cssText = 'display:flex;align-items:center;gap:2px';
+          const faderBtn = document.createElement('button');
+          faderBtn.className = 'fx-fader-btn active';
+          faderBtn.textContent = 'POST';
+          faderBtn.title = 'Toggle pre/post volume fader';
+          faderBtn.addEventListener('click', ev => {
+            ev.stopPropagation();
+            inst.postFader = !inst.postFader;
+            faderBtn.textContent = inst.postFader ? 'POST' : 'PRE';
+            faderBtn.classList.toggle('active', inst.postFader);
+            s.rebuildFxChain();
+          });
+          hdrRight.appendChild(faderBtn);
           const removeBtn = document.createElement('button');
           removeBtn.className = 'fx-panel-remove';
           removeBtn.textContent = '✕';
@@ -4733,7 +4826,8 @@
             s.removeFxInstance(inst.uid);
             panelEl.remove();
           });
-          hdr.appendChild(removeBtn);
+          hdrRight.appendChild(removeBtn);
+          hdr.appendChild(hdrRight);
           const body = document.createElement('div');
           body.className = 'fx-body-inner';
           panelEl.appendChild(hdr);
@@ -5412,7 +5506,7 @@
         if (!(s instanceof Sample)) continue;
         const fxChainData = s.fxChain.map(inst => {
           if (inst.type === 'eq') return { type: 'eq', bands: inst.eqData.bands.map(b => ({ ...b })) };
-          return { type: inst.type, params: { ...inst.params } };
+          return { type: inst.type, params: { ...inst.params }, postFader: !!inst.postFader };
         });
         projectData.samples.push({
           name: s.name, x: s.x, y: s.y, color: s.color,
@@ -5528,6 +5622,10 @@
               } else if (fxd.params) {
                 Object.assign(inst.params, fxd.params);
                 applyFxNodeParams(inst);
+              }
+              if (fxd.postFader) {
+                inst.postFader = true;
+                s.rebuildFxChain();
               }
             }
           }

@@ -55,7 +55,7 @@ Click a tile to open its floating edit card. Multiple cards can be open at once.
 - End handle auto-snaps to the subdivision boundary when sync is on
 - Loop point and file position changes take effect on the next subdivision — playback is never interrupted mid-loop
 
-**FX Rack** — add unlimited instances of any effect; click ✕ to remove.
+**FX Rack** — add unlimited instances of any effect. Each effect panel has a **PRE/POST** toggle (defaults to POST) that routes the effect either before or after the volume/pan fader. Click ✕ to remove.
 
 | Button | Effect |
 |--------|--------|
@@ -115,8 +115,14 @@ Add LFOs to your canvas to modulate any sample parameter (Pitch, Stretch, Volume
 ## Audio Chain (per sample)
 
 ```
-AudioBuffer → Player(s) → PitchShift → EQ (5 bands) → FX chain → Panner → Volume → Output
+AudioBuffer → Player(s) → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
 ```
 
 A second player (`xfPlayer`) handles crossfade transitions and, in Grid Sync mode, the wrapped portion of a loop when File Position is offset from the loop start. Fades without crossfade are baked into the buffer directly.
+
+---
+
+## Sample List
+
+A small monospace list in the bottom-right corner of the canvas (left of the master VU meter) shows all loaded samples. Names are capped at 20 characters. Grey = card closed; white = card open. Click any name to open or close that sample's edit card.
 
