@@ -72,6 +72,20 @@ Click a tile to open its floating edit card. Multiple cards can be open at once.
 
 ---
 
+## Step Sequencer
+
+Add step sequencers to your canvas to trigger samples rhythmically. Connect them to one or more samples via wires.
+
+- **Steps** — 1 to 16 steps per pattern. Each step button toggles on/off. The active step is highlighted in real time, in sync with the audio.
+- **Gate** — controls how much of the sample plays each step. At 100% the full loop region plays (capped to the loop end); lower values chop it shorter. The slider uses a curved scale for fine control at short durations.
+- **Subdivisions** — lock to the global transport grid: `1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32` and triplet variants.
+- **Grid Sync** — when on, step timing locks to the global BPM and subdivision. When off, use the **Rate** slider to set a free-running step interval in seconds.
+- **Wires** — drag from the sequencer port onto a sample tile to connect. A step sequencer can drive multiple samples simultaneously. Cables draw to the waveform on open edit cards.
+- **LFO Targeting** — LFO wires can connect to the **Steps** or **Gate** sliders on a sequencer node to modulate pattern length or gate amount over time.
+- **Organization** — Minimize, Duplicate, or Delete from the sequencer header.
+
+---
+
 ## LFO Modulator System
 
 Add LFOs to your canvas to modulate any sample parameter (Pitch, Stretch, Volume, Pan, Loop Points, or FX parameters).

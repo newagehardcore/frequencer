@@ -1633,6 +1633,357 @@
       color: #fff;
     }
 
+    /* ═══ STEP SEQUENCER ═══ */
+    .seq-node {
+      position: absolute;
+      width: 260px;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.2);
+      z-index: 200;
+      cursor: default;
+      user-select: none;
+    }
+
+    .seq-node.dragging {
+      z-index: 250;
+    }
+
+    .seq-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: #000;
+      cursor: grab;
+    }
+
+    .seq-titlebar:active {
+      cursor: grabbing;
+    }
+
+    .seq-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .seq-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #fff;
+    }
+
+    .seq-dup,
+    .seq-remove,
+    .seq-min {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+
+    .seq-dup:hover,
+    .seq-remove:hover,
+    .seq-min:hover {
+      color: #fff;
+    }
+
+    .seq-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 3px;
+      padding: 8px 8px 4px;
+    }
+
+    .seq-step {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background 0.06s, border-color 0.06s;
+      min-height: 22px;
+      padding: 0;
+    }
+
+    .seq-step:hover:not(.inactive) {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    .seq-step.act {
+      background: var(--seq-color, #fff);
+      border-color: var(--seq-color, #fff);
+    }
+
+    .seq-step.cur {
+      box-shadow: 0 0 0 2px #fff;
+    }
+
+    .seq-step.inactive {
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .seq-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+    }
+
+    .seq-steps-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px 4px;
+      width: 100%;
+    }
+
+    .seq-steps-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.45);
+      flex-shrink: 0;
+    }
+
+    .seq-steps-slider {
+      flex: 1;
+    }
+
+    .seq-sample-sel {
+      flex: 1;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.7);
+      font-size: 9px;
+      font-family: 'Courier New', monospace;
+      padding: 3px 4px;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .seq-grid-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px 6px;
+    }
+
+    .seq-rate-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 8px 8px;
+    }
+
+    .seq-rate-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.45);
+      width: 36px;
+      flex-shrink: 0;
+    }
+
+    .seq-subdiv-sel {
+      flex: 1;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.7);
+      font-size: 9px;
+      font-family: 'Courier New', monospace;
+      padding: 3px 4px;
+    }
+
+    .seq-min-footer {
+      display: none;
+      height: 16px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.45);
+      padding-left: 6px;
+      line-height: 16px;
+    }
+
+    .seq-mini-grid {
+      display: none;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 2px;
+      padding: 8px 8px 6px;
+      height: 40px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--b2);
+    }
+
+    .seq-mini-step {
+      background: rgba(255,255,255,0.06);
+      border-radius: 1px;
+    }
+
+    .seq-mini-step.act {
+      background: var(--seq-color, #fff);
+    }
+
+    .seq-mini-step.cur {
+      outline: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .seq-mini-step.inactive {
+      opacity: 0.1;
+    }
+
+    .seq-node.collapsed {
+      width: 136px;
+      padding: 0;
+      background: var(--surface);
+    }
+
+    .seq-mode-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 8px 6px;
+    }
+
+    .seq-gate-slider {
+      flex: 1;
+    }
+
+    .seq-wire-port {
+      display: block;
+      margin: 2px auto 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #000;
+      border: 2px solid rgba(255,255,255,0.4);
+      cursor: crosshair;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .seq-wire-port:hover {
+      border-color: #fff;
+      background: #1a1a1a;
+    }
+
+    .seq-dest-list {
+      padding: 0 8px 6px;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .seq-dest-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 8px;
+      color: rgba(255,255,255,0.55);
+      font-family: 'Courier New', monospace;
+    }
+
+    .seq-dest-item:last-child { border-bottom: none; }
+
+    .seq-dest-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+
+    .seq-dest-unlink {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.25);
+      cursor: pointer;
+      font-size: 10px;
+      padding: 0 2px;
+      font-family: inherit;
+      line-height: 1;
+    }
+
+    .seq-dest-unlink:hover { color: #fff; }
+
+    .tile.seq-controlled {
+      position: relative;
+    }
+
+    .tile.seq-controlled::after {
+      content: 'SEQ';
+      position: absolute;
+      bottom: 3px;
+      right: 4px;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--seq-ctrl-color, rgba(255,255,255,0.5));
+      pointer-events: none;
+    }
+
+    .seq-wire-line {
+      fill: none;
+      stroke-width: 2;
+      stroke-dasharray: none;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    .seq-wire-temp {
+      fill: none;
+      stroke-width: 2;
+      stroke-dasharray: 6 4;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .seq-node.collapsed {
+      width: 136px;
+      padding: 0;
+      background: var(--surface);
+    }
+
+    .seq-node.collapsed .seq-titlebar,
+    .seq-node.collapsed .seq-grid,
+    .seq-node.collapsed .seq-controls,
+    .seq-node.collapsed .seq-mode-row,
+    .seq-node.collapsed .seq-grid-row,
+    .seq-node.collapsed .seq-rate-row,
+    .seq-node.collapsed .seq-wire-port,
+    .seq-node.collapsed .seq-dest-list {
+      display: none;
+    }
+
+    .seq-node.collapsed .seq-mini-grid {
+      display: grid;
+    }
+
+    .seq-node.collapsed .seq-min-footer {
+      display: block;
+    }
+
     #lfo-wires {
       position: fixed;
       top: 0;
@@ -1801,6 +2152,11 @@
         style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
         LFO</button>
     </div>
+    <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-seq" title="Add Step Sequencer"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        Step</button>
+    </div>
     <div class="finfo">
       <div class="flbl">Samples</div>
       <div class="finfo-val"><b id="sc">0</b> loaded</div>
@@ -1822,7 +2178,7 @@
     let masterMeter = null;
     const masterSamplesGain = new Tone.Gain(1).toDestination();
 
-    const WAVE_ZOOM_MAX = 32;
+    const WAVE_ZOOM_MAX = 1e7;
     let soloId = null;
     const openCards = new Map(); // sampleId → { el, getZView, drawWave, updateLoopReg }
     let cardZTop = 400;
@@ -1861,6 +2217,109 @@
     let _lfoColorIdx = 0;
     const LFO_COLORS = ['#00cccc', '#cc00cc', '#00cc00', '#cccc00', '#ff6600', '#0099ff', '#ff0066', '#6600ff'];
     function nextLfoColor() { return LFO_COLORS[_lfoColorIdx++ % LFO_COLORS.length]; }
+
+    // ════════════════════════════════════════════════════
+    // STEP SEQUENCER SYSTEM
+    // ════════════════════════════════════════════════════
+    const seqs = new Map();
+    let nextSeqId = 1;
+    const MAX_SEQS = 8;
+    const SEQ_W = 260;
+    const seqNodes = new Map(); // seqId → { el, stopAnim }
+    let _seqColorIdx = 0;
+    const SEQ_COLORS = ['#ff9900', '#00aaff', '#ff00aa', '#aaff00', '#aa00ff', '#00ffaa', '#ff4444', '#ffcc00'];
+    function nextSeqColor() { return SEQ_COLORS[_seqColorIdx++ % SEQ_COLORS.length]; }
+
+    // Returns the natural play duration of a sample (how long it plays when triggered once)
+    function getSeqSampleDuration(s) {
+      const loopRange = Math.max(0.001, s.loopEnd - s.loopStart);
+      if (s.gridSync) {
+        const bpm = Tone.Transport.bpm.value;
+        const subdivSec = (60 / bpm) * (4 / s.subdiv) * s.subdivFactor;
+        return subdivSec * s.gridMulti;
+      }
+      return loopRange * s._activeDur;
+    }
+
+    // Returns step duration in seconds for the given sequencer (for visual tracking)
+    function seqStepDurSec(seq) {
+      if (seq.gridSync) {
+        const barSec = (60 / Tone.Transport.bpm.value) * 4;
+        const map = { '1n': barSec, '2n': barSec / 2, '4n': barSec / 4, '8n': barSec / 8,
+          '16n': barSec / 16, '32n': barSec / 32, '4t': barSec / 6, '8t': barSec / 12, '16t': barSec / 24 };
+        return map[seq.subdiv] || barSec / 16;
+      }
+      return seq.rate;
+    }
+
+    class StepSequencer {
+      constructor(id, x, y) {
+        this.id = id;
+        this.name = 'Seq ' + id;
+        this.x = x; this.y = y;
+        this.color = nextSeqColor();
+        this.numSteps = 16;
+        this.steps = new Array(16).fill(false);
+        this.destinations = []; // array of sampleIds connected via wire
+        this.gateLength = 1.0;  // fraction of step duration (1.0 = play until next trigger)
+        this.gridSync = true;
+        this.subdiv = '16n';
+        this.rate = 0.125; // seconds per step in free mode
+        this._scheduleId = null;
+        this._seqPhaseTransport = null; // transport seconds when step 0 fired (for visual sync)
+      }
+
+      getStepInterval() {
+        return this.gridSync ? this.subdiv : this.rate;
+      }
+
+      schedule() {
+        this.unschedule();
+        if (!audioReady) return;
+        let stepIdx = 0;
+        this._seqPhaseTransport = null; // reset — will be captured on first fire
+        this._scheduleId = Tone.Transport.scheduleRepeat((time) => {
+          // Capture transport phase of step 0 for accurate visual sync
+          if (stepIdx === 0) {
+            const lookahead = time - Tone.context.rawContext.currentTime;
+            this._seqPhaseTransport = Tone.Transport.seconds + lookahead;
+          }
+          const step = stepIdx % this.numSteps;
+          stepIdx++;
+          if (!this.steps[step]) return;
+          const stepDur = seqStepDurSec(this);
+          for (const sampleId of this.destinations) {
+            const s = samples.get(sampleId);
+            if (!s || !(s instanceof Sample) || s.muted) continue;
+            s.triggerAtTime(time, this.gateLength);
+            // Next active step's triggerAtTime will interrupt early if it fires before the gate closes
+          }
+        }, this.getStepInterval());
+      }
+
+      unschedule() {
+        if (this._scheduleId !== null) {
+          Tone.Transport.clear(this._scheduleId);
+          this._scheduleId = null;
+        }
+        this._seqPhaseTransport = null;
+      }
+
+      reschedule() {
+        if (audioReady) this.schedule();
+      }
+
+      addDestination(sampleId) {
+        if (!this.destinations.includes(sampleId)) this.destinations.push(sampleId);
+      }
+
+      removeDestination(sampleId) {
+        this.destinations = this.destinations.filter(id => id !== sampleId);
+      }
+    }
+
+    // sampleId → seqId: tracks which sequencer controls a given sample
+    const sampleSeqMap = new Map();
 
     // Maps cslider CSS classes to { prop, min, max, label }
     const LFO_PARAM_MAP = {
@@ -1941,6 +2400,7 @@
         this.gridSync = false;
         this.subdiv = 1; // same scale as sample grid (1 = 1 bar)
         this.destinations = []; // { sampleId, param, min, max }
+        this.seqDestinations = []; // { seqId, param, min, max }
         this._phase = 0;
         this._lastTime = performance.now() / 1000;
         this._activePreset = 'sine';
@@ -1992,7 +2452,22 @@
       removeDestination(sampleId, param, fxUid) {
         this.destinations = this.destinations.filter(d => !(d.sampleId === sampleId && d.param === param && d.fxUid === fxUid));
       }
+
+      addSeqDestination(seqId, param, min, max) {
+        if (this.seqDestinations.find(d => d.seqId === seqId && d.param === param)) return;
+        this.seqDestinations.push({ seqId, param, min, max });
+      }
+
+      removeSeqDestination(seqId, param) {
+        this.seqDestinations = this.seqDestinations.filter(d => !(d.seqId === seqId && d.param === param));
+      }
     }
+
+    // Seq parameter definitions for LFO modulation
+    const SEQ_PARAM_MAP = {
+      'seq-steps-input': { param: 'numSteps', min: 1, max: 16, label: 'Steps' },
+      'seq-gate-input':  { param: 'gateLength', min: 0.01, max: 1, label: 'Gate' },
+    };
 
     // Check if a parameter is being modulated by any LFO
     function isParamModulated(sampleId, paramClass, fxUid = null) {
@@ -2061,6 +2536,7 @@
         this._gridEv = null;
         this._filePosTimer = null;
         this._pendingRestart = false; // set to restart on the next loop wrap boundary
+        this._seqTrigVer = 0; // incremented on each seq trigger/stop to guard stale Draw callbacks
         this._currentDb = 0;
 
         // Compute initial vol/pan from position so nodes never start at wrong defaults
@@ -2147,7 +2623,7 @@
       // ── Computed helpers ──
       get startSec() { return this.loopStart * this.duration; }
       get endSec() { return this.loopEnd * this.duration; }
-      get lenSec() { return Math.max(0.01, (this.loopEnd - this.loopStart) * this.duration); }
+      get lenSec() { return Math.max(1e-4, (this.loopEnd - this.loopStart) * this.duration); }
       get filePosSec() { return this.filePosition * this.duration; }
       get _srcBuf() { return this.reversed ? this._revBuf : this.raw; }
       get _revStart() { return this.reversed ? (this.duration - this.endSec) : this.startSec; }
@@ -2475,6 +2951,7 @@
 
       // ── Free-running loop (no grid) ──
       play() {
+        ++this._seqTrigVer; // invalidate any pending seq Draw callbacks
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
@@ -2607,6 +3084,7 @@
       // 'wait' mode: sample plays once, then silence until next subdivision fires.
       // 'cut' mode: always cut to subdivSec length regardless of sample length.
       playGrid() {
+        ++this._seqTrigVer; // invalidate any pending seq Draw callbacks
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
@@ -2686,6 +3164,7 @@
       }
 
       stop() {
+        ++this._seqTrigVer; // invalidate any pending seq Draw callbacks
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
@@ -2698,6 +3177,121 @@
         this.fadeGain.gain.cancelScheduledValues(now);
         this.fadeGain.gain.setValueAtTime(1, now);
         this._renderTile();
+      }
+
+      // ── Step-sequencer trigger: start a one-shot at AudioContext time `acTime` ──
+      // Handles PS / faded / native buffers correctly and updates playhead state.
+      // Returns the natural play duration in seconds.
+      // gateLength: 0..1 fraction of loop region to play; null or 1 = play until next trigger.
+      triggerAtTime(acTime, gateLength = null) {
+        ++this._seqTrigVer;
+        const ver = this._seqTrigVer;
+
+        // Stop anything currently playing
+        try { this.player.stop(acTime); } catch (e) { }
+        try { this.xfPlayer.stop(acTime); } catch (e) { }
+
+        // Reset gain state at trigger time
+        this.xfGain.gain.cancelScheduledValues(acTime);
+        this.xfGain.gain.setValueAtTime(0, acTime);
+        this.fadeGain.gain.cancelScheduledValues(acTime);
+        this.fadeGain.gain.setValueAtTime(1, acTime);
+
+        let playDur;
+
+        if (this.psStretch > 1 && this._psBuffer && !this._psRendering) {
+          // ── PaulStretch one-shot ──
+          const psBuf = this._psBuffer;
+          const psStart = this.loopStart * psBuf.duration;
+          const psEnd = this.loopEnd * psBuf.duration;
+          const psDur = psEnd - psStart;
+          playDur = psDur / this._pbRate;
+          const hasFades = this.attackTime > 0 || this.releaseTime > 0;
+          let buf = psBuf, offset = psStart;
+          if (hasFades) {
+            if (!this._psFadedBuf) this._psFadedBuf = this._buildFadedLoopBuffer(psBuf, psStart, psEnd);
+            if (this._psFadedBuf) { buf = this._psFadedBuf; offset = 0; }
+          }
+          if (typeof this.player.buffer.set === 'function') this.player.buffer.set(buf);
+          else this.player.buffer._buffer = buf;
+          this.player.loop = false;
+          this.player.playbackRate = this._pbRate;
+          try { this.player.start(acTime, offset, playDur); } catch (e) { }
+          this._psPlayingBuffer = true;
+        } else {
+          // ── Normal one-shot ──
+          this._psPlayingBuffer = false;
+          const startPos = this._revStart;
+          const endPos = this._revEnd;
+          const rawDur = endPos - startPos;
+          playDur = rawDur / this._pbRate;
+          let fadedOk = false;
+          if (this.attackTime > 0 || this.releaseTime > 0) {
+            if (!this._fadedBuf) this._fadedBuf = this._buildFadedLoopBuffer();
+            if (this._fadedBuf) {
+              const fb = this._fadedBuf;
+              if (typeof this.player.buffer.set === 'function') this.player.buffer.set(fb);
+              else this.player.buffer._buffer = fb;
+              this.player.loop = false;
+              this.player.playbackRate = this._pbRate;
+              playDur = fb.duration / this._pbRate;
+              try { this.player.start(acTime, 0, playDur); } catch (e) { }
+              fadedOk = true;
+            }
+          }
+          if (!fadedOk) {
+            if (typeof this.player.buffer.set === 'function') this.player.buffer.set(this._srcBuf);
+            else this.player.buffer._buffer = this._srcBuf;
+            this.player.loop = false;
+            this.player.playbackRate = this._pbRate;
+            try { this.player.start(acTime, startPos, playDur); } catch (e) { }
+          }
+        }
+
+        // Gate: if gateLength < 1, cut audio after that fraction of the loop region.
+        // Use loop region duration (consistent regardless of buffer type) for the gate window.
+        // Gate stop: always cap to loop region (prevents bleed past loop end for faded buffers).
+        // At gateLength=1 this equals loopRealSec; the next trigger will interrupt early if sooner.
+        const loopRealSec = this.lenSec / this._pbRate;
+        const gateDur = loopRealSec * (gateLength ?? 1);
+        const stopAt = acTime + gateDur;
+        try { this.player.stop(stopAt); } catch (e) { }
+        try { this.xfPlayer.stop(stopAt); } catch (e) { }
+
+        // Update playhead on trigger (skip if play()/stop() has since been called)
+        Tone.Draw.schedule(() => {
+          if (this._seqTrigVer !== ver) return;
+          this._anchorAcTime = acTime;
+          this._anchorBufferPos = this._revStart;
+          this.playing = true;
+          this._renderTile();
+        }, acTime);
+
+        // Update playhead on stop
+        Tone.Draw.schedule(() => {
+          if (this._seqTrigVer !== ver) return;
+          this.playing = false;
+          this._anchorAcTime = null;
+          this._renderTile();
+        }, stopAt);
+
+        return playDur;
+      }
+
+      // ── Step-sequencer stop: cut playback at AudioContext time `acTime` ──
+      stopAtTime(acTime) {
+        ++this._seqTrigVer;
+        const ver = this._seqTrigVer;
+        try { this.player.stop(acTime); } catch (e) { }
+        try { this.xfPlayer.stop(acTime); } catch (e) { }
+        this.fadeGain.gain.cancelScheduledValues(acTime);
+        this.fadeGain.gain.setValueAtTime(1, acTime);
+        Tone.Draw.schedule(() => {
+          if (this._seqTrigVer !== ver) return;
+          this.playing = false;
+          this._anchorAcTime = null;
+          this._renderTile();
+        }, acTime);
       }
 
       updateBufferAnchor() {
@@ -2784,6 +3378,7 @@
       // Automatically syncs WebAudio loop nodes & visually correct relative playhead phase without jumping
       setLoopBounds(start, end) {
         this.updateBufferAnchor();
+        const oldStart = this.loopStart;
         this.loopStart = start;
         this.loopEnd = end;
 
@@ -2793,12 +3388,19 @@
           const psDur = this._psBuffer.duration;
           if (this.filePosition > end) this.filePosition = Math.max(start, end - 0.001 / Math.max(0.001, psDur));
           this._psFadedBuf = null; // loop region changed — rebuild faded buffer on next play
-          if (!this.gridSync) {
-            this.player.loopStart = start * psDur;
-            this.player.loopEnd = end * psDur;
-            // If fades/crossfade active, restart to apply new baked buffer
-            if (this.playing && (this.attackTime > 0 || this.releaseTime > 0 || this.crossfadeTime > 0)) {
+          if (!this.playing) return;
+          this.filePosition = start;
+          if (this.gridSync) {
+            this._cancelGrid();
+            this._stopPlayer();
+            this.playGrid();
+          } else {
+            const hasFades = this.attackTime > 0 || this.releaseTime > 0 || this.crossfadeTime > 0;
+            if (hasFades) {
               this.play();
+            } else {
+              this.player.loopStart = start * psDur;
+              this.player.loopEnd = end * psDur;
             }
           }
           return;
@@ -2821,12 +3423,16 @@
         // Only clamp filePosition at the upper end (it can be below loopStart for pre-loop playthrough)
         if (this.filePosition >= end) this.filePosition = Math.max(0, end - 0.001 / Math.max(0.001, this.duration));
 
-        if (!this.gridSync) {
-          const hasFades = this.attackTime > 0 || this.releaseTime > 0 || this.crossfadeTime > 0;
-          if (!hasFades) {
-            this.player.loopStart = this.startSec;
-            this.player.loopEnd = this.endSec;
-          }
+        if (!this.playing) return;
+
+        // Always restart immediately so the new region plays right away
+        this.filePosition = start;
+        if (this.gridSync) {
+          this._cancelGrid();
+          this._stopPlayer();
+          this.playGrid();
+        } else {
+          this.play();
         }
       }
 
@@ -3443,6 +4049,7 @@
     // ════════════════════════════════════════════════════
     function startSample(s) {
       if (!(s instanceof Sample)) return;
+      if (sampleSeqMap.has(s.id)) return; // controlled by step sequencer
       // Respect solo
       if (soloId !== null && soloId !== s.id) return;
       if (s.gridSync) s.playGrid();
@@ -3482,6 +4089,16 @@
 
     function removeSample(id) {
       const s = samples.get(id);
+      // Disconnect from any seq before disposing
+      if (sampleSeqMap.has(id)) {
+        const seqId = sampleSeqMap.get(id);
+        const seq = seqs.get(seqId);
+        if (seq) {
+          seq.removeDestination(id);
+          seqNodes.get(seqId)?.updateDestList();
+        }
+        sampleSeqMap.delete(id);
+      }
       if (s instanceof Sample) s.dispose();
       const t = document.getElementById('t' + id) || document.getElementById('stub' + id);
       if (t) t.remove();
@@ -4117,9 +4734,9 @@
             const { start: vs, width: vw } = getZView();
             const rel = Math.max(0, Math.min(1, vs + relView * vw));
             if (isStart) {
-              s.setLoopBounds(Math.min(rel, s.loopEnd - 0.005), s.loopEnd);
+              s.setLoopBounds(Math.min(rel, s.loopEnd - 1e-4), s.loopEnd);
             } else {
-              s.setLoopBounds(s.loopStart, Math.max(rel, s.loopStart + 0.005));
+              s.setLoopBounds(s.loopStart, Math.max(rel, s.loopStart + 1e-4));
             }
             updateLoopReg();
           };
@@ -4439,7 +5056,7 @@
       lsSlider.addEventListener('input', e => {
         e.stopPropagation();
         const dur = s._activeDur;
-        const sec = Math.min(parseFloat(e.target.value), s.loopEnd * dur - 0.005);
+        const sec = Math.min(parseFloat(e.target.value), s.loopEnd * dur - 1e-4);
         s.setLoopBounds(sec / dur, s.loopEnd);
         updateLoopReg();
       });
@@ -4447,7 +5064,7 @@
       leSlider.addEventListener('input', e => {
         e.stopPropagation();
         const dur = s._activeDur;
-        const sec = Math.max(parseFloat(e.target.value), s.loopStart * dur + 0.005);
+        const sec = Math.max(parseFloat(e.target.value), s.loopStart * dur + 1e-4);
         s.setLoopBounds(s.loopStart, sec / dur);
         updateLoopReg();
       });
@@ -5168,6 +5785,7 @@
       document.getElementById('btn-play').classList.add('playing');
       Tone.Transport.start();
       for (const [, s] of samples) if (s instanceof Sample && !s.playing) startSample(s);
+      for (const [, seq] of seqs) seq.reschedule();
       if (metroOn) buildMetro();
       beatTick();
     }
@@ -5185,6 +5803,7 @@
       Tone.Transport.stop();
       Tone.Transport.position = 0;
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
+      for (const [, seq] of seqs) seq.unschedule();
       // beat-pos removed
       cancelAnimationFrame(beatRaf);
     }
@@ -5501,7 +6120,7 @@
     }
 
     function saveProject() {
-      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [] };
+      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [], seqs: [] };
       for (const [, s] of samples) {
         if (!(s instanceof Sample)) continue;
         const fxChainData = s.fxChain.map(inst => {
@@ -5528,7 +6147,18 @@
           shape: lfo.shape.map(p => ({ x: p.x, y: p.y })),
           rate: lfo.rate, gridSync: lfo.gridSync, subdiv: lfo.subdiv,
           _activePreset: lfo._activePreset,
-          destinations: lfo.destinations.map(d => ({ sampleId: d.sampleId, param: d.param, min: d.min, max: d.max }))
+          destinations: lfo.destinations.map(d => ({ sampleId: d.sampleId, param: d.param, min: d.min, max: d.max })),
+          seqDestinations: lfo.seqDestinations.map(d => ({ seqId: d.seqId, param: d.param, min: d.min, max: d.max }))
+        });
+      }
+      // Save step sequencers
+      for (const [, seq] of seqs) {
+        projectData.seqs.push({
+          id: seq.id, name: seq.name, x: seq.x, y: seq.y, color: seq.color,
+          numSteps: seq.numSteps, steps: [...seq.steps],
+          destinations: [...seq.destinations],
+          gateLength: seq.gateLength,
+          gridSync: seq.gridSync, subdiv: seq.subdiv, rate: seq.rate
         });
       }
       const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
@@ -5668,8 +6298,37 @@
               }
             }
           }
+          if (Array.isArray(ld.seqDestinations)) {
+            for (const dd of ld.seqDestinations) {
+              if (seqs.has(dd.seqId)) lfo.addSeqDestination(dd.seqId, dd.param, dd.min, dd.max);
+            }
+          }
           lfos.set(lid, lfo);
           createLfoNode(lfo);
+        }
+      }
+      // Restore step sequencers
+      for (const sid of [...seqs.keys()]) removeSeq(sid);
+      if (Array.isArray(data.seqs)) {
+        for (const sd of data.seqs) {
+          const sqid = nextSeqId++;
+          const seq = new StepSequencer(sqid, sd.x || 400, sd.y || 300);
+          seq.name = sd.name || ('Seq ' + sqid);
+          if (sd.color) seq.color = sd.color;
+          seq.numSteps = sd.numSteps || 16;
+          if (Array.isArray(sd.steps)) seq.steps = sd.steps.slice(0, 16);
+          seq.gateLength = sd.gateLength ?? 1.0;
+          seq.gridSync = sd.gridSync !== false;
+          seq.subdiv = sd.subdiv || '16n';
+          seq.rate = sd.rate || 0.125;
+          seqs.set(sqid, seq);
+          createSeqNode(seq);
+          // Reconnect destinations
+          if (Array.isArray(sd.destinations)) {
+            for (const sampleId of sd.destinations) {
+              if (samples.has(sampleId)) connectSeqToSample(seq, sampleId);
+            }
+          }
         }
       }
       updateEmpty();
@@ -6270,6 +6929,36 @@
           });
           list.appendChild(item);
         }
+        // Seq destinations
+        for (const d of lfo.seqDestinations) {
+          const seq = seqs.get(d.seqId);
+          if (!seq) continue;
+          const pLabel = d.param === 'numSteps' ? 'Steps' : 'Gate';
+          const item = document.createElement('div');
+          item.className = 'lfo-dest-item';
+          item.innerHTML = `
+            <span class="lfo-dest-name" title="${seq.name} · ${pLabel}">${seq.name.substring(0, 8)}: ${pLabel}</span>
+            <input class="lfo-dest-field lfo-dest-min" type="text" value="${d.min}" title="Min">
+            <input class="lfo-dest-field lfo-dest-max" type="text" value="${d.max}" title="Max">
+            <button class="lfo-dest-unlink" title="Unlink">✕</button>
+          `;
+          const minF = item.querySelector('.lfo-dest-min');
+          const maxF = item.querySelector('.lfo-dest-max');
+          minF.addEventListener('change', () => { const v = parseFloat(minF.value); if (!isNaN(v)) d.min = v; else minF.value = d.min; });
+          maxF.addEventListener('change', () => { const v = parseFloat(maxF.value); if (!isNaN(v)) d.max = v; else maxF.value = d.max; });
+          [minF, maxF].forEach(f => {
+            f.addEventListener('mousedown', e => e.stopPropagation());
+            f.addEventListener('click', e => e.stopPropagation());
+            f.addEventListener('keydown', e => { if (e.key === 'Enter') f.blur(); e.stopPropagation(); });
+          });
+          item.querySelector('.lfo-dest-unlink').addEventListener('click', e => {
+            e.stopPropagation();
+            lfo.removeSeqDestination(d.seqId, d.param);
+            updateDestList();
+            updateLfoWires();
+          });
+          list.appendChild(item);
+        }
       }
 
       cv.appendChild(el);
@@ -6277,6 +6966,355 @@
       lfoNodes.set(lfo.id, nodeInfo);
       updateLfoWires();
       return nodeInfo;
+    }
+
+    // ════════════════════════════════════════════════════
+    // STEP SEQUENCER NODE CREATION
+    // ════════════════════════════════════════════════════
+
+    function createSeqNode(seq) {
+      const el = document.createElement('div');
+      el.className = 'seq-node';
+      el.id = 'seq-' + seq.id;
+      el.style.left = (seq.x - SEQ_W / 2) + 'px';
+      el.style.top = (seq.y - 100) + 'px';
+      el.style.borderColor = seq.color;
+      el.style.setProperty('--seq-color', seq.color);
+
+      el.innerHTML = `
+        <div class="seq-titlebar" title="Click to collapse/expand">
+          <div class="seq-color-dot"></div>
+          <div class="seq-name">${seq.name}</div>
+          <button class="seq-dup" title="Duplicate">⧉</button>
+          <button class="seq-remove" title="Remove">🗑</button>
+          <button class="seq-min" title="Minimize">✕</button>
+        </div>
+        <div class="seq-mini-grid"></div>
+        <div class="seq-min-footer">${seq.name}</div>
+        <div class="seq-grid"></div>
+        <div class="seq-controls">
+          <div class="seq-steps-row">
+            <span class="seq-steps-lbl">Steps</span>
+            <div class="cslider seq-steps-slider">
+              <input type="range" class="seq-steps-input" min="1" max="16" step="1" value="${seq.numSteps}">
+              <div class="cslider-thumb"><span class="cslider-lbl">${seq.numSteps}</span><input class="cslider-edit" type="text"></div>
+            </div>
+          </div>
+        </div>
+        <div class="seq-mode-row">
+          <span class="seq-rate-lbl">Gate</span>
+          <div class="cslider seq-gate-slider">
+            <input type="range" class="seq-gate-input" min="0" max="1" step="0.001" value="${Math.sqrt(seq.gateLength).toFixed(3)}">
+            <div class="cslider-thumb"><span class="cslider-lbl">${Math.round(seq.gateLength * 100)}%</span><input class="cslider-edit" type="text"></div>
+          </div>
+        </div>
+        <div class="seq-grid-row">
+          <button class="cbtn seq-grid-btn" style="flex:0 0 auto;padding:4px 8px;font-size:9px">Grid</button>
+          <select class="seq-subdiv-sel">
+            <option value="1n">1 bar</option>
+            <option value="2n">1/2</option>
+            <option value="4n">1/4</option>
+            <option value="8n">1/8</option>
+            <option value="16n" selected>1/16</option>
+            <option value="32n">1/32</option>
+            <option value="4t">1/4T</option>
+            <option value="8t">1/8T</option>
+            <option value="16t">1/16T</option>
+          </select>
+        </div>
+        <div class="seq-rate-row">
+          <span class="seq-rate-lbl">Rate</span>
+          <div class="cslider seq-rate-slider">
+            <input type="range" class="seq-rate-input" min="0.04" max="2" step="0.01" value="${seq.rate}">
+            <div class="cslider-thumb"><span class="cslider-lbl">${seq.rate.toFixed(2)}s</span><input class="cslider-edit" type="text"></div>
+          </div>
+        </div>
+        <div class="seq-wire-port" title="Drag to connect to a sampler"></div>
+        <div class="seq-dest-list"></div>
+      `;
+
+      const q = sel => el.querySelector(sel);
+      q('.seq-color-dot').style.background = seq.color;
+
+      // ── Build step grid ──
+      function buildGrid() {
+        const grid = q('.seq-grid');
+        const mini = q('.seq-mini-grid');
+        grid.innerHTML = '';
+        mini.innerHTML = '';
+        for (let i = 0; i < 16; i++) {
+          const btn = document.createElement('button');
+          btn.className = 'seq-step' +
+            (seq.steps[i] ? ' act' : '') +
+            (i >= seq.numSteps ? ' inactive' : '');
+          btn.dataset.step = i;
+          btn.addEventListener('click', e => {
+            e.stopPropagation();
+            seq.steps[i] = !seq.steps[i];
+            btn.classList.toggle('act', seq.steps[i]);
+            const dot = q(`.seq-mini-grid .seq-mini-step[data-step="${i}"]`);
+            if (dot) dot.classList.toggle('act', seq.steps[i]);
+          });
+          grid.appendChild(btn);
+
+          const dot = document.createElement('div');
+          dot.className = 'seq-mini-step' +
+            (seq.steps[i] ? ' act' : '') +
+            (i >= seq.numSteps ? ' inactive' : '');
+          dot.dataset.step = i;
+          mini.appendChild(dot);
+        }
+      }
+      buildGrid();
+
+      // ── Step highlight (visual playhead via rAF) ──
+      let _displayStep = -1;
+      let _animRunning = true;
+
+      function highlightStep(step) {
+        const prevBtn = el.querySelector('.seq-grid .seq-step.cur');
+        if (prevBtn) prevBtn.classList.remove('cur');
+        const curBtn = el.querySelector(`.seq-grid .seq-step[data-step="${step}"]`);
+        if (curBtn && !curBtn.classList.contains('inactive')) curBtn.classList.add('cur');
+
+        const prevDot = el.querySelector('.seq-mini-grid .seq-mini-step.cur');
+        if (prevDot) prevDot.classList.remove('cur');
+        const curDot = el.querySelector(`.seq-mini-grid .seq-mini-step[data-step="${step}"]`);
+        if (curDot && !curDot.classList.contains('inactive')) curDot.classList.add('cur');
+      }
+
+      (function animLoop() {
+        if (!_animRunning) return;
+        if (audioReady && seq._scheduleId !== null && isPlaying && seq._seqPhaseTransport !== null) {
+          const stepDur = seqStepDurSec(seq);
+          if (stepDur > 0) {
+            const elapsed = Tone.Transport.seconds - seq._seqPhaseTransport;
+            if (elapsed >= 0) {
+              const curStep = Math.floor(elapsed / stepDur) % seq.numSteps;
+              if (curStep !== _displayStep) {
+                _displayStep = curStep;
+                highlightStep(curStep);
+              }
+            }
+          }
+        } else if ((!isPlaying || seq._seqPhaseTransport === null) && _displayStep !== -1) {
+          _displayStep = -1;
+          el.querySelectorAll('.seq-step.cur, .seq-mini-step.cur').forEach(e => e.classList.remove('cur'));
+        }
+        requestAnimationFrame(animLoop);
+      })();
+
+      // ── Steps slider ──
+      const stepsSlider = q('.seq-steps-slider');
+      const stepsInput = q('.seq-steps-input');
+
+      function updateInactiveSteps() {
+        el.querySelectorAll('.seq-step').forEach((btn, i) => btn.classList.toggle('inactive', i >= seq.numSteps));
+        el.querySelectorAll('.seq-mini-step').forEach((dot, i) => dot.classList.toggle('inactive', i >= seq.numSteps));
+        seq.reschedule();
+      }
+
+      initCslider(stepsSlider, v => Math.round(parseFloat(v)) + '');
+      stepsInput.addEventListener('input', e => {
+        e.stopPropagation();
+        seq.numSteps = Math.max(1, Math.min(16, Math.round(parseFloat(e.target.value))));
+        updateInactiveSteps();
+      });
+
+      // Gate length slider
+      const gateSlider = q('.seq-gate-slider');
+      const gateInput = q('.seq-gate-input');
+      // Slider position t (0–1) maps to gate length t² for better low-end resolution
+      initCslider(gateSlider, v => { const t = parseFloat(v); return Math.round(t * t * 100) + '%'; });
+      gateInput.addEventListener('input', e => { const t = parseFloat(e.target.value); seq.gateLength = t * t; });
+
+      // ── Grid sync ──
+      const gridBtn = q('.seq-grid-btn');
+      const subdivSel = q('.seq-subdiv-sel');
+      const rateRow = q('.seq-rate-row');
+      subdivSel.value = seq.subdiv;
+      gridBtn.classList.toggle('act', seq.gridSync);
+
+      function updateGridUI() {
+        const on = seq.gridSync;
+        subdivSel.style.opacity = on ? '1' : '0.4';
+        subdivSel.style.pointerEvents = on ? 'all' : 'none';
+        rateRow.style.opacity = on ? '0.3' : '1';
+        rateRow.style.pointerEvents = on ? 'none' : 'all';
+      }
+      updateGridUI();
+
+      gridBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        seq.gridSync = !seq.gridSync;
+        gridBtn.classList.toggle('act', seq.gridSync);
+        updateGridUI();
+        seq.reschedule();
+      });
+      subdivSel.addEventListener('change', e => {
+        e.stopPropagation();
+        seq.subdiv = subdivSel.value;
+        if (seq.gridSync) seq.reschedule();
+      });
+
+      // ── Rate slider (free mode) ──
+      const rateSlider = q('.seq-rate-slider');
+      const rateInput = q('.seq-rate-input');
+      initCslider(rateSlider, v => parseFloat(v).toFixed(2) + 's');
+      rateInput.addEventListener('input', e => {
+        seq.rate = parseFloat(e.target.value);
+        if (!seq.gridSync) seq.reschedule();
+      });
+
+      // ── Wire port ──
+      q('.seq-wire-port').addEventListener('mousedown', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        startSeqWireDrag(seq, e);
+      });
+
+      // ── Destination list ──
+      function updateDestList() {
+        const list = q('.seq-dest-list');
+        list.innerHTML = '';
+        for (const sampleId of seq.destinations) {
+          const s = samples.get(sampleId);
+          if (!s) continue;
+          const item = document.createElement('div');
+          item.className = 'seq-dest-item';
+          item.innerHTML = `
+            <span class="seq-dest-name" title="${s.name}">${s.name.substring(0, 14)}</span>
+            <button class="seq-dest-unlink" title="Disconnect">✕</button>
+          `;
+          item.querySelector('.seq-dest-unlink').addEventListener('click', e => {
+            e.stopPropagation();
+            disconnectSeqFromSample(sampleId);
+          });
+          list.appendChild(item);
+        }
+      }
+      updateDestList();
+
+      // ── Header buttons ──
+      q('.seq-remove').addEventListener('click', e => { e.stopPropagation(); removeSeq(seq.id); });
+      q('.seq-dup').addEventListener('click', e => { e.stopPropagation(); duplicateSeq(seq); });
+      q('.seq-min').addEventListener('click', e => { e.stopPropagation(); el.classList.toggle('collapsed'); });
+
+      // ── Titlebar drag & collapse ──
+      let titleMoved = false;
+      q('.seq-titlebar').addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        e.preventDefault(); e.stopPropagation();
+        titleMoved = false;
+        const ox = e.clientX, oy = e.clientY;
+        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
+        el.classList.add('dragging');
+        const mm = ev => {
+          const dx = ev.clientX - ox, dy = ev.clientY - oy;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) titleMoved = true;
+          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
+          seq.x = oL + dx + SEQ_W / 2; seq.y = oT + dy;
+          updateLfoWires();
+        };
+        const mu = () => {
+          el.classList.remove('dragging');
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+      q('.seq-titlebar').addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        if (!titleMoved) { e.stopPropagation(); el.classList.toggle('collapsed'); }
+      });
+
+      // ── Collapsed state: drag & click to expand ──
+      let minMoved = false;
+      el.addEventListener('mousedown', e => {
+        if (!el.classList.contains('collapsed')) return;
+        e.preventDefault(); e.stopPropagation();
+        minMoved = false;
+        const ox = e.clientX, oy = e.clientY;
+        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
+        el.classList.add('dragging');
+        const mm = ev => {
+          const dx = ev.clientX - ox, dy = ev.clientY - oy;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) minMoved = true;
+          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
+          seq.x = oL + dx + 136 / 2; seq.y = oT + dy;
+          updateLfoWires();
+        };
+        const mu = () => {
+          el.classList.remove('dragging');
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+      el.addEventListener('click', e => {
+        if (!el.classList.contains('collapsed')) return;
+        if (!minMoved) el.classList.remove('collapsed');
+      });
+
+      cv.appendChild(el);
+      const nodeInfo = { el, stopAnim: () => { _animRunning = false; }, updateDestList };
+      seqNodes.set(seq.id, nodeInfo);
+      seq.schedule();
+      return nodeInfo;
+    }
+
+    // ── Seq connect / disconnect ──
+    function connectSeqToSample(seq, sampleId) {
+      // If already controlled by another seq, remove that link first
+      if (sampleSeqMap.has(sampleId)) {
+        const oldSeqId = sampleSeqMap.get(sampleId);
+        const oldSeq = seqs.get(oldSeqId);
+        if (oldSeq) {
+          oldSeq.removeDestination(sampleId);
+          seqNodes.get(oldSeqId)?.updateDestList();
+        }
+        sampleSeqMap.delete(sampleId);
+      }
+      seq.addDestination(sampleId);
+      sampleSeqMap.set(sampleId, seq.id);
+      // Stop sample's internal playback — sequencer takes over
+      const s = samples.get(sampleId);
+      if (s instanceof Sample) {
+        s.stop();
+        s.playing = false;
+        s._renderTile();
+        // Mark tile visually
+        const tile = document.getElementById('t' + sampleId);
+        if (tile) {
+          tile.classList.add('seq-controlled');
+          tile.style.setProperty('--seq-ctrl-color', seq.color);
+        }
+      }
+      seqNodes.get(seq.id)?.updateDestList();
+      updateLfoWires();
+    }
+
+    function disconnectSeqFromSample(sampleId) {
+      const seqId = sampleSeqMap.get(sampleId);
+      if (seqId === undefined) return;
+      const seq = seqs.get(seqId);
+      if (seq) {
+        seq.removeDestination(sampleId);
+        seqNodes.get(seqId)?.updateDestList();
+      }
+      sampleSeqMap.delete(sampleId);
+      // Remove tile indicator
+      const tile = document.getElementById('t' + sampleId);
+      if (tile) {
+        tile.classList.remove('seq-controlled');
+        tile.style.removeProperty('--seq-ctrl-color');
+      }
+      // Restart sample's internal playback
+      const s = samples.get(sampleId);
+      if (s instanceof Sample && audioReady && isPlaying) startSample(s);
+      updateLfoWires();
     }
 
     // ── Wire drag system ──
@@ -6291,8 +7329,11 @@
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;
 
-      // Highlight potential targets
+      // Highlight potential targets: sample card sliders + seq param sliders
       document.querySelectorAll('.sample-card .cslider').forEach(sl => {
+        sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
+      });
+      document.querySelectorAll('.seq-node .seq-steps-slider, .seq-node .seq-gate-slider').forEach(sl => {
         sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
       });
 
@@ -6309,9 +7350,8 @@
         document.removeEventListener('mouseup', mu);
         tempLine.remove();
         // Remove highlights
-        document.querySelectorAll('.sample-card .cslider').forEach(sl => {
-          sl.style.outline = '';
-        });
+        document.querySelectorAll('.sample-card .cslider').forEach(sl => { sl.style.outline = ''; });
+        document.querySelectorAll('.seq-node .seq-steps-slider, .seq-node .seq-gate-slider').forEach(sl => { sl.style.outline = ''; });
 
         // Check if dropped on a target
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
@@ -6319,6 +7359,31 @@
         const sliderWrap = target.closest('.cslider');
         const eqCanvas = target.classList.contains('card-eq-canvas') ? target : target.closest('.card-eq-canvas');
         if (!sliderWrap && !eqCanvas) return;
+
+        // ── Seq param target ──
+        const seqNodeEl = sliderWrap?.closest('.seq-node');
+        if (seqNodeEl) {
+          const native = sliderWrap.querySelector('input[type=range]');
+          if (!native) return;
+          let seqParamInfo = null;
+          for (const cls of native.classList) {
+            if (SEQ_PARAM_MAP[cls]) { seqParamInfo = SEQ_PARAM_MAP[cls]; break; }
+          }
+          if (!seqParamInfo) return;
+          const seqId = parseInt(seqNodeEl.id.replace('seq-', ''));
+          if (isNaN(seqId) || !seqs.has(seqId)) return;
+          // Remove from any existing LFO targeting this seq param
+          for (const [, existLfo] of lfos) {
+            if (existLfo.seqDestinations.find(d => d.seqId === seqId && d.param === seqParamInfo.param)) {
+              existLfo.removeSeqDestination(seqId, seqParamInfo.param);
+              lfoNodes.get(existLfo.id)?.updateDestList();
+            }
+          }
+          lfo.addSeqDestination(seqId, seqParamInfo.param, seqParamInfo.min, seqParamInfo.max);
+          lfoNodes.get(lfo.id)?.updateDestList();
+          updateLfoWires();
+          return;
+        }
 
         const cardEl = (sliderWrap || eqCanvas).closest('.sample-card');
         if (!cardEl) return;
@@ -6366,6 +7431,61 @@
         applyParamOverride(sampleId, paramClass, lfo, fxUid);
         lfoNodes.get(lfo.id)?.updateDestList();
         updateLfoWires();
+      };
+
+      document.addEventListener('mousemove', mm);
+      document.addEventListener('mouseup', mu);
+    }
+
+    function startSeqWireDrag(seq, startEvent) {
+      const wiresSvg = document.getElementById('lfo-wires');
+      const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      tempLine.classList.add('seq-wire-temp');
+      tempLine.style.stroke = seq.color;
+      wiresSvg.appendChild(tempLine);
+
+      const port = seqNodes.get(seq.id)?.el.querySelector('.seq-wire-port');
+      const portRect = port.getBoundingClientRect();
+      const sx = portRect.left + portRect.width / 2;
+      const sy = portRect.top + portRect.height / 2;
+
+      // Highlight potential targets: tiles and open sample cards
+      document.querySelectorAll('.tile').forEach(t => {
+        t.style.outline = '2px dashed rgba(255,255,255,0.3)';
+      });
+      document.querySelectorAll('.sample-card').forEach(c => {
+        c.style.outline = '2px dashed rgba(255,255,255,0.3)';
+      });
+
+      const mm = ev => {
+        const ex = ev.clientX, ey = ev.clientY;
+        const cx1 = sx, cy1 = sy + 40;
+        const cx2 = ex, cy2 = ey - 40;
+        tempLine.setAttribute('d', `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`);
+      };
+
+      const mu = ev => {
+        document.removeEventListener('mousemove', mm);
+        document.removeEventListener('mouseup', mu);
+        tempLine.remove();
+        document.querySelectorAll('.tile').forEach(t => { t.style.outline = ''; });
+        document.querySelectorAll('.sample-card').forEach(c => { c.style.outline = ''; });
+
+        const target = document.elementFromPoint(ev.clientX, ev.clientY);
+        if (!target) return;
+
+        // Check open sample card first, then tile
+        const card = target.closest('.sample-card');
+        if (card) {
+          const sampleId = findSampleIdFromCard(card);
+          if (sampleId !== null && samples.has(sampleId)) connectSeqToSample(seq, sampleId);
+          return;
+        }
+        const tile = target.closest('.tile');
+        if (!tile) return;
+        const sampleId = parseInt(tile.id.slice(1));
+        if (isNaN(sampleId) || !samples.has(sampleId)) return;
+        connectSeqToSample(seq, sampleId);
       };
 
       document.addEventListener('mousemove', mm);
@@ -6475,6 +7595,104 @@
           // Solid overlay — masked out where cards sit
           const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           over.classList.add('lfo-wire-line', 'lfo-wire-over');
+          over.style.stroke = lfo.color;
+          over.setAttribute('d', pathD);
+          over.setAttribute('mask', 'url(#wire-card-mask)');
+          wiresSvg.appendChild(over);
+        }
+      }
+
+      // ── Seq wires (seq wire-port → sample tile or waveform canvas) ──
+      wiresSvg.querySelectorAll('.seq-wire-line').forEach(w => w.remove());
+      for (const [, seq] of seqs) {
+        const nodeInfo = seqNodes.get(seq.id);
+        if (!nodeInfo || !seq.destinations.length) continue;
+
+        const port = nodeInfo.el.querySelector('.seq-wire-port');
+        let sx, sy;
+        if (nodeInfo.el.classList.contains('collapsed') || !port) {
+          const elRect = nodeInfo.el.getBoundingClientRect();
+          sx = elRect.left + elRect.width / 2;
+          sy = elRect.top + elRect.height / 2;
+        } else {
+          const portRect = port.getBoundingClientRect();
+          sx = portRect.left + portRect.width / 2;
+          sy = portRect.top + portRect.height / 2;
+        }
+
+        for (const sampleId of seq.destinations) {
+          const cardInfo = openCards.get(sampleId);
+          let targetEl;
+          if (cardInfo) {
+            // Point to the center of the waveform canvas when card is open
+            targetEl = cardInfo.el.querySelector('.card-wave-canvas') || cardInfo.el;
+          } else {
+            targetEl = document.getElementById('t' + sampleId);
+          }
+          if (!targetEl) continue;
+          const tRect = targetEl.getBoundingClientRect();
+          const ex = tRect.left + tRect.width / 2;
+          const ey = tRect.top + tRect.height / 2;
+
+          const cx1 = sx, cy1 = sy + 40;
+          const cx2 = ex, cy2 = ey - 40;
+          const pathD = `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
+
+          // Dotted underlay (shows through cards)
+          const under = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          under.classList.add('seq-wire-line', 'lfo-wire-under');
+          under.style.stroke = seq.color;
+          under.setAttribute('d', pathD);
+          wiresSvg.appendChild(under);
+
+          // Solid overlay masked out where cards sit
+          const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          over.classList.add('seq-wire-line', 'lfo-wire-over');
+          over.style.stroke = seq.color;
+          over.setAttribute('d', pathD);
+          over.setAttribute('mask', 'url(#wire-card-mask)');
+          wiresSvg.appendChild(over);
+        }
+      }
+
+      // ── LFO→Seq wires ──
+      wiresSvg.querySelectorAll('.lfo-seq-wire').forEach(w => w.remove());
+      for (const [, lfo] of lfos) {
+        if (!lfo.seqDestinations.length) continue;
+        const lfoNodeInfo = lfoNodes.get(lfo.id);
+        if (!lfoNodeInfo) continue;
+        const lfoPort = lfoNodeInfo.el.querySelector('.lfo-wire-port');
+        let lsx, lsy;
+        if (lfoNodeInfo.el.classList.contains('collapsed') || !lfoPort) {
+          const elRect = lfoNodeInfo.el.getBoundingClientRect();
+          lsx = elRect.left + elRect.width / 2;
+          lsy = elRect.top + elRect.height / 2;
+        } else {
+          const portRect = lfoPort.getBoundingClientRect();
+          lsx = portRect.left + portRect.width / 2;
+          lsy = portRect.top + portRect.height / 2;
+        }
+        for (const d of lfo.seqDestinations) {
+          const seqNodeInfo = seqNodes.get(d.seqId);
+          if (!seqNodeInfo) continue;
+          const inputCls = d.param === 'numSteps' ? '.seq-steps-slider' : '.seq-gate-slider';
+          const sliderEl = seqNodeInfo.el.querySelector(inputCls);
+          if (!sliderEl) continue;
+          const sRect = sliderEl.getBoundingClientRect();
+          const ex = sRect.left + sRect.width / 2;
+          const ey = sRect.top + sRect.height / 2;
+          const cx1 = lsx, cy1 = lsy + 30;
+          const cx2 = ex, cy2 = ey - 30;
+          const pathD = `M${lsx},${lsy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
+
+          const under = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          under.classList.add('lfo-seq-wire', 'lfo-wire-under');
+          under.style.stroke = lfo.color;
+          under.setAttribute('d', pathD);
+          wiresSvg.appendChild(under);
+
+          const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          over.classList.add('lfo-seq-wire', 'lfo-wire-over');
           over.style.stroke = lfo.color;
           over.setAttribute('d', pathD);
           over.setAttribute('mask', 'url(#wire-card-mask)');
@@ -6641,6 +7859,33 @@
             }
           }
         }
+
+        // Apply to seq destinations
+        for (const d of lfo.seqDestinations) {
+          const seq = seqs.get(d.seqId);
+          if (!seq) continue;
+          const modVal = d.min + val * (d.max - d.min);
+          const nodeInfo = seqNodes.get(d.seqId);
+          if (d.param === 'numSteps') {
+            const n = Math.max(1, Math.min(16, Math.round(modVal)));
+            if (n !== seq.numSteps) {
+              seq.numSteps = n;
+              if (nodeInfo) {
+                const inp = nodeInfo.el.querySelector('.seq-steps-input');
+                if (inp) { inp.value = n; inp.dispatchEvent(new Event('input')); }
+              }
+            }
+          } else if (d.param === 'gateLength') {
+            seq.gateLength = Math.max(0, Math.min(1, modVal));
+            if (nodeInfo) {
+              const inp = nodeInfo.el.querySelector('.seq-gate-input');
+              if (inp) {
+                inp.value = Math.sqrt(seq.gateLength).toFixed(3);
+                inp.closest('.cslider')?._syncPos?.();
+              }
+            }
+          }
+        }
       }
     }
 
@@ -6683,6 +7928,63 @@
       const lfo = new LFO(id, cx, cy);
       lfos.set(id, lfo);
       createLfoNode(lfo);
+    });
+
+    // ── Seq duplicate & remove ──
+    function duplicateSeq(srcSeq) {
+      if (seqs.size >= MAX_SEQS) return null;
+      const id = nextSeqId++;
+      const seq = new StepSequencer(id, srcSeq.x + 20, srcSeq.y + 20);
+      seq.numSteps = srcSeq.numSteps;
+      seq.steps = [...srcSeq.steps];
+      // destinations not copied — new seq starts unconnected
+      seq.gateLength = srcSeq.gateLength;
+      seq.gridSync = srcSeq.gridSync;
+      seq.subdiv = srcSeq.subdiv;
+      seq.rate = srcSeq.rate;
+      seqs.set(id, seq);
+      createSeqNode(seq);
+      return seq;
+    }
+
+    function removeSeq(id) {
+      const seq = seqs.get(id);
+      if (!seq) return;
+      seq.unschedule();
+      // Disconnect all controlled samples and restart their internal playback
+      for (const sampleId of [...seq.destinations]) {
+        sampleSeqMap.delete(sampleId);
+        const tile = document.getElementById('t' + sampleId);
+        if (tile) { tile.classList.remove('seq-controlled'); tile.style.removeProperty('--seq-ctrl-color'); }
+        const s = samples.get(sampleId);
+        if (s instanceof Sample && audioReady && isPlaying) startSample(s);
+      }
+      seq.destinations = [];
+      // Disconnect any LFO→seq connections
+      for (const [, lfo] of lfos) {
+        const before = lfo.seqDestinations.length;
+        lfo.seqDestinations = lfo.seqDestinations.filter(d => d.seqId !== id);
+        if (lfo.seqDestinations.length !== before) lfoNodes.get(lfo.id)?.updateDestList();
+      }
+      const nodeInfo = seqNodes.get(id);
+      if (nodeInfo) {
+        nodeInfo.stopAnim();
+        nodeInfo.el.remove();
+      }
+      seqNodes.delete(id);
+      seqs.delete(id);
+      updateLfoWires();
+    }
+
+    // ── Add Step Sequencer button ──
+    document.getElementById('btn-add-seq').addEventListener('click', () => {
+      if (seqs.size >= MAX_SEQS) return;
+      const id = nextSeqId++;
+      const cx = (cv.clientWidth || 800) / 2 + (id - 1) * 30;
+      const cy = (cv.clientHeight || 500) / 2 + (id - 1) * 20;
+      const seq = new StepSequencer(id, cx, cy);
+      seqs.set(id, seq);
+      createSeqNode(seq);
     });
 
     // ════════════════════════════════════════════════════
