@@ -7101,6 +7101,7 @@
           return { type: inst.type, params: { ...inst.params }, postFader: !!inst.postFader };
         });
         projectData.samples.push({
+          id: s.id,
           name: s.name, x: s.x, y: s.y, color: s.color,
           pitchST: s.pitchST, stretchST: s.stretchST, psStretch: s.psStretch, reversed: s.reversed,
           loopStart: s.loopStart, loopEnd: s.loopEnd, filePosition: s.filePosition,
@@ -7125,7 +7126,14 @@
           shape: lfo.shape.map(p => ({ x: p.x, y: p.y })),
           rate: lfo.rate, gridSync: lfo.gridSync, subdiv: lfo.subdiv,
           _activePreset: lfo._activePreset,
-          destinations: lfo.destinations.map(d => ({ sampleId: d.sampleId, param: d.param, min: d.min, max: d.max })),
+          destinations: lfo.destinations.map(d => {
+            let fxIdx = null;
+            if (d.fxUid != null) {
+              const samp = samples.get(d.sampleId);
+              if (samp) fxIdx = samp.fxChain.findIndex(i => i.uid === d.fxUid);
+            }
+            return { sampleId: d.sampleId, param: d.param, min: d.min, max: d.max, fxIdx };
+          }),
           seqDestinations: lfo.seqDestinations.map(d => ({ seqId: d.seqId, param: d.param, min: d.min, max: d.max }))
         });
       }
@@ -7174,6 +7182,9 @@
         document.getElementById('bpm-val').textContent = Math.round(data.bpm);
       }
 
+      // idMap: old saved sample id → new runtime id (for reconnecting LFO/seq cables)
+      const idMap = {};
+
       // Restore samples
       for (const sd of data.samples) {
         if (!sd.audioB64) continue;
@@ -7185,6 +7196,7 @@
             Tone.context.rawContext.decodeAudioData(bytes.buffer, res, rej)
           );
           const id = nextId++;
+          if (sd.id != null) idMap[sd.id] = id;
           const s = new Sample(id, sd.name, decoded, sd.x, sd.y);
 
           // Restore color
@@ -7258,47 +7270,15 @@
         }
       }
 
-      // Restore LFOs
-      // Clear existing LFOs first
-      for (const lid of [...lfos.keys()]) removeLfo(lid);
-      if (Array.isArray(data.lfos)) {
-        for (const ld of data.lfos) {
-          const lid = nextLfoId++;
-          const lfo = new LFO(lid, ld.x || 400, ld.y || 300);
-          lfo.name = ld.name || ('LFO ' + lid);
-          if (ld.color) lfo.color = ld.color;
-          if (Array.isArray(ld.shape)) lfo.shape = ld.shape.map(p => ({ x: p.x, y: p.y }));
-          lfo.rate = ld.rate || 2;
-          lfo.gridSync = ld.gridSync || false;
-          lfo.subdiv = ld.subdiv || 1;
-          lfo._activePreset = ld._activePreset || null;
-          // Restore destinations — remap old sampleIds to new ones
-          // We assume samples were loaded in the same order, so old id N = new samples in order
-          if (Array.isArray(ld.destinations)) {
-            // Build old→new id mapping: old sample data order → new sample ids
-            const sampleIdList = [...samples.keys()];
-            for (const dd of ld.destinations) {
-              // Find matching sample by index if sampleId doesn't exist
-              const targetId = samples.has(dd.sampleId) ? dd.sampleId : null;
-              if (targetId) {
-                lfo.addDestination(targetId, dd.param, dd.min, dd.max);
-              }
-            }
-          }
-          if (Array.isArray(ld.seqDestinations)) {
-            for (const dd of ld.seqDestinations) {
-              if (seqs.has(dd.seqId)) lfo.addSeqDestination(dd.seqId, dd.param, dd.min, dd.max);
-            }
-          }
-          lfos.set(lid, lfo);
-          createLfoNode(lfo);
-        }
-      }
-      // Restore step sequencers
+      // seqIdMap: old saved seq id → new runtime id (must be built before LFO restoration)
+      const seqIdMap = {};
+
+      // Restore step sequencers (before LFOs so LFO→seq destinations can resolve)
       for (const sid of [...seqs.keys()]) removeSeq(sid);
       if (Array.isArray(data.seqs)) {
         for (const sd of data.seqs) {
           const sqid = nextSeqId++;
+          if (sd.id != null) seqIdMap[sd.id] = sqid;
           const seq = new StepSequencer(sqid, sd.x || 400, sd.y || 300);
           seq.name = sd.name || ('Seq ' + sqid);
           if (sd.color) seq.color = sd.color;
@@ -7318,12 +7298,52 @@
           seq.rate = sd.rate || 0.125;
           seqs.set(sqid, seq);
           createSeqNode(seq);
-          // Reconnect destinations
+          // Reconnect seq→sample destinations using idMap
           if (Array.isArray(sd.destinations)) {
-            for (const sampleId of sd.destinations) {
-              if (samples.has(sampleId)) connectSeqToSample(seq, sampleId);
+            for (const oldSampleId of sd.destinations) {
+              const targetId = idMap[oldSampleId] ?? (samples.has(oldSampleId) ? oldSampleId : null);
+              if (targetId != null) connectSeqToSample(seq, targetId);
             }
           }
+        }
+      }
+
+      // Restore LFOs
+      // Clear existing LFOs first
+      for (const lid of [...lfos.keys()]) removeLfo(lid);
+      if (Array.isArray(data.lfos)) {
+        for (const ld of data.lfos) {
+          const lid = nextLfoId++;
+          const lfo = new LFO(lid, ld.x || 400, ld.y || 300);
+          lfo.name = ld.name || ('LFO ' + lid);
+          if (ld.color) lfo.color = ld.color;
+          if (Array.isArray(ld.shape)) lfo.shape = ld.shape.map(p => ({ x: p.x, y: p.y }));
+          lfo.rate = ld.rate || 2;
+          lfo.gridSync = ld.gridSync || false;
+          lfo.subdiv = ld.subdiv || 1;
+          lfo._activePreset = ld._activePreset || null;
+          // Restore LFO→sample destinations, remapping old IDs and fxUid via chain index
+          if (Array.isArray(ld.destinations)) {
+            for (const dd of ld.destinations) {
+              const targetId = idMap[dd.sampleId] ?? (samples.has(dd.sampleId) ? dd.sampleId : null);
+              if (targetId == null) continue;
+              let fxUid = null;
+              if (dd.fxIdx != null && dd.fxIdx >= 0) {
+                const samp = samples.get(targetId);
+                if (samp && samp.fxChain[dd.fxIdx]) fxUid = samp.fxChain[dd.fxIdx].uid;
+              }
+              lfo.addDestination(targetId, dd.param, dd.min, dd.max, fxUid);
+            }
+          }
+          // Restore LFO→seq destinations using seqIdMap
+          if (Array.isArray(ld.seqDestinations)) {
+            for (const dd of ld.seqDestinations) {
+              const targetSeqId = seqIdMap[dd.seqId] ?? (seqs.has(dd.seqId) ? dd.seqId : null);
+              if (targetSeqId != null) lfo.addSeqDestination(targetSeqId, dd.param, dd.min, dd.max);
+            }
+          }
+          lfos.set(lid, lfo);
+          createLfoNode(lfo);
         }
       }
       updateEmpty();
