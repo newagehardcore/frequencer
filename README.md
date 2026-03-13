@@ -21,7 +21,7 @@ Drag audio files or folders onto the canvas, or click `+ Import`. Supported: WAV
 
 ## Sample Tiles
 
-Each tile shows a color-coded waveform, a live playhead, and a stereo VU meter. A master VU meter sits in the header.
+Each tile shows the sample's waveform rendered in its assigned color, a white live playhead, and a stereo VU meter. A master VU meter sits in the header. The app uses a monochrome (black and white) visual style throughout — only the waveforms carry color.
 
 | Interaction | Result |
 |-------------|--------|
@@ -33,29 +33,35 @@ Each tile shows a color-coded waveform, a live playhead, and a stereo VU meter. 
 
 ## Edit Card
 
-Click a tile to open its floating edit card. Multiple cards can be open at once.
+Click a tile to open its floating edit card. Multiple cards can be open at once. The card has a white border and displays the sample's waveform in its assigned color.
 
-**Playback** — Play, Stop, Mute, Solo, Reverse (plays buffer backwards).
+**Playback modes** (row above the waveform) — select how the sample plays:
 
-**Pitch Shift** — ±24 semitones, pitch only (speed unchanged).
+| Mode | Behaviour |
+|------|-----------|
+| LOOP | Loops the loop region continuously (default) |
+| REV | Plays the loop region in reverse, continuously |
+| GRAN | Granular synthesis (see Granular Mode below) |
+| TRIG | Waits for an external trigger — only plays on demand |
 
-**Timestretch** — ±24 semitones of playback rate (changes speed and pitch together).
+In **TRIG** mode the sample stops looping and waits silently. The Play button fires it once. Connecting a step sequencer wire automatically switches the sample to TRIG and drives it from the sequencer. Clicking LOOP, REV, or GRAN while a sequencer is connected disconnects it and restores continuous playback.
 
-**Loop Points** — drag white handles on the waveform, or use the **Start** and **End** sliders (full file range, in seconds). The waveform can be zoomed and panned by dragging (drag vertically to zoom, horizontally to pan; double-click to reset).
+**Controls** — Play · Stop · Mute · Solo
 
-**File Position** — sets where playback begins each loop iteration. In free mode it acts as a one-time start offset, applied on the next loop boundary. In Grid Sync mode it shifts the playhead start within the grid period without interrupting playback — the new value is picked up silently on the next subdivision trigger.
+The remaining parameters are grouped into collapsible accordion sections (click a section header to expand; multiple sections can be open at once):
 
-**Fades** — Attack, Release, or Crossfade (equal-power). Crossfade and Attack/Release are mutually exclusive.
+**PLAYBACK** — Loop start/end handles and sliders, File Position, and Grid Sync settings. Grid Sync options are hidden in GRAN and TRIG modes.
+- *Loop Points* — drag handles on the waveform or use the Start/End sliders. Waveform supports zoom (drag vertically) and pan (drag horizontally); double-click to reset.
+- *File Position* — start offset within the loop region. In Grid Sync mode applies silently on the next subdivision.
+- *Grid Sync* — lock to BPM: `1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32`, with Dot (×1.5) and 3let (÷1.5) variants; `÷2` / `÷3` multipliers skip every other or every third trigger.
 
-**Grid Sync** — Lock the sample to the global transport:
-- Subdivision: `1 Bar · ½ · ¼ · ⅛ · 1/16`
-- Dotted (`Dot` button = ×1.5) or triplet (`3let` button = ×⅔) variants
-- Grid multiplier: `÷2` fires every other hit, `÷3` every third
-- Overflow: `Wait` or `Cut`
-- End handle auto-snaps to the subdivision boundary when sync is on
-- Loop point and file position changes take effect on the next subdivision — playback is never interrupted mid-loop
+**MIXER** — Volume and Pan.
 
-**FX Rack** — add unlimited instances of any effect. Each effect panel has a **PRE/POST** toggle (defaults to POST) that routes the effect either before or after the volume/pan fader. Click ✕ to remove.
+**ENVELOPE** — Attack, Release, Crossfade (equal-power).
+
+**PITCH+TIME** — Pitch Shift (±24 st, speed unchanged) · Timestretch (±24 st, changes speed and pitch) · Paulstretch (extreme slow-down).
+
+**EFFECTS** — FX rack. Add unlimited effect instances; each has a PRE/POST fader toggle. Click ✕ to remove.
 
 | Button | Effect |
 |--------|--------|

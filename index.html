@@ -265,14 +265,14 @@
       width: 136px;
       height: 56px;
       background: var(--surface);
-      border: 1px solid var(--b2);
+      border: 1px solid rgba(255,255,255,0.2);
       cursor: grab;
       overflow: hidden;
       z-index: 10;
     }
 
     .tile:hover {
-      border-color: var(--b3);
+      border-color: rgba(255,255,255,0.5);
     }
 
     .tile.playing {
@@ -369,6 +369,123 @@
 
     .tile.soloed .tile-gbadge {
       color: #fff;
+    }
+
+    .tile-gran-badge {
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      z-index: 3;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--b3);
+      display: none;
+    }
+
+    .tile.gran-on .tile-gran-badge {
+      display: block;
+      color: var(--mid);
+    }
+
+    .tile.gran-on.playing .tile-gran-badge {
+      color: #fff;
+    }
+
+    .tile-gran-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      display: none;
+    }
+    .tile.gran-on.playing .tile-gran-canvas { display: block; }
+
+    /* Playback mode row buttons */
+    .playmode-btn {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4);
+      cursor: pointer;
+      font-family: Helvetica, Arial, sans-serif;
+      transition: all 0.1s;
+    }
+    .playmode-btn:hover {
+      border-color: rgba(255,255,255,0.5);
+      color: rgba(255,255,255,0.8);
+    }
+    .playmode-btn.act {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    /* Mode row above waveform */
+    .card-mode-row {
+      display: flex;
+      gap: 0;
+      padding: 4px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .card-mode-row .playmode-btn {
+      border-radius: 0;
+      border-right-width: 0;
+    }
+    .card-mode-row .playmode-btn:last-child {
+      border-right-width: 1px;
+    }
+
+    /* Accordion sections */
+    .card-accordion {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .card-acc-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      user-select: none;
+    }
+    .card-acc-hdr:hover { color: #fff; }
+    .card-acc-hdr::after {
+      content: '▸';
+      font-size: 8px;
+      transition: transform 0.15s;
+    }
+    .card-acc-hdr.open { color: rgba(255,255,255,0.85); }
+    .card-acc-hdr.open::after { transform: rotate(90deg); }
+    .card-acc-body { display: none; }
+    .card-acc-body.open { display: block; }
+
+    /* Gran overlay canvas */
+    .card-gran-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Gran sliders section - hidden by default */
+    .gran-sliders {
+      display: none;
+    }
+    .gran-sliders.visible {
+      display: block;
+    }
+    .loop-grid-section.hidden {
+      display: none;
     }
 
     /* ═══ FLOATING SAMPLE CARD ═══ */
@@ -760,7 +877,6 @@
 
     /* ═══ FX CHAIN SECTION ═══ */
     .fx-section {
-      border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     .fx-btn-row {
@@ -1370,13 +1486,14 @@
       width: 220px;
       background: #000;
       border: 1px solid rgba(255,255,255,0.2);
-      z-index: 200;
+      z-index: 10;
       cursor: default;
       user-select: none;
     }
 
     .lfo-node.dragging {
-      z-index: 250;
+      /* z-index controlled dynamically via cardZTop */
+      z-index: inherit;
     }
 
     .lfo-titlebar {
@@ -1639,13 +1756,14 @@
       width: 260px;
       background: #000;
       border: 1px solid rgba(255,255,255,0.2);
-      z-index: 200;
+      z-index: 10;
       cursor: default;
       user-select: none;
     }
 
     .seq-node.dragging {
-      z-index: 250;
+      /* z-index controlled dynamically via cardZTop */
+      z-index: inherit;
     }
 
     .seq-titlebar {
@@ -1717,11 +1835,128 @@
       transition: background 0.06s, border-color 0.06s;
       min-height: 22px;
       padding: 0;
+      position: relative;
+      overflow: hidden;
     }
 
-    .seq-step:hover:not(.inactive) {
+    /* Per-step visual overlays */
+    .step-vol-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.45);
+      pointer-events: none;
+      transition: height 0.06s;
+    }
+    .step-pitch-tag {
+      position: absolute;
+      top: 1px; right: 2px;
+      font-size: 6px;
+      line-height: 1;
+      font-weight: 700;
+      color: rgba(0,0,0,0.65);
+      pointer-events: none;
+      letter-spacing: -0.03em;
+    }
+    .seq-step:not(.act) .step-pitch-tag { color: rgba(255,255,255,0.6); }
+    .step-gate-bar {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      background: rgba(255,255,255,0.9);
+      pointer-events: none;
+      transition: width 0.06s;
+    }
+    .seq-step.act .step-gate-bar { background: rgba(0,0,0,0.6); }
+
+    /* Step editor popover (hover-triggered) */
+    .seq-step-editor {
+      position: absolute;
+      z-index: 200;
+      background: #0d0d0d;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 4px;
+      padding: 7px 9px 8px;
+      width: 210px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.75);
+      font-size: 9px;
+    }
+    .sse-header {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 6px;
+    }
+    .sse-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .sse-lbl {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.4);
+      width: 28px;
+      flex-shrink: 0;
+    }
+    .sse-row input[type=range] {
+      flex: 1;
+      height: 2px;
+      cursor: pointer;
+      accent-color: var(--seq-color, #fff);
+    }
+    .sse-row input[type=range]:disabled { opacity: 0.25; cursor: default; }
+    .sse-val {
+      font-size: 8px;
+      color: rgba(255,255,255,0.65);
+      width: 34px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .sse-global-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 8px;
+      color: rgba(255,255,255,0.4);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .sse-global-wrap input[type=checkbox] { accent-color: var(--seq-color, #fff); margin: 0; }
+    .sse-reset {
+      display: block;
+      width: 100%;
+      margin-top: 2px;
+      font-size: 7px;
+      padding: 3px 0;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 2px;
+      color: rgba(255,255,255,0.4);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .sse-reset:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+
+    .seq-step:not(.act):hover:not(.inactive) {
       background: rgba(255,255,255,0.15);
       border-color: rgba(255,255,255,0.3);
+    }
+    .seq-step.act:hover:not(.inactive) {
+      filter: brightness(1.15);
+    }
+    .seq-step.editing {
+      box-shadow: 0 0 0 2px #fff;
+      z-index: 1;
+    }
+    .seq-step.act.editing {
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--seq-color, #fff);
     }
 
     .seq-step.act {
@@ -1734,8 +1969,7 @@
     }
 
     .seq-step.inactive {
-      opacity: 0.15;
-      pointer-events: none;
+      display: none;
     }
 
     .seq-controls {
@@ -1828,8 +2062,8 @@
       display: none;
       grid-template-columns: repeat(16, 1fr);
       gap: 2px;
-      padding: 8px 8px 6px;
-      height: 40px;
+      padding: 6px 8px;
+      min-height: 26px;
       box-sizing: border-box;
       border-bottom: 1px solid var(--b2);
     }
@@ -1848,7 +2082,7 @@
     }
 
     .seq-mini-step.inactive {
-      opacity: 0.1;
+      display: none;
     }
 
     .seq-node.collapsed {
@@ -1991,7 +2225,7 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      z-index: 500;
+      z-index: 9000;
       overflow: visible;
     }
 
@@ -2181,7 +2415,7 @@
     const WAVE_ZOOM_MAX = 1e7;
     let soloId = null;
     const openCards = new Map(); // sampleId → { el, getZView, drawWave, updateLoopReg }
-    let cardZTop = 400;
+    let cardZTop = 10; // unified z-index counter for all floating elements
     let nextId = 1;
 
     const samples = new Map();
@@ -2215,7 +2449,7 @@
     const lfoNodes = new Map(); // lfoId → { el, drawShape, updateDestList, ... }
     let _wiringLfo = null; // set during wire-drag: { lfoId, tempLine }
     let _lfoColorIdx = 0;
-    const LFO_COLORS = ['#00cccc', '#cc00cc', '#00cc00', '#cccc00', '#ff6600', '#0099ff', '#ff0066', '#6600ff'];
+    const LFO_COLORS = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'];
     function nextLfoColor() { return LFO_COLORS[_lfoColorIdx++ % LFO_COLORS.length]; }
 
     // ════════════════════════════════════════════════════
@@ -2227,7 +2461,7 @@
     const SEQ_W = 260;
     const seqNodes = new Map(); // seqId → { el, stopAnim }
     let _seqColorIdx = 0;
-    const SEQ_COLORS = ['#ff9900', '#00aaff', '#ff00aa', '#aaff00', '#aa00ff', '#00ffaa', '#ff4444', '#ffcc00'];
+    const SEQ_COLORS = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'];
     function nextSeqColor() { return SEQ_COLORS[_seqColorIdx++ % SEQ_COLORS.length]; }
 
     // Returns the natural play duration of a sample (how long it plays when triggered once)
@@ -2259,7 +2493,7 @@
         this.x = x; this.y = y;
         this.color = nextSeqColor();
         this.numSteps = 16;
-        this.steps = new Array(16).fill(false);
+        this.steps = Array.from({length: 64}, () => ({on: false, pitch: 0, vol: 1.0, gate: null}));
         this.destinations = []; // array of sampleIds connected via wire
         this.gateLength = 1.0;  // fraction of step duration (1.0 = play until next trigger)
         this.gridSync = true;
@@ -2286,12 +2520,14 @@
           }
           const step = stepIdx % this.numSteps;
           stepIdx++;
-          if (!this.steps[step]) return;
+          const stepData = this.steps[step];
+          if (!stepData.on) return;
           const stepDur = seqStepDurSec(this);
+          const gateLen = stepData.gate ?? this.gateLength;
           for (const sampleId of this.destinations) {
             const s = samples.get(sampleId);
             if (!s || !(s instanceof Sample) || s.muted) continue;
-            s.triggerAtTime(time, this.gateLength);
+            s.triggerAtTime(time, gateLen, stepData.vol, stepData.pitch);
             // Next active step's triggerAtTime will interrupt early if it fires before the gate closes
           }
         }, this.getStepInterval());
@@ -2361,6 +2597,11 @@
       'eq-pk2-freq': { prop: 'freq', min: 100, max: 18000, label: 'Pk2 Freq', isEq: true, bandIdx: 2 },
       'eq-pk3-freq': { prop: 'freq', min: 200, max: 20000, label: 'Pk3 Freq', isEq: true, bandIdx: 3 },
       'eq-lp-freq': { prop: 'freq', min: 20, max: 20000, label: 'LP Freq', isEq: true, bandIdx: 4 },
+      // Granular params
+      'card-grain-size':    { prop: 'grainSize',    min: 10,  max: 500, label: 'Gr.Size',  setter: 'setGrainSize',    fmtVal: v => Math.round(v) + 'ms', isGran: true },
+      'card-grain-scatter': { prop: 'grainScatter', min: 0,   max: 1,   label: 'Scatter',  setter: 'setGrainScatter', fmtVal: v => (+v).toFixed(2), isGran: true },
+      'card-grain-density': { prop: 'grainDensity', min: 1,   max: 40,  label: 'Density',  setter: 'setGrainDensity', fmtVal: v => Math.round(v) + '/s', isGran: true },
+      'card-pitch-spread':  { prop: 'pitchSpread',  min: 0,   max: 100, label: 'PtchSprd', setter: 'setPitchSpread',  fmtVal: v => Math.round(v) + 'c',  isGran: true },
     };
 
     // LFO preset shape generators (return breakpoint arrays [{x:0..1, y:0..1}])
@@ -2465,7 +2706,7 @@
 
     // Seq parameter definitions for LFO modulation
     const SEQ_PARAM_MAP = {
-      'seq-steps-input': { param: 'numSteps', min: 1, max: 16, label: 'Steps' },
+      'seq-steps-input': { param: 'numSteps', min: 1, max: 64, label: 'Steps' },
       'seq-gate-input':  { param: 'gateLength', min: 0.01, max: 1, label: 'Gate' },
     };
 
@@ -2502,6 +2743,10 @@
     // ════════════════════════════════════════════════════
     // SAMPLE CLASS
     // ════════════════════════════════════════════════════
+    // Micro fade-in applied at every sample start to eliminate digital click from
+    // cutting into audio mid-waveform. Short enough (<5 ms) to leave transients intact.
+    const DECLICK_S = 0.005;
+
     class Sample {
       constructor(id, name, rawBuf, x = 0, y = 0) {
         this.id = id;
@@ -2530,6 +2775,18 @@
         this.crossfadeTime = 0; // seconds
         this.clipGainDb = 0;    // clip gain in dB, -12..+12
 
+        this.triggerMode = false; // one-shot on trigger, no auto-loop
+
+        // Granular mode state
+        this.granular = false;
+        this.grainSize = 100;    // ms, 10..500
+        this.grainScatter = 0;   // 0..1
+        this.grainDensity = 16;  // grains/sec, 1..40
+        this.pitchSpread = 0;    // cents, 0..100
+        this.grainPlayer = null; // Tone.GrainPlayer when active
+        this._granPhase = 0;     // 0..1 nominal position within loop for scatter
+        this._granLastTick = null;
+
         this.playing = false;
         this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
         this._anchorBufferPos = 0; // Absolute buffer seconds tracking anchor
@@ -2537,6 +2794,7 @@
         this._filePosTimer = null;
         this._pendingRestart = false; // set to restart on the next loop wrap boundary
         this._seqTrigVer = 0; // incremented on each seq trigger/stop to guard stale Draw callbacks
+        this._lastStepVol = 1.0; // tracks last per-step volume for crossfade at trigger boundary
         this._currentDb = 0;
 
         // Compute initial vol/pan from position so nodes never start at wrong defaults
@@ -2749,9 +3007,187 @@
         }
       }
 
+      // ── Granular mode ──
+      setGranularMode(val) {
+        if (this.granular === val) return;
+        this.granular = val;
+        this._fadedBuf = null;
+        if (val) {
+          // Ensure reverse is off (mutually exclusive)
+          if (this.reversed) { this.reversed = false; }
+          // Immediately stop and DISCONNECT regular players — prevents any audio bleed
+          this._cancelGrid();
+          this.player.loop = false;
+          this.xfPlayer.loop = false;
+          this._stopPlayer();
+          this._stopXfLoop();
+          try { this.player.disconnect(); } catch(e) {}
+          try { this.xfPlayer.disconnect(); } catch(e) {}
+          // Ensure fadeGain is at 1 (grainGain will control grain player volume independently)
+          const ctx = Tone.context.rawContext;
+          this.fadeGain.gain.cancelScheduledValues(ctx.currentTime);
+          this.fadeGain.gain.setValueAtTime(1, ctx.currentTime);
+          // Dedicated gain node for the grain player
+          this.grainGain = new Tone.Gain(0).connect(this.fadeGain);
+          this.grainPlayer = new Tone.GrainPlayer();
+          this._setGrainBuf();
+          this._applyGrainParams();
+          this._updateGranWindow();
+          this.grainPlayer.connect(this.grainGain);
+          if (this.playing) {
+            const startAt = ctx.currentTime + 0.01;
+            this.grainGain.gain.setValueAtTime(0, ctx.currentTime);
+            this.grainGain.gain.linearRampToValueAtTime(1, startAt + 0.1);
+            try { this.grainPlayer.start(startAt); } catch (e) { console.warn('gran start', e); }
+            this._anchorAcTime = null; // no linear playhead in gran mode
+          }
+        } else {
+          if (this.grainPlayer) {
+            if (this.playing) {
+              const ctx = Tone.context.rawContext;
+              const now = ctx.currentTime;
+              const XFADE = 0.04;
+              // Fade out grain via grainGain only — leave fadeGain at 1 for incoming regular player
+              this.grainGain.gain.cancelScheduledValues(now);
+              this.grainGain.gain.setValueAtTime(this.grainGain.gain.value, now);
+              this.grainGain.gain.linearRampToValueAtTime(0, now + XFADE);
+              const gp = this.grainPlayer, gg = this.grainGain;
+              setTimeout(() => {
+                try { gp.stop(); gp.disconnect(); gp.dispose(); } catch (e) {}
+                try { gg.disconnect(); gg.dispose(); } catch (e) {}
+              }, (XFADE + 0.02) * 1000);
+            } else {
+              try { this.grainPlayer.stop(); this.grainPlayer.disconnect(); this.grainPlayer.dispose(); } catch (e) {}
+              try { this.grainGain.disconnect(); this.grainGain.dispose(); } catch (e) {}
+            }
+            this.grainPlayer = null;
+            this.grainGain = null;
+          }
+          // Reconnect regular players before resuming
+          try { this.player.connect(this.fadeGain); } catch(e) {}
+          try { this.xfPlayer.connect(this.xfGain); } catch(e) {}
+          if (this.playing) {
+            if (this.gridSync) { this._cancelGrid(); this.playGrid(); }
+            else this.play();
+          }
+        }
+        this._granPhase = 0;
+        this._granLastTick = null;
+        this._granDetuneTarget = undefined;
+        this._granTickCount = 0;
+        this._renderTile();
+      }
+
+      // Set the grain player's buffer — uses PS buffer if PaulStretch is active
+      _setGrainBuf() {
+        const gp = this.grainPlayer;
+        if (!gp) return;
+        const buf = (this.psStretch > 1 && this._psBuffer) ? this._psBuffer : this.raw;
+        if (typeof gp.buffer.set === 'function') gp.buffer.set(buf);
+        else gp.buffer._buffer = buf;
+      }
+
+      _applyGrainParams() {
+        const gp = this.grainPlayer;
+        if (!gp) return;
+        this._setGrainBuf();
+        const dur = this._activeDur;
+        gp.grainSize = Math.max(0.05, this.grainSize / 1000);
+        // Minimum overlap = 30ms fixed floor to guarantee click-free crossfades
+        gp.overlap = Math.max(0.03, Math.min(gp.grainSize * 0.9, gp.grainSize - 1 / Math.max(1, this.grainDensity)));
+        gp.loopStart = this.loopStart * dur;
+        gp.loopEnd = this.loopEnd * dur;
+        gp.loop = true;
+        // playbackRate = 1 — grain audio goes through this.ps (PitchShift) for pitch.
+        // Changing playbackRate here would also shift pitch, doubling the effect.
+        gp.playbackRate = 1.0;
+        // detune starts at 0 — pitch shift is handled by this.ps which is downstream.
+        // _granTick modulates detune for pitch spread on top of that.
+        gp.detune = 0;
+      }
+
+      setGrainSize(ms) {
+        this.grainSize = Math.max(10, Math.min(500, ms));
+        const gp = this.grainPlayer;
+        if (gp) {
+          gp.grainSize = Math.max(0.05, this.grainSize / 1000);
+          gp.overlap = Math.max(0.03, Math.min(gp.grainSize * 0.9,
+            gp.grainSize - 1 / Math.max(1, this.grainDensity)));
+          this._updateGranWindow();
+        }
+      }
+
+      setGrainScatter(v) {
+        this.grainScatter = Math.max(0, Math.min(1, v));
+        this._updateGranWindow();
+      }
+
+      setGrainDensity(v) {
+        this.grainDensity = Math.max(1, Math.min(40, v));
+        const gp = this.grainPlayer;
+        if (gp) {
+          gp.overlap = Math.max(0.03, Math.min(gp.grainSize * 0.9,
+            gp.grainSize - 1 / Math.max(1, this.grainDensity)));
+        }
+      }
+
+      setPitchSpread(cents) {
+        this.pitchSpread = Math.max(0, Math.min(100, cents));
+      }
+
+      _updateGranWindow() {
+        const gp = this.grainPlayer;
+        if (!gp) return;
+        const dur = this._activeDur;
+        const ls = this.loopStart * dur;
+        const le = this.loopEnd * dur;
+        const span = Math.max(0.001, le - ls);
+        if (this.grainScatter >= 0.99) {
+          gp.loopStart = ls;
+          gp.loopEnd = le;
+        } else {
+          // Scatter 0 = narrow window around loop center, Scatter 1 = full loop region.
+          // GrainPlayer's internal random scheduling provides the scatter naturally.
+          const center = ls + span * 0.5;
+          const minHalfW = Math.max(this.grainSize / 1000, span * 0.05);
+          const halfW = minHalfW + (span * 0.5 - minHalfW) * this.grainScatter;
+          gp.loopStart = Math.max(ls, center - halfW);
+          gp.loopEnd = Math.min(le, Math.max(gp.loopStart + this.grainSize / 1000 * 1.1, center + halfW));
+        }
+      }
+
+      // Called from phLoop each frame — handles smooth pitch spread modulation
+      _granTick(now) {
+        if (!this.grainPlayer || !this.playing) return;
+        this._granTickCount = (this._granTickCount || 0) + 1;
+
+        // Pitch spread: GrainPlayer.detune is a plain Cents number (not a Param),
+        // so we lerp directly. Pick a new random target every ~18 frames (~300ms),
+        // then lerp toward it each frame for smooth per-grain pitch variation.
+        if (this.pitchSpread > 0) {
+          if (this._granTickCount % 18 === 0 || this._granDetuneTarget === undefined) {
+            this._granDetuneTarget = (Math.random() * 2 - 1) * this.pitchSpread;
+          }
+          // Lerp detune toward target — smooth, no sudden jumps
+          const cur = this.grainPlayer.detune;
+          this.grainPlayer.detune = cur + (this._granDetuneTarget - cur) * 0.12;
+        } else if (this.grainPlayer.detune !== 0) {
+          // Smoothly return to 0 when spread is off
+          this.grainPlayer.detune = this.grainPlayer.detune * 0.85;
+          if (Math.abs(this.grainPlayer.detune) < 0.5) this.grainPlayer.detune = 0;
+        }
+      }
+
       // ── Internal: stop the player node without changing state ──
       _stopPlayer() {
-        try { this.player.stop(); } catch (e) { }
+        const now = Tone.context.rawContext.currentTime;
+        const fg = this.fadeGain.gain;
+        fg.cancelScheduledValues(now);
+        fg.setValueAtTime(fg.value, now);
+        fg.linearRampToValueAtTime(0, now + DECLICK_S);
+        try { this.player.stop(now + DECLICK_S); } catch (e) {
+          try { this.player.stop(); } catch (e2) { }
+        }
       }
 
       // ── Internal: cancel the two-player crossfade loop ──
@@ -2774,7 +3210,8 @@
           fg.setValueAtTime(0, time);
           fg.linearRampToValueAtTime(1, time + atk);
         } else {
-          fg.setValueAtTime(1, time);
+          fg.setValueAtTime(0, time);
+          fg.linearRampToValueAtTime(1, time + DECLICK_S);
         }
         if (rel > 0) {
           const rStart = time + Math.max(atk, dur - rel);
@@ -2959,6 +3396,24 @@
         this._filePosTimer = null;
         this._pendingRestart = false;
 
+        // ── Granular mode ──
+        if (this.granular && this.grainPlayer) {
+          this._applyGrainParams();
+          const startAt = Tone.context.rawContext.currentTime + 0.005;
+          // Ramp grainGain up smoothly to avoid onset click
+          if (this.grainGain) {
+            this.grainGain.gain.cancelScheduledValues(startAt - 0.005);
+            this.grainGain.gain.setValueAtTime(0, startAt - 0.005);
+            this.grainGain.gain.linearRampToValueAtTime(1, startAt + 0.1);
+          }
+          try { this.grainPlayer.start(startAt); } catch (e) { console.warn('gran play', e); }
+          this._anchorAcTime = null; // no linear playhead in gran mode
+          this._anchorBufferPos = this._revStart;
+          this.playing = true;
+          this._renderTile();
+          return;
+        }
+
         // ── PaulStretch mode: play the pre-rendered stretched buffer ──
         // loopStart/loopEnd and filePosition are all 0..1 relative to the PS buffer.
         if (this.psStretch > 1 && this._psBuffer && !this._psRendering) {
@@ -3009,6 +3464,8 @@
           this.player.loopEnd = psEnd;
           this.player.loop = true;
           this.player.playbackRate = this._pbRate;
+          this.fadeGain.gain.setValueAtTime(0, startAt);
+          this.fadeGain.gain.linearRampToValueAtTime(1, startAt + DECLICK_S);
           try {
             this.player.start(startAt, psOffset);
             this._anchorAcTime = startAt;
@@ -3069,6 +3526,8 @@
         this.player.loopStart = this._revStart;
         this.player.loopEnd = this._revEnd;
         this.player.loop = true;
+        this.fadeGain.gain.setValueAtTime(0, startAt);
+        this.fadeGain.gain.linearRampToValueAtTime(1, startAt + DECLICK_S);
         try {
           this.player.start(startAt, this._revFilePos);
           this._anchorAcTime = startAt;
@@ -3088,6 +3547,8 @@
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
+        // Granular mode: use play() instead (no grid quantization for granular)
+        if (this.granular && this.grainPlayer) { this.play(); return; }
         this.player.loop = false;
         this.xfPlayer.loop = false;
 
@@ -3168,14 +3629,21 @@
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
+        if (this.grainPlayer) {
+          if (this.grainGain) {
+            const now = Tone.context.rawContext.currentTime;
+            this.grainGain.gain.cancelScheduledValues(now);
+            this.grainGain.gain.setValueAtTime(this.grainGain.gain.value, now);
+            this.grainGain.gain.linearRampToValueAtTime(0, now + 0.03);
+          }
+          setTimeout(() => { try { this.grainPlayer && this.grainPlayer.stop(); } catch(e) {} }, 40);
+        }
+        this._granLastTick = null;
         clearTimeout(this._filePosTimer);
         this._filePosTimer = null;
         this._pendingRestart = false;
         this.playing = false;
         this._anchorAcTime = null;
-        const now = Tone.context.rawContext.currentTime;
-        this.fadeGain.gain.cancelScheduledValues(now);
-        this.fadeGain.gain.setValueAtTime(1, now);
         this._renderTile();
       }
 
@@ -3183,7 +3651,8 @@
       // Handles PS / faded / native buffers correctly and updates playhead state.
       // Returns the natural play duration in seconds.
       // gateLength: 0..1 fraction of loop region to play; null or 1 = play until next trigger.
-      triggerAtTime(acTime, gateLength = null) {
+      triggerAtTime(acTime, gateLength = null, stepVolume = 1.0, stepPitch = 0) {
+        const pitchRatio = stepPitch !== 0 ? Math.pow(2, stepPitch / 12) : 1;
         ++this._seqTrigVer;
         const ver = this._seqTrigVer;
 
@@ -3191,13 +3660,21 @@
         try { this.player.stop(acTime); } catch (e) { }
         try { this.xfPlayer.stop(acTime); } catch (e) { }
 
-        // Reset gain state at trigger time
-        this.xfGain.gain.cancelScheduledValues(acTime);
+        // Crossfade at trigger boundary: ramp out old note, ramp in new note
+        const vol = Math.max(0, Math.min(1, stepVolume));
+        const fg = this.fadeGain.gain;
+        this.xfGain.gain.cancelScheduledValues(acTime - DECLICK_S);
         this.xfGain.gain.setValueAtTime(0, acTime);
-        this.fadeGain.gain.cancelScheduledValues(acTime);
-        this.fadeGain.gain.setValueAtTime(1, acTime);
+        fg.cancelScheduledValues(acTime - DECLICK_S);
+        fg.setValueAtTime(this._lastStepVol, acTime - DECLICK_S);
+        fg.linearRampToValueAtTime(0, acTime);
+        fg.setValueAtTime(0, acTime);
+        fg.linearRampToValueAtTime(vol, acTime + DECLICK_S);
+        this._lastStepVol = vol;
 
         let playDur;
+
+        let anchorPos; // buffer position (seconds) where playback actually starts — used for playhead
 
         if (this.psStretch > 1 && this._psBuffer && !this._psRendering) {
           // ── PaulStretch one-shot ──
@@ -3205,26 +3682,35 @@
           const psStart = this.loopStart * psBuf.duration;
           const psEnd = this.loopEnd * psBuf.duration;
           const psDur = psEnd - psStart;
-          playDur = psDur / this._pbRate;
+          const psRate = this._pbRate * pitchRatio;
+          playDur = psDur / psRate;
+          // Start from filePosition within the PS loop (clamped to loop bounds)
+          const psFilePos = Math.max(psStart, Math.min(psEnd - 0.001, this.filePosition * psBuf.duration));
+          anchorPos = psFilePos;
           const hasFades = this.attackTime > 0 || this.releaseTime > 0;
-          let buf = psBuf, offset = psStart;
+          let buf = psBuf, offset = psFilePos;
           if (hasFades) {
             if (!this._psFadedBuf) this._psFadedBuf = this._buildFadedLoopBuffer(psBuf, psStart, psEnd);
-            if (this._psFadedBuf) { buf = this._psFadedBuf; offset = 0; }
+            if (this._psFadedBuf) {
+              buf = this._psFadedBuf;
+              offset = Math.max(0, Math.min(this._psFadedBuf.duration - 0.001, psFilePos - psStart));
+            }
           }
           if (typeof this.player.buffer.set === 'function') this.player.buffer.set(buf);
           else this.player.buffer._buffer = buf;
           this.player.loop = false;
-          this.player.playbackRate = this._pbRate;
+          this.player.playbackRate = psRate;
           try { this.player.start(acTime, offset, playDur); } catch (e) { }
           this._psPlayingBuffer = true;
         } else {
           // ── Normal one-shot ──
           this._psPlayingBuffer = false;
-          const startPos = this._revStart;
+          const startPos = this._revFilePos; // trigger from filePosition, not loop start
+          anchorPos = startPos;
           const endPos = this._revEnd;
           const rawDur = endPos - startPos;
-          playDur = rawDur / this._pbRate;
+          const stepRate = this._pbRate * pitchRatio;
+          playDur = rawDur / stepRate;
           let fadedOk = false;
           if (this.attackTime > 0 || this.releaseTime > 0) {
             if (!this._fadedBuf) this._fadedBuf = this._buildFadedLoopBuffer();
@@ -3233,9 +3719,10 @@
               if (typeof this.player.buffer.set === 'function') this.player.buffer.set(fb);
               else this.player.buffer._buffer = fb;
               this.player.loop = false;
-              this.player.playbackRate = this._pbRate;
-              playDur = fb.duration / this._pbRate;
-              try { this.player.start(acTime, 0, playDur); } catch (e) { }
+              this.player.playbackRate = stepRate;
+              const fbOffset = Math.max(0, Math.min(fb.duration - 0.001, startPos - this._revStart));
+              playDur = (fb.duration - fbOffset) / stepRate;
+              try { this.player.start(acTime, fbOffset, playDur); } catch (e) { }
               fadedOk = true;
             }
           }
@@ -3243,16 +3730,16 @@
             if (typeof this.player.buffer.set === 'function') this.player.buffer.set(this._srcBuf);
             else this.player.buffer._buffer = this._srcBuf;
             this.player.loop = false;
-            this.player.playbackRate = this._pbRate;
+            this.player.playbackRate = stepRate;
             try { this.player.start(acTime, startPos, playDur); } catch (e) { }
           }
         }
 
-        // Gate: if gateLength < 1, cut audio after that fraction of the loop region.
-        // Use loop region duration (consistent regardless of buffer type) for the gate window.
-        // Gate stop: always cap to loop region (prevents bleed past loop end for faded buffers).
-        // At gateLength=1 this equals loopRealSec; the next trigger will interrupt early if sooner.
-        const loopRealSec = this.lenSec / this._pbRate;
+        // Gate: fraction of loop region to play.
+        // PS mode: gate is relative to the stretched buffer duration (not the source lenSec).
+        const loopRealSec = (this.psStretch > 1 && this._psBuffer && this._psPlayingBuffer)
+          ? (this.loopEnd - this.loopStart) * this._psBuffer.duration / (this._pbRate * pitchRatio)
+          : this.lenSec / (this._pbRate * pitchRatio);
         const gateDur = loopRealSec * (gateLength ?? 1);
         const stopAt = acTime + gateDur;
         try { this.player.stop(stopAt); } catch (e) { }
@@ -3262,7 +3749,7 @@
         Tone.Draw.schedule(() => {
           if (this._seqTrigVer !== ver) return;
           this._anchorAcTime = acTime;
-          this._anchorBufferPos = this._revStart;
+          this._anchorBufferPos = anchorPos; // actual start position in buffer seconds
           this.playing = true;
           this._renderTile();
         }, acTime);
@@ -3296,8 +3783,10 @@
 
       updateBufferAnchor() {
         if (!this.playing || this._anchorAcTime === null) return;
-        // Grid mode: fire() resets the anchor authoritatively via Tone.Draw.schedule — don't clobber it
-        if (this.gridSync && this._xfTimeout === null) return;
+        // Grid mode: fire() resets the anchor authoritatively via Tone.Draw.schedule — don't clobber it.
+        // Exception: PS mode uses player.loop=true (no fire()), so always needs anchor tracking.
+        const isPS = this.psStretch > 1 && this._psBuffer && this._psPlayingBuffer;
+        if (!isPS && this.gridSync && this._xfTimeout === null) return;
         const acNow = Tone.context.rawContext.currentTime;
         let elapsed = acNow - this._anchorAcTime;
         if (elapsed <= 0) return;
@@ -3387,21 +3876,16 @@
         if (this.psStretch > 1 && this._psBuffer && !this._psRendering) {
           const psDur = this._psBuffer.duration;
           if (this.filePosition > end) this.filePosition = Math.max(start, end - 0.001 / Math.max(0.001, psDur));
+          if (this.filePosition < start) this.filePosition = start;
           this._psFadedBuf = null; // loop region changed — rebuild faded buffer on next play
           if (!this.playing) return;
-          this.filePosition = start;
           if (this.gridSync) {
             this._cancelGrid();
             this._stopPlayer();
-            this.playGrid();
+            this.play(); // playGrid() would restore the source buffer, breaking PS mode
           } else {
-            const hasFades = this.attackTime > 0 || this.releaseTime > 0 || this.crossfadeTime > 0;
-            if (hasFades) {
-              this.play();
-            } else {
-              this.player.loopStart = start * psDur;
-              this.player.loopEnd = end * psDur;
-            }
+            this.filePosition = start;
+            this.play();
           }
           return;
         }
@@ -3423,10 +3907,11 @@
         // Only clamp filePosition at the upper end (it can be below loopStart for pre-loop playthrough)
         if (this.filePosition >= end) this.filePosition = Math.max(0, end - 0.001 / Math.max(0.001, this.duration));
 
+        // Clamp filePosition to the new bounds (preserve custom filePos within region)
+        if (this.filePosition < start) this.filePosition = start;
+
         if (!this.playing) return;
 
-        // Always restart immediately so the new region plays right away
-        this.filePosition = start;
         if (this.gridSync) {
           this._cancelGrid();
           this._stopPlayer();
@@ -3436,27 +3921,15 @@
         }
       }
 
-      // Set file position (normalized 0..1), restarting on the next loop wrap boundary
+      // Set file position (normalized 0..1), immediately restarting from the new position
       setFilePosition(norm) {
         clearTimeout(this._filePosTimer);
+        this._filePosTimer = null;
         this._pendingRestart = false;
         this.filePosition = Math.max(0, Math.min(this.loopEnd - 0.001 / Math.max(0.001, this.duration), norm));
         if (!this.playing) return;
-
         if (this.gridSync) return; // fire() reads _revFilePos fresh each tick — no restart needed
-
-        // Non-grid: flag a restart to fire at the next loop wrap (detected in playheadPos)
-        this._pendingRestart = true;
-        // Safety-net: fire a fallback if the RAF-based detection somehow misses the wrap
-        const pos = this.playheadPos();
-        const fwd = pos !== null ? (this.reversed ? 1 - pos : pos) : 1;
-        const remaining = Math.max(0, (1 - fwd) * this.lenSec / this._pbRate);
-        this._filePosTimer = setTimeout(() => {
-          if (this.playing && !this.gridSync && this._pendingRestart) {
-            this._pendingRestart = false;
-            this.play();
-          }
-        }, remaining * 1000 + 300); // generous buffer so RAF fires first
+        this.play();
       }
 
       dispose() {
@@ -3631,6 +4104,7 @@
         tile.classList.toggle('playing', this.playing);
         tile.classList.toggle('muted', this.muted);
         tile.classList.toggle('grid-on', this.gridSync);
+        tile.classList.toggle('gran-on', this.granular);
 
         const mbtn = tile.querySelector('.tile-mbtn');
         if (mbtn) mbtn.classList.toggle('mute-on', this.muted);
@@ -3672,13 +4146,23 @@
       const ph = document.createElement('div');
       ph.className = 'tile-ph';
       ph.id = 'ph' + s.id;
-      ph.style.background = s.color;
+      ph.style.background = '#fff';
       t.appendChild(ph);
 
       const gb = document.createElement('div');
       gb.className = 'tile-gbadge';
       gb.textContent = 'GRID';
       t.appendChild(gb);
+
+      const granBadge = document.createElement('div');
+      granBadge.className = 'tile-gran-badge';
+      granBadge.textContent = 'GRAN';
+      t.appendChild(granBadge);
+
+      const tgc = document.createElement('canvas');
+      tgc.className = 'tile-gran-canvas';
+      tgc.width = TW; tgc.height = TH;
+      t.appendChild(tgc);
 
       const lb = document.createElement('div');
       lb.className = 'tile-lbl';
@@ -3765,11 +4249,11 @@
         }
         const scaledAmp = Math.min(1, amp * clipScale);
         const barH = Math.max(1, scaledAmp * drawH * 0.85);
-        ctx.fillStyle = `rgba(255,255,255,${0.25 + scaledAmp * 0.75})`;
+        ctx.fillStyle = s.color;
         ctx.fillRect(i, mid - barH / 2, 1, barH);
       }
 
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fillStyle = hexToRgba(s.color, 0.25);
       ctx.fillRect(0, mid, W, 1);
 
       // ── Fade overlays on tile ──
@@ -3834,6 +4318,7 @@
         oL = parseInt(tile.style.left);
         oT = parseInt(tile.style.top);
         moved = false; tile._dragged = false;
+        tile.style.zIndex = ++cardZTop;
         tile.classList.add('dragging');
 
         const mm = (ev) => {
@@ -3861,6 +4346,27 @@
     }
 
     // ════════════════════════════════════════════════════
+    // COLOR HELPERS (shared by gran viz in phLoop and in card)
+    // ════════════════════════════════════════════════════
+    function hexToRgbArr(hex) {
+      const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      return [r, g, b];
+    }
+    function shiftHue(r, g, b, hueDeg) {
+      const rn = r/255, gn = g/255, bn = b/255;
+      const max = Math.max(rn,gn,bn), min = Math.min(rn,gn,bn), l = (max+min)/2;
+      if (max === min) return [r,g,b];
+      const d = max - min;
+      const s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+      let h = max===rn ? (gn-bn)/d+(gn<bn?6:0) : max===gn ? (bn-rn)/d+2 : (rn-gn)/d+4;
+      h = (h/6 + hueDeg/360) % 1;
+      if (h < 0) h += 1;
+      function hue2rgb(p,q,t) { if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; }
+      const q2 = l < 0.5 ? l*(1+s) : l+s-l*s, p2 = 2*l-q2;
+      return [Math.round(hue2rgb(p2,q2,h+1/3)*255), Math.round(hue2rgb(p2,q2,h)*255), Math.round(hue2rgb(p2,q2,h-1/3)*255)];
+    }
+
+    // ════════════════════════════════════════════════════
     // PLAYHEAD ANIMATION LOOP
     // ════════════════════════════════════════════════════
     (function phLoop() {
@@ -3870,7 +4376,11 @@
         if (!s.playing) { ph.style.display = 'none'; continue; }
         const pos = s.playheadPos();
         if (pos === null) { ph.style.display = 'none'; continue; }
-        const tileX = pos * TW;
+        // PS mode: pos is 0..1 of PS buffer; tile waveform shows PS buffer (x=0..TW), so use pos directly
+        const tileAbsPos = (s.psStretch > 1 && s._psBuffer && s._psPlayingBuffer)
+          ? pos
+          : s.loopStart + pos * (s.loopEnd - s.loopStart);
+        const tileX = tileAbsPos * TW;
         ph.style.left = tileX + 'px';
         ph.style.display = 'block';
       }
@@ -3885,7 +4395,7 @@
         const W = wrap ? (wrap.clientWidth || 284) - 20 : 264;
         const pos = si.playheadPos();
         if (pos !== null) {
-          // pos is 0..1 within the loop region in both normal and PS mode
+          // pos is 0..1 within the loop region; map to full-buffer absolute position (works for both PS and normal mode)
           const absPos = si.loopStart + pos * (si.loopEnd - si.loopStart);
           const { start: vs, width: vw } = cardInfo.getZView();
           const viewPos = (absPos - vs) / vw;
@@ -3919,6 +4429,51 @@
         if (!tile) continue;
         const vuC = tile.querySelector('.tile-vu-canvas');
         if (vuC) drawVU(vuC, si);
+      }
+
+      // Granular parameter tick + mini tile grain viz
+      const _granNow = performance.now() / 1000;
+      for (const [_gsid, _gs] of samples) {
+        if (!(_gs instanceof Sample) || !_gs.granular) continue;
+        if (_gs.grainPlayer) _gs._granTick(_granNow);
+        // Mini tile grain canvas
+        const _gtile = document.getElementById('t' + _gsid);
+        if (!_gtile) continue;
+        const _tgc = _gtile.querySelector('.tile-gran-canvas');
+        if (!_tgc) continue;
+        if (!_gs.playing) { _tgc._tgParticles = null; continue; }
+        const _tgW = TW, _tgH = TH;
+        const _tgCtx = _tgc.getContext('2d');
+        // Init particle pool
+        if (!_tgc._tgParticles) _tgc._tgParticles = [];
+        const _tgP = _tgc._tgParticles;
+        // Spawn new grains proportional to density
+        const _spawnN = Math.max(1, Math.round(_gs.grainDensity / 30));
+        for (let _si = 0; _si < _spawnN; _si++) {
+          const _norm = _gs.loopStart + Math.random() * (_gs.loopEnd - _gs.loopStart);
+          const _spread = _gs.pitchSpread / 100; // 0..1
+          const _hue = _spread * (Math.random() * 2 - 1) * 60; // ±60° hue shift
+          _tgP.push({ x: _norm * _tgW, life: 1.0, hue: _hue, h: 4 + (_gs.grainSize / 500) * (_tgH * 0.5) });
+        }
+        // Age particles
+        for (let _pi = _tgP.length - 1; _pi >= 0; _pi--) {
+          _tgP[_pi].life -= 0.08 + Math.random() * 0.04;
+          if (_tgP[_pi].life <= 0) { _tgP.splice(_pi, 1); }
+        }
+        // Cap pool size
+        if (_tgP.length > 60) _tgP.splice(0, _tgP.length - 60);
+        // Draw
+        _tgCtx.clearRect(0, 0, _tgW, _tgH);
+        const [_br, _bg, _bb] = hexToRgbArr(_gs.color || '#ffffff');
+        for (const _tp of _tgP) {
+          const _op = Math.max(0, _tp.life) * 0.8;
+          const [_cr, _cg, _cb] = shiftHue(_br, _bg, _bb, _tp.hue);
+          _tgCtx.globalAlpha = _op;
+          _tgCtx.fillStyle = `rgb(${_cr},${_cg},${_cb})`;
+          const _cy = _tgH * 0.5 - _tp.h * 0.5 + (Math.random() - 0.5) * 2;
+          _tgCtx.fillRect(Math.round(_tp.x), _cy, 1, _tp.h);
+        }
+        _tgCtx.globalAlpha = 1;
       }
 
       // LFO modulation tick
@@ -3958,6 +4513,47 @@
     const AUDIO_EXTS = new Set(['wav', 'mp3', 'ogg', 'flac', 'aiff', 'aif', 'm4a', 'opus', 'webm', 'weba']);
     const isAudio = n => AUDIO_EXTS.has((n.split('.').pop() || '').toLowerCase());
 
+    // Returns a top-left {x, y} within canvas bounds that doesn't overlap existing elements.
+    // w, h = dimensions of the element to place.
+    function findFreePosition(w, h) {
+      const margin = 20;
+      const cw = cv.clientWidth || 800;
+      const ch = cv.clientHeight || 500;
+      const maxX = cw - w - margin;
+      const maxY = ch - h - margin;
+      const cvRect = cv.getBoundingClientRect();
+
+      // Collect occupied rects in canvas coordinates
+      const occupied = [];
+      document.querySelectorAll('.tile, .lfo-node, .seq-node').forEach(el => {
+        const r = el.getBoundingClientRect();
+        occupied.push({ x: r.left - cvRect.left, y: r.top - cvRect.top, w: r.width, h: r.height });
+      });
+      document.querySelectorAll('.sample-card.open').forEach(el => {
+        const r = el.getBoundingClientRect();
+        occupied.push({ x: r.left - cvRect.left, y: r.top - cvRect.top, w: r.width, h: r.height });
+      });
+
+      for (let i = 0; i < 80; i++) {
+        const x = margin + Math.random() * Math.max(0, maxX - margin);
+        const y = margin + Math.random() * Math.max(0, maxY - margin);
+        let ok = true;
+        for (const o of occupied) {
+          if (x < o.x + o.w + margin && x + w + margin > o.x &&
+              y < o.y + o.h + margin && y + h + margin > o.y) {
+            ok = false; break;
+          }
+        }
+        if (ok) return { x, y };
+      }
+      // Fallback: diagonal cascade
+      const n = occupied.length;
+      return {
+        x: Math.min(margin + (n * 48) % Math.max(1, maxX - margin), maxX),
+        y: Math.min(margin + (n * 32) % Math.max(1, maxY - margin), maxY)
+      };
+    }
+
     async function importFile(file, dropPos = null) {
       if (!isAudio(file.name)) return;
 
@@ -3971,8 +4567,9 @@
         x = Math.max(TW / 2, Math.min(cw - TW / 2, dropPos.x - cvRect.left));
         y = Math.max(TH / 2, Math.min(ch - TH / 2, dropPos.y - cvRect.top));
       } else {
-        x = 80 + Math.random() * (cw - 160);
-        y = 60 + Math.random() * (ch - 120);
+        const pos = findFreePosition(TW, TH);
+        x = pos.x + TW / 2;
+        y = pos.y + TH / 2;
       }
 
       // Placeholder tile while decoding
@@ -4050,6 +4647,7 @@
     function startSample(s) {
       if (!(s instanceof Sample)) return;
       if (sampleSeqMap.has(s.id)) return; // controlled by step sequencer
+      if (s.triggerMode) return; // waiting for manual/external trigger
       // Respect solo
       if (soloId !== null && soloId !== s.id) return;
       if (s.gridSync) s.playGrid();
@@ -4142,6 +4740,12 @@
       s.releaseTime = src.releaseTime;
       s.crossfadeTime = src.crossfadeTime;
       s.muted = src.muted;
+      // Copy granular settings
+      s.grainSize = src.grainSize;
+      s.grainScatter = src.grainScatter;
+      s.grainDensity = src.grainDensity;
+      s.pitchSpread = src.pitchSpread;
+      if (src.granular) s.setGranularMode(true);
 
       // Copy EQ bands
       src.eqBands.forEach((b, i) => {
@@ -4244,6 +4848,7 @@
     function closeCard(id) {
       const info = openCards.get(id);
       if (!info) return;
+      if (typeof info._stopGranAnim === 'function') info._stopGranAnim();
       info.el.remove();
       openCards.delete(id);
       const tile = document.getElementById('t' + id);
@@ -4284,6 +4889,12 @@
           <button class="card-remove" title="Remove">🗑</button>
           <button class="card-close">✕</button>
         </div>
+        <div class="card-mode-row">
+          <button class="playmode-btn card-mode-loop act">LOOP</button>
+          <button class="playmode-btn card-mode-rev">REV</button>
+          <button class="playmode-btn card-mode-gran">GRAN</button>
+          <button class="playmode-btn card-mode-trig">TRIG</button>
+        </div>
         <div class="card-wave-row">
           <div class="card-gain-strip">
             <div class="card-gain-line"></div>
@@ -4291,6 +4902,7 @@
           </div>
           <div class="card-wave-wrap">
             <canvas class="card-wave-canvas"></canvas>
+            <canvas class="card-gran-canvas"></canvas>
             <div class="card-loop-reg">
               <div class="lh clh-s"></div>
               <div class="lh clh-e"></div>
@@ -4301,144 +4913,202 @@
             <canvas class="card-vu-canvas" width="20" height="80"></canvas>
           </div>
         </div>
-        <div class="card-times">
-          <span class="ct-s">Start: 0.000s</span>
-          <span class="ct-e">End: 0.000s</span>
-        </div>
-        <div class="csec tight" style="padding:4px 8px 2px">
-          <div class="crow">
-            <span class="clbl">Start</span>
-            <div class="cslider">
-              <input type="range" class="card-loopstart" min="0" max="1" step="0.0001" value="0">
-              <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
-            </div>
-          </div>
-          <div class="crow">
-            <span class="clbl">End</span>
-            <div class="cslider">
-              <input type="range" class="card-loopend" min="0" max="1" step="0.0001" value="1">
-              <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
-            </div>
-          </div>
-          <div class="crow">
-            <span class="clbl">File Pos</span>
-            <div class="cslider">
-              <input type="range" class="card-filepos" min="0" max="1" step="0.0001" value="0">
-              <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
-            </div>
-          </div>
-        </div>
         <div class="card-body">
           <div class="csec">
             <div class="crow">
               <button class="cbtn act card-play" style="flex:2">&#9654; Play</button>
               <button class="cbtn card-stop" style="flex:2">&#9632; Stop</button>
-              <button class="cbtn card-rev" style="flex:2">&#9664;&#9664; Rev</button>
               <button class="cbtn ms-btn card-mute-btn">M</button>
               <button class="cbtn ms-btn card-solo-btn">S</button>
             </div>
           </div>
-          <div class="csec tight">
-            <div class="crow">
-              <span class="clbl">Pitchshift</span>
-              <input type="text" class="rng-field" value="-24">
-              <div class="cslider">
-                <input type="range" class="card-pitch" min="-24" max="24" step="1" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">PLAYBACK</div>
+            <div class="card-acc-body">
+              <div class="card-times" style="padding:4px 8px 0">
+                <span class="ct-s">Start: 0.000s</span>
+                <span class="ct-e">End: 0.000s</span>
               </div>
-              <input type="text" class="rng-field" value="24">
-            </div>
-            <div class="crow">
-              <span class="clbl">Timestretch</span>
-              <input type="text" class="rng-field" value="-24">
-              <div class="cslider">
-                <input type="range" class="card-stretch" min="-24" max="24" step="1" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+              <div class="csec tight" style="border:none;padding:4px 8px 6px">
+                <div class="crow">
+                  <span class="clbl">Start</span>
+                  <div class="cslider">
+                    <input type="range" class="card-loopstart" min="0" max="1" step="0.0001" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                </div>
+                <div class="crow">
+                  <span class="clbl">End</span>
+                  <div class="cslider">
+                    <input type="range" class="card-loopend" min="0" max="1" step="0.0001" value="1">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                </div>
+                <div class="crow">
+                  <span class="clbl">File Pos</span>
+                  <div class="cslider">
+                    <input type="range" class="card-filepos" min="0" max="1" step="0.0001" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                </div>
               </div>
-              <input type="text" class="rng-field" value="24">
-            </div>
-            <div class="crow">
-              <span class="clbl">Paulstretch</span>
-              <div class="cslider">
-                <input type="range" class="card-ps" min="0" max="100" step="0.5" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">Off</span><input class="cslider-edit" type="text"></div>
+              <div class="csec loop-grid-section" style="border-top:1px solid rgba(255,255,255,0.08);border-bottom:none;padding:6px 8px">
+                <div class="crow">
+                  <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
+                  <select class="card-subdiv" style="flex:1">
+                    <option value="0.25">4 bars</option>
+                    <option value="0.333">3 bars</option>
+                    <option value="0.4">2.5 bars</option>
+                    <option value="0.5">2 bars</option>
+                    <option value="0.667">1.5 bars</option>
+                    <option value="1" selected>1 bar</option>
+                    <option value="2">1/2</option>
+                    <option value="4">1/4</option>
+                    <option value="8">1/8</option>
+                    <option value="16">1/16</option>
+                    <option value="32">1/32</option>
+                  </select>
+                  <button class="cbtn ms-btn card-dot-btn">Dot</button>
+                  <button class="cbtn ms-btn card-tri-btn">3let</button>
+                  <button class="cbtn ms-btn card-skip2-btn">÷2</button>
+                  <button class="cbtn ms-btn card-skip3-btn">÷3</button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="csec tight">
+          <div class="csec tight gran-sliders">
             <div class="crow">
-              <span class="clbl">Attack</span>
+              <span class="clbl">Grain Size</span>
+              <input type="text" class="rng-field" value="10">
+              <div class="cslider">
+                <input type="range" class="card-grain-size" min="10" max="500" step="1" value="100">
+                <div class="cslider-thumb"><span class="cslider-lbl">100ms</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="500">
+            </div>
+            <div class="crow">
+              <span class="clbl">Scatter</span>
               <input type="text" class="rng-field" value="0">
               <div class="cslider">
-                <input type="range" class="card-attack" min="0" max="4" step="0.01" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+                <input type="range" class="card-grain-scatter" min="0" max="1" step="0.01" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0.00</span><input class="cslider-edit" type="text"></div>
               </div>
-              <input type="text" class="rng-field" value="4">
+              <input type="text" class="rng-field" value="1">
             </div>
             <div class="crow">
-              <span class="clbl">Release</span>
+              <span class="clbl">Density</span>
+              <input type="text" class="rng-field" value="1">
+              <div class="cslider">
+                <input type="range" class="card-grain-density" min="1" max="40" step="0.5" value="16">
+                <div class="cslider-thumb"><span class="cslider-lbl">16/s</span><input class="cslider-edit" type="text"></div>
+              </div>
+              <input type="text" class="rng-field" value="40">
+            </div>
+            <div class="crow">
+              <span class="clbl">Pitch Sprd</span>
               <input type="text" class="rng-field" value="0">
               <div class="cslider">
-                <input type="range" class="card-release" min="0" max="4" step="0.01" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+                <input type="range" class="card-pitch-spread" min="0" max="100" step="1" value="0">
+                <div class="cslider-thumb"><span class="cslider-lbl">0c</span><input class="cslider-edit" type="text"></div>
               </div>
-              <input type="text" class="rng-field" value="4">
-            </div>
-            <div class="crow">
-              <span class="clbl">X-Fade</span>
-              <input type="text" class="rng-field" value="0">
-              <div class="cslider">
-                <input type="range" class="card-xfade" min="0" max="4" step="0.01" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
-              </div>
-              <input type="text" class="rng-field" value="4">
+              <input type="text" class="rng-field" value="100">
             </div>
           </div>
-          <div class="csec tight">
-            <div class="crow">
-              <span class="clbl">Volume</span>
-              <input type="text" class="rng-field" value="0%">
-              <div class="cslider">
-                <input type="range" class="card-vol" min="0" max="1" step="0.01" value="0.8">
-                <div class="cslider-thumb"><span class="cslider-lbl">80%</span><input class="cslider-edit" type="text"></div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">MIXER</div>
+            <div class="card-acc-body">
+              <div class="csec tight" style="border:none">
+                <div class="crow">
+                  <span class="clbl">Volume</span>
+                  <input type="text" class="rng-field" value="0%">
+                  <div class="cslider">
+                    <input type="range" class="card-vol" min="0" max="1" step="0.01" value="0.8">
+                    <div class="cslider-thumb"><span class="cslider-lbl">80%</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="100%">
+                </div>
+                <div class="crow">
+                  <span class="clbl">Pan</span>
+                  <input type="text" class="rng-field" value="L100">
+                  <div class="cslider">
+                    <input type="range" class="card-pan" min="-1" max="1" step="0.01" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">C</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="R100">
+                </div>
               </div>
-              <input type="text" class="rng-field" value="100%">
-            </div>
-            <div class="crow">
-              <span class="clbl">Pan</span>
-              <input type="text" class="rng-field" value="L100">
-              <div class="cslider">
-                <input type="range" class="card-pan" min="-1" max="1" step="0.01" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">C</span><input class="cslider-edit" type="text"></div>
-              </div>
-              <input type="text" class="rng-field" value="R100">
             </div>
           </div>
-          <div class="csec">
-            <div class="crow">
-              <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
-              <select class="card-subdiv" style="flex:1">
-                <option value="0.25">4 bars</option>
-                <option value="0.333">3 bars</option>
-                <option value="0.4">2.5 bars</option>
-                <option value="0.5">2 bars</option>
-                <option value="0.667">1.5 bars</option>
-                <option value="1" selected>1 bar</option>
-                <option value="2">1/2</option>
-                <option value="4">1/4</option>
-                <option value="8">1/8</option>
-                <option value="16">1/16</option>
-                <option value="32">1/32</option>
-              </select>
-              <button class="cbtn ms-btn card-dot-btn">Dot</button>
-              <button class="cbtn ms-btn card-tri-btn">3let</button>
-              <button class="cbtn ms-btn card-skip2-btn">÷2</button>
-              <button class="cbtn ms-btn card-skip3-btn">÷3</button>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">ENVELOPE</div>
+            <div class="card-acc-body">
+              <div class="csec tight" style="border:none">
+                <div class="crow">
+                  <span class="clbl">Attack</span>
+                  <input type="text" class="rng-field" value="0">
+                  <div class="cslider">
+                    <input type="range" class="card-attack" min="0" max="4" step="0.01" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="4">
+                </div>
+                <div class="crow">
+                  <span class="clbl">Release</span>
+                  <input type="text" class="rng-field" value="0">
+                  <div class="cslider">
+                    <input type="range" class="card-release" min="0" max="4" step="0.01" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="4">
+                </div>
+                <div class="crow">
+                  <span class="clbl">X-Fade</span>
+                  <input type="text" class="rng-field" value="0">
+                  <div class="cslider">
+                    <input type="range" class="card-xfade" min="0" max="4" step="0.01" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0 ms</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="4">
+                </div>
+              </div>
             </div>
           </div>
-          <div class="fx-section" id="fx-section-${s.id}"></div>
-          <div class="csec" style="border:none">
-            <div class="crow">
+          <div class="card-accordion">
+            <div class="card-acc-hdr">PITCH+TIME</div>
+            <div class="card-acc-body">
+              <div class="csec tight" style="border:none">
+                <div class="crow">
+                  <span class="clbl">Pitchshift</span>
+                  <input type="text" class="rng-field" value="-24">
+                  <div class="cslider">
+                    <input type="range" class="card-pitch" min="-24" max="24" step="1" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="24">
+                </div>
+                <div class="crow">
+                  <span class="clbl">Timestretch</span>
+                  <input type="text" class="rng-field" value="-24">
+                  <div class="cslider">
+                    <input type="range" class="card-stretch" min="-24" max="24" step="1" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="24">
+                </div>
+                <div class="crow">
+                  <span class="clbl">Paulstretch</span>
+                  <div class="cslider">
+                    <input type="range" class="card-ps" min="0" max="100" step="0.5" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">Off</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">EFFECTS</div>
+            <div class="card-acc-body">
+              <div class="fx-section" id="fx-section-${s.id}"></div>
             </div>
           </div>
         </div>`;
@@ -4446,15 +5116,26 @@
       const q = sel => cardEl.querySelector(sel);
 
       // Set initial values
-      cardEl.style.borderColor = s.color;
+      cardEl.style.borderColor = '#fff';
       q('.card-color-dot').style.background = s.color;
-      q('.card-ph').style.background = s.color;
+      q('.card-ph').style.background = '#fff';
       q('.card-name').textContent = s.name.toUpperCase();
       q('.card-pitch').value = s.pitchST;
       q('.card-stretch').value = s.stretchST;
       // Convert stored ratio back to slider position: sliderVal = log(ratio)/log(200)*100
       q('.card-ps').value = s.psStretch > 1 ? Math.log(s.psStretch) / Math.log(200) * 100 : 0;
-      q('.card-rev').classList.toggle('act', s.reversed);
+      // Granular initial values
+      q('.card-grain-size').value = s.grainSize;
+      q('.card-grain-scatter').value = s.grainScatter;
+      q('.card-grain-density').value = s.grainDensity;
+      q('.card-pitch-spread').value = s.pitchSpread;
+      // Playback mode buttons
+      q('.card-mode-loop').classList.toggle('act', !s.reversed && !s.granular && !s.triggerMode);
+      q('.card-mode-rev').classList.toggle('act', s.reversed && !s.triggerMode);
+      q('.card-mode-gran').classList.toggle('act', s.granular && !s.triggerMode);
+      q('.card-mode-trig').classList.toggle('act', s.triggerMode);
+      if (s.granular && !s.triggerMode) q('.gran-sliders').classList.add('visible');
+      if (s.granular || s.triggerMode) q('.loop-grid-section').classList.add('hidden');
       q('.card-subdiv').value = s.subdiv;
       q('.card-dot-btn').classList.toggle('act', s.subdivFactor === 1.5);
       q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
@@ -4563,10 +5244,10 @@
           }
           const scaledAmp = Math.min(1, amp * clipScale);
           const barH = Math.max(1, scaledAmp * H * 0.88);
-          ctx.fillStyle = `rgba(255,255,255,${0.25 + scaledAmp * 0.75})`;
+          ctx.fillStyle = s.color;
           ctx.fillRect(i, H / 2 - barH / 2, 1, barH);
         }
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillStyle = hexToRgba(s.color, 0.25);
         ctx.fillRect(0, H / 2, W, 1);
         const vw = ve - vs;
         const toX = norm => (norm - vs) / vw * W;
@@ -4623,6 +5304,132 @@
           }
         }
       }
+
+      // ── Grain cloud visualization ──
+      let granAnimId = null;
+      const granParticles = [];
+
+      function hexToRgbArr(hex) {
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return [r, g, b];
+      }
+
+      function shiftHue(r, g, b, hueDeg) {
+        // Simple hue rotation using HSL
+        const rn = r/255, gn = g/255, bn = b/255;
+        const max = Math.max(rn,gn,bn), min = Math.min(rn,gn,bn), l = (max+min)/2;
+        if (max === min) return [r,g,b];
+        const d = max - min;
+        const s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+        let h = max===rn ? (gn-bn)/d+(gn<bn?6:0) : max===gn ? (bn-rn)/d+2 : (rn-gn)/d+4;
+        h = (h/6 + hueDeg/360) % 1;
+        if (h < 0) h += 1;
+        function hue2rgb(p,q,t) { if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; }
+        const q2 = l < 0.5 ? l*(1+s) : l+s-l*s, p2 = 2*l-q2;
+        return [Math.round(hue2rgb(p2,q2,h+1/3)*255), Math.round(hue2rgb(p2,q2,h)*255), Math.round(hue2rgb(p2,q2,h-1/3)*255)];
+      }
+
+      function drawGranCanvas() {
+        const gc = q('.card-gran-canvas');
+        if (!gc) return;
+        const wrap = q('.card-wave-wrap');
+        const W = (wrap.clientWidth || 284) - 20, H = wrap.clientHeight || 80;
+        gc.width = W; gc.height = H;
+        const ctx = gc.getContext('2d');
+        ctx.clearRect(0, 0, W, H);
+
+        const { start: vs, width: vw } = getZView();
+        const toX = norm => (norm - vs) / vw * W;
+        const [br, bg, bb] = hexToRgbArr(s.color || '#ffffff');
+
+        for (const p of granParticles) {
+          const x = toX(p.norm);
+          const glowR = p.w * 0.5; // half-glow radius in px
+          if (x < -glowR - 2 || x > W + glowR + 2) continue;
+          const [cr, cg, cb] = shiftHue(br, bg, bb, p.hueDeg);
+          const color = `${cr},${cg},${cb}`;
+
+          // Soft glow halo — gradient whose radius scales with grain size
+          if (glowR > 1) {
+            const grd = ctx.createLinearGradient(x - glowR, 0, x + glowR, 0);
+            grd.addColorStop(0,   `rgba(${color},0)`);
+            grd.addColorStop(0.4, `rgba(${color},${(p.opacity * 0.18).toFixed(3)})`);
+            grd.addColorStop(0.5, `rgba(${color},${(p.opacity * 0.22).toFixed(3)})`);
+            grd.addColorStop(0.6, `rgba(${color},${(p.opacity * 0.18).toFixed(3)})`);
+            grd.addColorStop(1,   `rgba(${color},0)`);
+            ctx.fillStyle = grd;
+            ctx.globalAlpha = 1;
+            ctx.fillRect(x - glowR, 0, glowR * 2, H);
+          }
+
+          // Crisp 1px center line
+          ctx.globalAlpha = p.opacity * 0.9;
+          ctx.fillStyle = `rgb(${color})`;
+          ctx.fillRect(Math.round(x), 0, 1, H);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function tickGranParticles() {
+        if (!s.granular) return;
+        const now = performance.now();
+        const loopSpan = s.loopEnd - s.loopStart;
+        const grainLifeMs = Math.max(10, s.grainSize);
+
+        // Age and remove dead particles
+        for (let i = granParticles.length - 1; i >= 0; i--) {
+          const p = granParticles[i];
+          const age = now - p.born;
+          if (age >= grainLifeMs) { granParticles.splice(i, 1); continue; }
+          const t = age / grainLifeMs; // 0..1 lifetime
+          // Envelope: fade in first 20%, sustain, fade out last 20%
+          p.opacity = t < 0.2 ? t / 0.2 : t > 0.8 ? (1 - t) / 0.2 : 1;
+        }
+
+        // Spawn new grains only when playing
+        if (!s.playing) { drawGranCanvas(); return; }
+        // Maintain a pool sized to density (active grains at any time)
+        const targetCount = Math.max(1, Math.round(s.grainDensity));
+        const needed = targetCount - granParticles.length;
+        for (let i = 0; i < needed; i++) {
+          // Position within loop, modulated by scatter
+          const center = s.loopStart + loopSpan * (s._granPhase || 0.5);
+          const spread = s.grainScatter * loopSpan * 0.5;
+          let norm = center + (Math.random() * 2 - 1) * spread;
+          norm = Math.max(s.loopStart, Math.min(s.loopEnd, norm));
+          // Grain width in pixels proportional to grainSize
+          const wrap2 = q('.card-wave-wrap');
+          const W2 = wrap2 ? (wrap2.clientWidth || 284) - 20 : 264;
+          const minW = 1, maxW = W2 * 0.4;
+          const w = minW + ((s.grainSize - 10) / 490) * (maxW - minW);
+          // Hue shift based on pitchSpread
+          const hueDeg = s.pitchSpread > 0 ? (Math.random() * 2 - 1) * (s.pitchSpread / 100) * 60 : 0;
+          granParticles.push({ born: now + Math.random() * grainLifeMs * 0.8, norm, w: Math.max(1, w), opacity: 0, hueDeg });
+        }
+        drawGranCanvas();
+      }
+
+      function granAnimLoop() {
+        if (!s.granular) { granAnimId = null; return; }
+        tickGranParticles();
+        granAnimId = requestAnimationFrame(granAnimLoop);
+      }
+
+      function startGranAnim() {
+        if (granAnimId) return;
+        granParticles.length = 0;
+        granAnimId = requestAnimationFrame(granAnimLoop);
+      }
+
+      function stopGranAnim() {
+        if (granAnimId) { cancelAnimationFrame(granAnimId); granAnimId = null; }
+        granParticles.length = 0;
+        const gc = q('.card-gran-canvas');
+        if (gc) { const ctx = gc.getContext('2d'); ctx.clearRect(0, 0, gc.width, gc.height); }
+      }
+
+      // Start anim immediately if granular is already active
+      if (s.granular) startGranAnim();
 
       function updateFpHandle() {
         const fpEl = q('.card-fp');
@@ -4681,7 +5488,7 @@
       requestAnimationFrame(() => { drawWave(); updateLoopReg(); updateGainHandle(); });
 
       // Store in openCards with references needed by phLoop
-      openCards.set(s.id, { el: cardEl, getZView, phEl: () => q('.card-ph'), waveWrap: () => q('.card-wave-wrap'), vuCanvas: () => q('.card-vu-canvas'), _drawWave: () => { drawWave(); updateLoopReg(); } });
+      openCards.set(s.id, { el: cardEl, getZView, phEl: () => q('.card-ph'), waveWrap: () => q('.card-wave-wrap'), vuCanvas: () => q('.card-vu-canvas'), _drawWave: () => { drawWave(); updateLoopReg(); }, _stopGranAnim: stopGranAnim });
 
       // ── Titlebar drag ──
       q('.card-titlebar').addEventListener('mousedown', e => {
@@ -4733,34 +5540,31 @@
             const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
             const { start: vs, width: vw } = getZView();
             const rel = Math.max(0, Math.min(1, vs + relView * vw));
+            // Live update: move loop bounds seamlessly without restarting
             if (isStart) {
-              s.setLoopBounds(Math.min(rel, s.loopEnd - 1e-4), s.loopEnd);
+              s.loopStart = Math.min(rel, s.loopEnd - 1e-4);
+              if (s.playing && !s.gridSync) {
+                if (s.psStretch > 1 && s._psBuffer && s._psPlayingBuffer)
+                  s.player.loopStart = s.loopStart * s._psBuffer.duration;
+                else
+                  s.player.loopStart = s._revStart;
+              }
             } else {
-              s.setLoopBounds(s.loopStart, Math.max(rel, s.loopStart + 1e-4));
+              s.loopEnd = Math.max(rel, s.loopStart + 1e-4);
+              if (s.playing && !s.gridSync) {
+                if (s.psStretch > 1 && s._psBuffer && s._psPlayingBuffer)
+                  s.player.loopEnd = s.loopEnd * s._psBuffer.duration;
+                else
+                  s.player.loopEnd = s._revEnd;
+              }
             }
             updateLoopReg();
           };
           const mu = () => {
             document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
-            if (isStart && s.gridSync) { snapEndToSubdiv(); return; } // next grid tick picks up new bounds
-            if (s.playing && !s.gridSync) {
-              const hasFades = s.attackTime > 0 || s.releaseTime > 0 || s.crossfadeTime > 0;
-              if (hasFades) {
-                // Flag restart at next loop wrap boundary (detected in playheadPos)
-                clearTimeout(s._filePosTimer);
-                s._pendingRestart = true;
-                const pos = s.playheadPos();
-                const fwd = pos !== null ? (s.reversed ? 1 - pos : pos) : 1;
-                const remaining = Math.max(0, (1 - fwd) * s.lenSec / s._pbRate);
-                s._filePosTimer = setTimeout(() => {
-                  if (s.playing && !s.gridSync && s._pendingRestart) {
-                    s._pendingRestart = false;
-                    s.play();
-                  }
-                }, remaining * 1000 + 300);
-              }
-              // No fades: native loopStart/loopEnd updated live in setLoopBounds — no jump needed
-            }
+            if (isStart && s.gridSync) { snapEndToSubdiv(); return; }
+            // Single restart on mouseup with final bounds
+            s.setLoopBounds(s.loopStart, s.loopEnd);
           };
           document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
         });
@@ -4888,6 +5692,11 @@
       // ── Controls ──
       q('.card-play').addEventListener('click', e => {
         e.stopPropagation();
+        if (s.triggerMode) {
+          if (!audioReady) return;
+          s.triggerAtTime(Tone.context.rawContext.currentTime + 0.005, null);
+          return;
+        }
         togglePlay(s.id);
         q('.card-play').classList.toggle('act', s.playing);
       });
@@ -4907,11 +5716,72 @@
         q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
         applyAllVols(); refreshSoloVis();
       });
-      q('.card-rev').addEventListener('click', e => {
-        e.stopPropagation();
-        s.setReverse(!s.reversed);
-        e.target.classList.toggle('act', s.reversed);
+      // ── Playback Mode (LOOP / REV / GRAN / TRIG) ──
+      function syncModeButtons() {
+        q('.card-mode-loop').classList.toggle('act', !s.reversed && !s.granular && !s.triggerMode);
+        q('.card-mode-rev').classList.toggle('act', s.reversed && !s.triggerMode);
+        q('.card-mode-gran').classList.toggle('act', s.granular && !s.triggerMode);
+        q('.card-mode-trig').classList.toggle('act', s.triggerMode);
+        q('.gran-sliders').classList.toggle('visible', s.granular && !s.triggerMode);
+        q('.loop-grid-section').classList.toggle('hidden', s.granular || s.triggerMode);
+      }
+      function setPlaybackMode(mode) {
+        const wasGran = s.granular;
+        if (mode === 'trig') {
+          if (s.granular) s.setGranularMode(false);
+          if (s.reversed) s.setReverse(false);
+          s.triggerMode = true;
+          s.stop();
+        } else {
+          if (sampleSeqMap.has(s.id)) disconnectSeqFromSample(s.id);
+          s.triggerMode = false;
+          if (mode === 'loop') {
+            if (s.granular) s.setGranularMode(false);
+            if (s.reversed) s.setReverse(false);
+          } else if (mode === 'rev') {
+            if (s.granular) s.setGranularMode(false);
+            if (!s.reversed) s.setReverse(true);
+          } else if (mode === 'gran') {
+            if (s.reversed) s.setReverse(false);
+            if (!s.granular) s.setGranularMode(true);
+          }
+        }
+        syncModeButtons();
+        if (s.granular !== wasGran) stopGranAnim();
+        if (s.granular && !s.triggerMode) startGranAnim();
+        // If leaving trigger mode and transport is running, start playing
+        if (mode !== 'trig' && audioReady && isPlaying && !s.playing) startSample(s);
+      }
+      q('.card-mode-loop').addEventListener('click', e => { e.stopPropagation(); setPlaybackMode('loop'); });
+      q('.card-mode-rev').addEventListener('click', e => { e.stopPropagation(); setPlaybackMode('rev'); });
+      q('.card-mode-gran').addEventListener('click', e => { e.stopPropagation(); setPlaybackMode('gran'); });
+      q('.card-mode-trig').addEventListener('click', e => { e.stopPropagation(); setPlaybackMode('trig'); });
+
+      // ── Accordion sections ──
+      cardEl.querySelectorAll('.card-acc-hdr').forEach(hdr => {
+        hdr.addEventListener('click', e => {
+          e.stopPropagation();
+          hdr.classList.toggle('open');
+          hdr.nextElementSibling.classList.toggle('open');
+        });
       });
+
+      // ── Granular sliders ──
+      function initGranSlider(cls, setter, fmt) {
+        const wrap = q('.' + cls)?.closest('.cslider');
+        if (wrap) initCslider(wrap, fmt);
+        q('.' + cls)?.addEventListener('input', e => {
+          const v = parseFloat(e.target.value);
+          s[setter](v);
+          const lbl = e.target.closest('.cslider')?.querySelector('.cslider-lbl');
+          if (lbl && fmt) lbl.textContent = fmt(v);
+        });
+      }
+      initGranSlider('card-grain-size',    'setGrainSize',    v => Math.round(v) + 'ms');
+      initGranSlider('card-grain-scatter', 'setGrainScatter', v => (+v).toFixed(2));
+      initGranSlider('card-grain-density', 'setGrainDensity', v => Math.round(v) + '/s');
+      initGranSlider('card-pitch-spread',  'setPitchSpread',  v => Math.round(v) + 'c');
+
       q('.card-pitch').addEventListener('input', e => {
         s.setPitch(parseInt(e.target.value));
       });
@@ -6135,6 +7005,9 @@
           subdivFactor: s.subdivFactor, gridMulti: s.gridMulti,
           attackTime: s.attackTime, releaseTime: s.releaseTime,
           crossfadeTime: s.crossfadeTime, clipGainDb: s.clipGainDb,
+          triggerMode: s.triggerMode,
+          granular: s.granular, grainSize: s.grainSize, grainScatter: s.grainScatter,
+          grainDensity: s.grainDensity, pitchSpread: s.pitchSpread,
           eqBands: s.eqBands.map(b => ({ ...b })),
           fxChain: fxChainData,
           audioB64: audioBufferToWavBase64(s.raw)
@@ -6155,7 +7028,7 @@
       for (const [, seq] of seqs) {
         projectData.seqs.push({
           id: seq.id, name: seq.name, x: seq.x, y: seq.y, color: seq.color,
-          numSteps: seq.numSteps, steps: [...seq.steps],
+          numSteps: seq.numSteps, steps: seq.steps.map(s => ({...s})),
           destinations: [...seq.destinations],
           gateLength: seq.gateLength,
           gridSync: seq.gridSync, subdiv: seq.subdiv, rate: seq.rate
@@ -6228,6 +7101,13 @@
           s.releaseTime = sd.releaseTime || 0;
           s.crossfadeTime = sd.crossfadeTime || 0;
           if (sd.reversed) s.setReverse(true);
+          // Restore granular state
+          if (sd.grainSize) s.grainSize = sd.grainSize;
+          if (sd.grainScatter != null) s.grainScatter = sd.grainScatter;
+          if (sd.grainDensity) s.grainDensity = sd.grainDensity;
+          if (sd.pitchSpread != null) s.pitchSpread = sd.pitchSpread;
+          if (sd.triggerMode) s.triggerMode = true;
+          if (sd.granular) s.setGranularMode(true);
 
           // Restore main 5-band EQ
           if (Array.isArray(sd.eqBands) && sd.eqBands.length === 5) {
@@ -6316,7 +7196,15 @@
           seq.name = sd.name || ('Seq ' + sqid);
           if (sd.color) seq.color = sd.color;
           seq.numSteps = sd.numSteps || 16;
-          if (Array.isArray(sd.steps)) seq.steps = sd.steps.slice(0, 16);
+          if (Array.isArray(sd.steps)) {
+            const loaded = sd.steps.slice(0, 64).map(s =>
+              typeof s === 'boolean' ? {on: s, pitch: 0, vol: 1.0, gate: null} :
+              {on: !!s.on, pitch: s.pitch || 0, vol: s.vol ?? 1.0, gate: s.gate ?? null}
+            );
+            // Pad to 64 if needed
+            while (loaded.length < 64) loaded.push({on: false, pitch: 0, vol: 1.0, gate: null});
+            seq.steps = loaded;
+          }
           seq.gateLength = sd.gateLength ?? 1.0;
           seq.gridSync = sd.gridSync !== false;
           seq.subdiv = sd.subdiv || '16n';
@@ -6543,6 +7431,12 @@
             if (typeof drawFn === 'function') drawFn();
           }
 
+          // Update grain player buffer if gran mode is active
+          if (s.granular && s.grainPlayer) {
+            s._setGrainBuf();
+            s._applyGrainParams();
+            s._updateGranWindow();
+          }
           // Restart playback using the stretched buffer
           if (s.playing) s.play();
         }
@@ -6815,6 +7709,7 @@
       q('.lfo-titlebar').addEventListener('mousedown', e => {
         if (e.target.closest('button')) return;
         e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop;
         titleMoved = false;
         const ox = e.clientX, oy = e.clientY;
         const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
@@ -6850,6 +7745,7 @@
       el.addEventListener('mousedown', e => {
         if (!el.classList.contains('collapsed')) return;
         e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop;
         minMoved = false;
         const ox = e.clientX, oy = e.clientY;
         const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
@@ -6961,6 +7857,7 @@
         }
       }
 
+      el.style.zIndex = ++cardZTop;
       cv.appendChild(el);
       const nodeInfo = { el, drawShape, updateDestList };
       lfoNodes.set(lfo.id, nodeInfo);
@@ -6996,7 +7893,7 @@
           <div class="seq-steps-row">
             <span class="seq-steps-lbl">Steps</span>
             <div class="cslider seq-steps-slider">
-              <input type="range" class="seq-steps-input" min="1" max="16" step="1" value="${seq.numSteps}">
+              <input type="range" class="seq-steps-input" min="1" max="64" step="1" value="${seq.numSteps}">
               <div class="cslider-thumb"><span class="cslider-lbl">${seq.numSteps}</span><input class="cslider-edit" type="text"></div>
             </div>
           </div>
@@ -7036,30 +7933,206 @@
       const q = sel => el.querySelector(sel);
       q('.seq-color-dot').style.background = seq.color;
 
+      // ── Step visuals ──
+      function updateStepVisuals(btn, stepData) {
+        btn.classList.toggle('act', stepData.on);
+        const volBar = btn.querySelector('.step-vol-bar');
+        const pitchTag = btn.querySelector('.step-pitch-tag');
+        const gateBar = btn.querySelector('.step-gate-bar');
+        if (volBar) volBar.style.height = stepData.on ? ((1 - stepData.vol) * 100) + '%' : '0%';
+        if (pitchTag) {
+          pitchTag.textContent = stepData.pitch !== 0 ? (stepData.pitch > 0 ? '+' + stepData.pitch : stepData.pitch) : '';
+          pitchTag.style.display = (stepData.pitch !== 0 && stepData.on) ? '' : 'none';
+        }
+        if (gateBar) {
+          const hasCustomGate = stepData.gate !== null && stepData.on;
+          gateBar.style.width = hasCustomGate ? (stepData.gate * 100) + '%' : (stepData.on ? '100%' : '0%');
+          gateBar.style.opacity = hasCustomGate ? '1' : '0';
+        }
+        const dot = q(`.seq-mini-grid .seq-mini-step[data-step="${btn.dataset.step}"]`);
+        if (dot) dot.classList.toggle('act', stepData.on);
+      }
+
+      // ── Hover-triggered step editor ──
+      const stepEditor = document.createElement('div');
+      stepEditor.className = 'seq-step-editor';
+      stepEditor.style.display = 'none';
+      stepEditor.innerHTML = `
+        <div class="sse-header">Step <span class="sse-num"></span></div>
+        <div class="sse-row">
+          <span class="sse-lbl">Pitch</span>
+          <input type="range" class="sse-pitch" min="-24" max="24" step="1" value="0">
+          <span class="sse-val sse-pitch-val">0 st</span>
+        </div>
+        <div class="sse-row">
+          <span class="sse-lbl">Vol</span>
+          <input type="range" class="sse-vol" min="0" max="100" step="1" value="100">
+          <span class="sse-val sse-vol-val">100%</span>
+        </div>
+        <div class="sse-row">
+          <span class="sse-lbl">Gate</span>
+          <label class="sse-global-wrap"><input type="checkbox" class="sse-gate-global" checked><span>Global</span></label>
+          <input type="range" class="sse-gate" min="1" max="100" step="1" value="100" disabled>
+          <span class="sse-val sse-gate-val">—</span>
+        </div>
+        <button class="sse-reset">Reset</button>
+      `;
+      el.appendChild(stepEditor);
+
+      let _hoverTimer = null, _closeTimer = null, _editorStepIdx = -1;
+
+      function populateEditor(stepIdx) {
+        const sd = seq.steps[stepIdx];
+        stepEditor.querySelector('.sse-num').textContent = stepIdx + 1;
+        const pitchIn = stepEditor.querySelector('.sse-pitch');
+        const volIn   = stepEditor.querySelector('.sse-vol');
+        const gateIn  = stepEditor.querySelector('.sse-gate');
+        const globalCb = stepEditor.querySelector('.sse-gate-global');
+        pitchIn.value = sd.pitch;
+        volIn.value   = Math.round(sd.vol * 100);
+        const hasGate = sd.gate !== null;
+        globalCb.checked = !hasGate;
+        gateIn.disabled  = !hasGate;
+        gateIn.value     = hasGate ? Math.round(sd.gate * 100) : Math.round(seq.gateLength * 100);
+        stepEditor.querySelector('.sse-pitch-val').textContent = sd.pitch > 0 ? '+' + sd.pitch + ' st' : sd.pitch + ' st';
+        stepEditor.querySelector('.sse-vol-val').textContent   = Math.round(sd.vol * 100) + '%';
+        stepEditor.querySelector('.sse-gate-val').textContent  = hasGate ? Math.round(sd.gate * 100) + '%' : '—';
+      }
+
+      function showEditor(btn, stepIdx) {
+        // Remove highlight from any previously focused step
+        el.querySelectorAll('.seq-step.editing').forEach(b => b.classList.remove('editing'));
+        btn.classList.add('editing');
+        _editorStepIdx = stepIdx;
+        populateEditor(stepIdx);
+        stepEditor.style.display = 'block';
+        // Position below the button, clamped within the seq-node
+        const btnRect = btn.getBoundingClientRect();
+        const elRect  = el.getBoundingClientRect();
+        const edW = stepEditor.offsetWidth || 200;
+        let left = btnRect.left - elRect.left;
+        if (left + edW > el.offsetWidth - 4) left = el.offsetWidth - edW - 4;
+        if (left < 4) left = 4;
+        stepEditor.style.left = left + 'px';
+        stepEditor.style.top  = (btnRect.bottom - elRect.top + 4) + 'px';
+      }
+
+      function hideEditor() {
+        stepEditor.style.display = 'none';
+        _editorStepIdx = -1;
+        el.querySelectorAll('.seq-step.editing').forEach(b => b.classList.remove('editing'));
+      }
+
+      // Step editor live update handlers
+      stepEditor.querySelector('.sse-pitch').addEventListener('input', e => {
+        if (_editorStepIdx < 0) return;
+        const sd = seq.steps[_editorStepIdx];
+        sd.pitch = parseInt(e.target.value);
+        stepEditor.querySelector('.sse-pitch-val').textContent = sd.pitch > 0 ? '+' + sd.pitch + ' st' : sd.pitch + ' st';
+        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
+        if (btn) updateStepVisuals(btn, sd);
+      });
+      stepEditor.querySelector('.sse-vol').addEventListener('input', e => {
+        if (_editorStepIdx < 0) return;
+        const sd = seq.steps[_editorStepIdx];
+        sd.vol = parseInt(e.target.value) / 100;
+        stepEditor.querySelector('.sse-vol-val').textContent = e.target.value + '%';
+        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
+        if (btn) updateStepVisuals(btn, sd);
+      });
+      stepEditor.querySelector('.sse-gate-global').addEventListener('change', e => {
+        if (_editorStepIdx < 0) return;
+        const sd = seq.steps[_editorStepIdx];
+        const gateIn = stepEditor.querySelector('.sse-gate');
+        if (e.target.checked) {
+          sd.gate = null;
+          gateIn.disabled = true;
+          stepEditor.querySelector('.sse-gate-val').textContent = '—';
+        } else {
+          sd.gate = parseInt(gateIn.value) / 100;
+          gateIn.disabled = false;
+          stepEditor.querySelector('.sse-gate-val').textContent = gateIn.value + '%';
+        }
+        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
+        if (btn) updateStepVisuals(btn, sd);
+      });
+      stepEditor.querySelector('.sse-gate').addEventListener('input', e => {
+        if (_editorStepIdx < 0) return;
+        const sd = seq.steps[_editorStepIdx];
+        sd.gate = parseInt(e.target.value) / 100;
+        stepEditor.querySelector('.sse-gate-val').textContent = e.target.value + '%';
+        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
+        if (btn) updateStepVisuals(btn, sd);
+      });
+      stepEditor.querySelector('.sse-reset').addEventListener('click', e => {
+        e.stopPropagation();
+        if (_editorStepIdx < 0) return;
+        const sd = seq.steps[_editorStepIdx];
+        sd.pitch = 0; sd.vol = 1.0; sd.gate = null;
+        populateEditor(_editorStepIdx);
+        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
+        if (btn) updateStepVisuals(btn, sd);
+      });
+      // Keep editor open while hovering it
+      stepEditor.addEventListener('mouseenter', () => clearTimeout(_closeTimer));
+      stepEditor.addEventListener('mouseleave', () => { _closeTimer = setTimeout(hideEditor, 120); });
+      stepEditor.addEventListener('click', e => e.stopPropagation());
+      stepEditor.addEventListener('mousedown', e => e.stopPropagation());
+
       // ── Build step grid ──
       function buildGrid() {
         const grid = q('.seq-grid');
         const mini = q('.seq-mini-grid');
         grid.innerHTML = '';
         mini.innerHTML = '';
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 64; i++) {
+          const stepData = seq.steps[i];
           const btn = document.createElement('button');
           btn.className = 'seq-step' +
-            (seq.steps[i] ? ' act' : '') +
+            (stepData.on ? ' act' : '') +
             (i >= seq.numSteps ? ' inactive' : '');
           btn.dataset.step = i;
+
+          // Inner overlays for vol/pitch/gate visuals
+          const volBar = document.createElement('div');
+          volBar.className = 'step-vol-bar';
+          volBar.style.height = (stepData.on ? (1 - stepData.vol) * 100 : 0) + '%';
+          btn.appendChild(volBar);
+
+          const pitchTag = document.createElement('div');
+          pitchTag.className = 'step-pitch-tag';
+          pitchTag.textContent = stepData.pitch !== 0 ? (stepData.pitch > 0 ? '+' + stepData.pitch : stepData.pitch) : '';
+          pitchTag.style.display = (stepData.pitch !== 0 && stepData.on) ? '' : 'none';
+          btn.appendChild(pitchTag);
+
+          const gateBar = document.createElement('div');
+          gateBar.className = 'step-gate-bar';
+          gateBar.style.width = stepData.on && stepData.gate !== null ? (stepData.gate * 100) + '%' : (stepData.on ? '100%' : '0%');
+          gateBar.style.opacity = (stepData.on && stepData.gate !== null) ? '1' : '0';
+          btn.appendChild(gateBar);
+
           btn.addEventListener('click', e => {
             e.stopPropagation();
-            seq.steps[i] = !seq.steps[i];
-            btn.classList.toggle('act', seq.steps[i]);
-            const dot = q(`.seq-mini-grid .seq-mini-step[data-step="${i}"]`);
-            if (dot) dot.classList.toggle('act', seq.steps[i]);
+            stepData.on = !stepData.on;
+            updateStepVisuals(btn, stepData);
+            // Refresh editor if open on this step
+            if (_editorStepIdx === i) populateEditor(i);
           });
+          btn.addEventListener('mouseenter', () => {
+            clearTimeout(_closeTimer);
+            clearTimeout(_hoverTimer);
+            _hoverTimer = setTimeout(() => showEditor(btn, i), 750);
+          });
+          btn.addEventListener('mouseleave', () => {
+            clearTimeout(_hoverTimer);
+            _closeTimer = setTimeout(hideEditor, 120);
+          });
+          btn.addEventListener('contextmenu', e => e.preventDefault());
           grid.appendChild(btn);
 
           const dot = document.createElement('div');
           dot.className = 'seq-mini-step' +
-            (seq.steps[i] ? ' act' : '') +
+            (stepData.on ? ' act' : '') +
             (i >= seq.numSteps ? ' inactive' : '');
           dot.dataset.step = i;
           mini.appendChild(dot);
@@ -7111,13 +8184,12 @@
       function updateInactiveSteps() {
         el.querySelectorAll('.seq-step').forEach((btn, i) => btn.classList.toggle('inactive', i >= seq.numSteps));
         el.querySelectorAll('.seq-mini-step').forEach((dot, i) => dot.classList.toggle('inactive', i >= seq.numSteps));
-        seq.reschedule();
       }
 
       initCslider(stepsSlider, v => Math.round(parseFloat(v)) + '');
       stepsInput.addEventListener('input', e => {
         e.stopPropagation();
-        seq.numSteps = Math.max(1, Math.min(16, Math.round(parseFloat(e.target.value))));
+        seq.numSteps = Math.max(1, Math.min(64, Math.round(parseFloat(e.target.value))));
         updateInactiveSteps();
       });
 
@@ -7205,6 +8277,7 @@
       q('.seq-titlebar').addEventListener('mousedown', e => {
         if (e.target.closest('button')) return;
         e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop;
         titleMoved = false;
         const ox = e.clientX, oy = e.clientY;
         const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
@@ -7234,6 +8307,7 @@
       el.addEventListener('mousedown', e => {
         if (!el.classList.contains('collapsed')) return;
         e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop;
         minMoved = false;
         const ox = e.clientX, oy = e.clientY;
         const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
@@ -7258,8 +8332,13 @@
         if (!minMoved) el.classList.remove('collapsed');
       });
 
+      el.style.zIndex = ++cardZTop;
       cv.appendChild(el);
-      const nodeInfo = { el, stopAnim: () => { _animRunning = false; }, updateDestList };
+      const nodeInfo = { el, stopAnim: () => {
+        _animRunning = false;
+        clearTimeout(_hoverTimer);
+        clearTimeout(_closeTimer);
+      }, updateDestList };
       seqNodes.set(seq.id, nodeInfo);
       seq.schedule();
       return nodeInfo;
@@ -7293,6 +8372,17 @@
         }
       }
       seqNodes.get(seq.id)?.updateDestList();
+      // Set trigger mode on sample and update open card if any
+      if (s instanceof Sample) s.triggerMode = true;
+      const _cInfo = openCards.get(sampleId);
+      if (_cInfo) {
+        const _ce = _cInfo.el;
+        _ce.querySelector('.card-mode-loop')?.classList.remove('act');
+        _ce.querySelector('.card-mode-rev')?.classList.remove('act');
+        _ce.querySelector('.card-mode-gran')?.classList.remove('act');
+        _ce.querySelector('.card-mode-trig')?.classList.add('act');
+        _ce.querySelector('.loop-grid-section')?.classList.add('hidden');
+      }
       updateLfoWires();
     }
 
@@ -7311,9 +8401,10 @@
         tile.classList.remove('seq-controlled');
         tile.style.removeProperty('--seq-ctrl-color');
       }
-      // Restart sample's internal playback
       const s = samples.get(sampleId);
-      if (s instanceof Sample && audioReady && isPlaying) startSample(s);
+      if (s instanceof Sample) {
+        s.stop(); // stop any ongoing playback — sample waits in trigger mode
+      }
       updateLfoWires();
     }
 
@@ -7528,7 +8619,7 @@
       bg.setAttribute('width', '19998'); bg.setAttribute('height', '19998');
       bg.setAttribute('fill', 'white');
       mask.appendChild(bg);
-      document.querySelectorAll('.sample-card, .lfo-node').forEach(cardEl => {
+      document.querySelectorAll('.sample-card, .lfo-node, .seq-node').forEach(cardEl => {
         const r = cardEl.getBoundingClientRect();
         const mr = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         mr.setAttribute('x', r.left);
@@ -7867,7 +8958,7 @@
           const modVal = d.min + val * (d.max - d.min);
           const nodeInfo = seqNodes.get(d.seqId);
           if (d.param === 'numSteps') {
-            const n = Math.max(1, Math.min(16, Math.round(modVal)));
+            const n = Math.max(1, Math.min(64, Math.round(modVal)));
             if (n !== seq.numSteps) {
               seq.numSteps = n;
               if (nodeInfo) {
@@ -7923,9 +9014,8 @@
     // ── Add LFO button ──
     document.getElementById('btn-add-lfo').addEventListener('click', () => {
       const id = nextLfoId++;
-      const cx = (cv.clientWidth || 800) / 2 + (id - 1) * 30;
-      const cy = (cv.clientHeight || 500) / 2 + (id - 1) * 20;
-      const lfo = new LFO(id, cx, cy);
+      const pos = findFreePosition(LFO_W, 200);
+      const lfo = new LFO(id, pos.x + LFO_W / 2, pos.y + 100);
       lfos.set(id, lfo);
       createLfoNode(lfo);
     });
@@ -7936,7 +9026,7 @@
       const id = nextSeqId++;
       const seq = new StepSequencer(id, srcSeq.x + 20, srcSeq.y + 20);
       seq.numSteps = srcSeq.numSteps;
-      seq.steps = [...srcSeq.steps];
+      seq.steps = srcSeq.steps.map(s => ({...s}));
       // destinations not copied — new seq starts unconnected
       seq.gateLength = srcSeq.gateLength;
       seq.gridSync = srcSeq.gridSync;
@@ -7957,7 +9047,9 @@
         const tile = document.getElementById('t' + sampleId);
         if (tile) { tile.classList.remove('seq-controlled'); tile.style.removeProperty('--seq-ctrl-color'); }
         const s = samples.get(sampleId);
-        if (s instanceof Sample && audioReady && isPlaying) startSample(s);
+        if (s instanceof Sample) {
+          if (audioReady && isPlaying) startSample(s);
+        }
       }
       seq.destinations = [];
       // Disconnect any LFO→seq connections
@@ -7980,9 +9072,8 @@
     document.getElementById('btn-add-seq').addEventListener('click', () => {
       if (seqs.size >= MAX_SEQS) return;
       const id = nextSeqId++;
-      const cx = (cv.clientWidth || 800) / 2 + (id - 1) * 30;
-      const cy = (cv.clientHeight || 500) / 2 + (id - 1) * 20;
-      const seq = new StepSequencer(id, cx, cy);
+      const pos = findFreePosition(SEQ_W, 260);
+      const seq = new StepSequencer(id, pos.x + SEQ_W / 2, pos.y + 100);
       seqs.set(id, seq);
       createSeqNode(seq);
     });
