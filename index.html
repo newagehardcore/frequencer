@@ -2598,10 +2598,9 @@
       'eq-pk3-freq': { prop: 'freq', min: 200, max: 20000, label: 'Pk3 Freq', isEq: true, bandIdx: 3 },
       'eq-lp-freq': { prop: 'freq', min: 20, max: 20000, label: 'LP Freq', isEq: true, bandIdx: 4 },
       // Granular params
-      'card-grain-size':    { prop: 'grainSize',    min: 10,  max: 500, label: 'Gr.Size',  setter: 'setGrainSize',    fmtVal: v => Math.round(v) + 'ms', isGran: true },
-      'card-grain-scatter': { prop: 'grainScatter', min: 0,   max: 1,   label: 'Scatter',  setter: 'setGrainScatter', fmtVal: v => (+v).toFixed(2), isGran: true },
-      'card-grain-density': { prop: 'grainDensity', min: 1,   max: 40,  label: 'Density',  setter: 'setGrainDensity', fmtVal: v => Math.round(v) + '/s', isGran: true },
-      'card-pitch-spread':  { prop: 'pitchSpread',  min: 0,   max: 100, label: 'PtchSprd', setter: 'setPitchSpread',  fmtVal: v => Math.round(v) + 'c',  isGran: true },
+      'card-grain-position': { prop: 'grainPosition', min: 0, max: 1, label: 'GrPos',     setter: 'setGrainPosition', fmtVal: v => Math.round(v * 100) + '%', isGran: true },
+      'card-grain-spread':   { prop: 'grainSpread',   min: 0, max: 1, label: 'GrSpread',  setter: 'setGrainSpread',   fmtVal: v => Math.round(v * 100) + '%', isGran: true },
+      'card-grain-density':  { prop: 'grainDensity',  min: 0, max: 1, label: 'GrDensity', setter: 'setGrainDensity',  fmtVal: v => Math.round(v * 100) + '%', isGran: true },
     };
 
     // LFO preset shape generators (return breakpoint arrays [{x:0..1, y:0..1}])
@@ -2747,6 +2746,169 @@
     // cutting into audio mid-waveform. Short enough (<5 ms) to leave transients intact.
     const DECLICK_S = 0.005;
 
+    class GranularEngine {
+      constructor(options = {}) {
+        this._listeners = {};
+        this.state = {
+          isBufferSet: false,
+          envelope: {
+            attack: (options.envelope && options.envelope.attack != null) ? options.envelope.attack : 0.1,
+            release: (options.envelope && options.envelope.release != null) ? options.envelope.release : 0.4
+          },
+          density: options.density != null ? options.density : 0.85,
+          spread: options.spread != null ? options.spread : 0,
+          pitch: options.pitch != null ? options.pitch : 1,
+          voices: []
+        };
+        this._idCounter = 0;
+        this.context = options.audioContext || new AudioContext();
+        this.gain = this.context.createGain();
+        this.gain.gain.value = 1;
+        // Do NOT auto-connect to destination — caller must call connect()
+      }
+
+      on(event, listener) {
+        if (!this._listeners[event]) this._listeners[event] = [];
+        this._listeners[event].push(listener);
+      }
+      off(event, listener) {
+        if (!this._listeners[event]) return;
+        this._listeners[event] = this._listeners[event].filter(l => l !== listener);
+      }
+      _fire(event, data) {
+        if (!this._listeners[event]) return;
+        this._listeners[event].forEach(l => l(data));
+      }
+
+      connect(audioNode) {
+        // audioNode can be a raw AudioNode or a Tone.js node (has .input property)
+        const dest = (audioNode && audioNode.input !== undefined) ? audioNode.input : audioNode;
+        this.gain.connect(dest);
+      }
+      disconnect() {
+        this.gain.disconnect();
+      }
+
+      set(state) {
+        // shallow merge with deep merge for envelope
+        for (const key of Object.keys(state)) {
+          if (key === 'envelope' && typeof state[key] === 'object') {
+            this.state.envelope = Object.assign({}, this.state.envelope, state[key]);
+          } else {
+            this.state[key] = state[key];
+          }
+        }
+      }
+
+      setBuffer(data) {
+        this.set({ isBufferSet: false });
+        this._fire('settingBuffer', { buffer: data });
+        if (data instanceof AudioBuffer) {
+          this.buffer = data;
+          this.set({ isBufferSet: true });
+          this._fire('bufferSet', { buffer: data });
+          return;
+        }
+        return new Promise(resolve => {
+          this.context.decodeAudioData(data, buffer => {
+            this.buffer = buffer;
+            this.set({ isBufferSet: true });
+            this._fire('bufferSet', { buffer });
+            resolve(buffer);
+          });
+        });
+      }
+
+      startVoice(options = {}) {
+        if (!this.state.isBufferSet) return;
+        const self = this;
+        const id = ++this._idCounter;
+
+        let position = options.position != null ? options.position : 0;
+        let volume = options.volume != null ? options.volume : 1;
+
+        let timeout = null;
+        let active = true;
+
+        function scheduleNext() {
+          if (!active) return;
+          self.createGrain(position, volume);
+          const density = (1 - self.state.density) * 500 + 15;
+          timeout = setTimeout(scheduleNext, density);
+        }
+
+        scheduleNext();
+
+        this.state.voices = [...this.state.voices, {
+          id,
+          get position() { return position; },
+          set position(v) { position = v; },
+          get volume() { return volume; },
+          set volume(v) { volume = v; },
+          stop() { active = false; clearTimeout(timeout); }
+        }];
+
+        return id;
+      }
+
+      updateVoice(id, options = {}) {
+        const v = this.state.voices.find(v => v.id === id);
+        if (!v) return;
+        if (options.position != null) v.position = options.position;
+        if (options.volume != null) v.volume = options.volume;
+      }
+
+      stopVoice(id) {
+        const v = this.state.voices.find(v => v.id === id);
+        if (v) v.stop();
+        this.state.voices = this.state.voices.filter(v => v.id !== id);
+      }
+
+      stopAllVoices() {
+        this.state.voices.forEach(v => v.stop());
+        this.state.voices = [];
+      }
+
+      createGrain(position, volume) {
+        if (!this.buffer) return;
+        const now = this.context.currentTime;
+        const source = this.context.createBufferSource();
+        source.playbackRate.value = this.state.pitch;
+        source.buffer = this.buffer;
+
+        const grainGain = this.context.createGain();
+        source.connect(grainGain);
+        grainGain.connect(this.gain);
+
+        // position 0-1 → buffer seconds offset
+        const offset = position * this.buffer.duration;
+        // random scatter in seconds around offset
+        const randomOffset = (Math.random() * this.state.spread) - (this.state.spread / 2);
+        const startOffset = Math.max(0, Math.min(this.buffer.duration - 0.01, offset + randomOffset));
+
+        const attack = this.state.envelope.attack * 0.4;
+        const release = Math.max(0.05, this.state.envelope.release * 1.5);
+        const grainDuration = attack + release;
+
+        volume = Math.min(1, Math.max(0, volume));
+
+        source.start(now, startOffset, grainDuration);
+        grainGain.gain.setValueAtTime(0, now);
+        grainGain.gain.linearRampToValueAtTime(volume, now + attack);
+        grainGain.gain.linearRampToValueAtTime(0, now + grainDuration);
+        source.stop(now + grainDuration + 0.05);
+
+        setTimeout(() => { try { grainGain.disconnect(); } catch(e){} }, (grainDuration + 0.3) * 1000);
+
+        this._fire('grainCreated', { position, volume, pitch: this.state.pitch });
+      }
+
+      dispose() {
+        this.stopAllVoices();
+        try { this.gain.disconnect(); } catch(e){}
+      }
+    }
+
     class Sample {
       constructor(id, name, rawBuf, x = 0, y = 0) {
         this.id = id;
@@ -2778,14 +2940,16 @@
         this.triggerMode = false; // one-shot on trigger, no auto-loop
 
         // Granular mode state
-        this.granular = false;
-        this.grainSize = 100;    // ms, 10..500
-        this.grainScatter = 0;   // 0..1
-        this.grainDensity = 16;  // grains/sec, 1..40
-        this.pitchSpread = 0;    // cents, 0..100
-        this.grainPlayer = null; // Tone.GrainPlayer when active
-        this._granPhase = 0;     // 0..1 nominal position within loop for scatter
-        this._granLastTick = null;
+        this.granular    = false;
+        this.grainPosition = 0.5;  // 0..1 within loop region
+        this.grainSpread   = 0.3;  // 0..1 → scatter in seconds around position
+        this.grainDensity  = 0.85; // 0..1 → grain trigger rate (0=sparse ~515ms, 1=dense ~15ms)
+        this.grainAttack   = 0.1;  // 0..1 → grain attack (×0.4 s)
+        this.grainRelease  = 0.4;  // 0..1 → grain release (×1.5 s)
+        this.grainPitch    = 0;    // semitones, –24..+24
+        this._gran         = null; // GranularEngine instance
+        this._granGain     = null; // raw GainNode for output fade control
+        this._granVoiceId  = null; // active voice ID
 
         this.playing = false;
         this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
@@ -3007,63 +3171,44 @@
         }
       }
 
-      // ── Granular mode ──
+      // ── Granular mode (GranularEngine) ──
       setGranularMode(val) {
         if (this.granular === val) return;
         this.granular = val;
         this._fadedBuf = null;
         if (val) {
-          // Ensure reverse is off (mutually exclusive)
-          if (this.reversed) { this.reversed = false; }
-          // Immediately stop and DISCONNECT regular players — prevents any audio bleed
+          if (this.reversed) this.reversed = false;
           this._cancelGrid();
           this.player.loop = false;
           this.xfPlayer.loop = false;
           this._stopPlayer();
           this._stopXfLoop();
+          this._anchorAcTime = null; // hide regular playhead immediately
           try { this.player.disconnect(); } catch(e) {}
           try { this.xfPlayer.disconnect(); } catch(e) {}
-          // Ensure fadeGain is at 1 (grainGain will control grain player volume independently)
           const ctx = Tone.context.rawContext;
+          // Keep fadeGain at 0 — player is disconnected; this ensures zero bleed
           this.fadeGain.gain.cancelScheduledValues(ctx.currentTime);
-          this.fadeGain.gain.setValueAtTime(1, ctx.currentTime);
-          // Dedicated gain node for the grain player
-          this.grainGain = new Tone.Gain(0).connect(this.fadeGain);
-          this.grainPlayer = new Tone.GrainPlayer();
-          this._setGrainBuf();
-          this._applyGrainParams();
-          this._updateGranWindow();
-          this.grainPlayer.connect(this.grainGain);
+          this.fadeGain.gain.setValueAtTime(0, ctx.currentTime);
+          // Route granular signal directly into clipGain, bypassing fadeGain entirely
+          this._granGain = ctx.createGain();
+          this._granGain.gain.value = 0;
+          const clipIn = this.clipGain.input || this.clipGain;
+          try { this._granGain.connect(clipIn); } catch(e) {
+            try { this._granGain.connect(this.clipGain); } catch(e2) {}
+          }
+          const buf = (this.psStretch > 1 && this._psBuffer) ? this._psBuffer : this.raw;
+          this._gran = new GranularEngine({ audioContext: ctx });
+          this._gran.setBuffer(buf);
+          this._gran.connect(this._granGain);
+          this._gran.set(this._granParams());
           if (this.playing) {
-            const startAt = ctx.currentTime + 0.01;
-            this.grainGain.gain.setValueAtTime(0, ctx.currentTime);
-            this.grainGain.gain.linearRampToValueAtTime(1, startAt + 0.1);
-            try { this.grainPlayer.start(startAt); } catch (e) { console.warn('gran start', e); }
-            this._anchorAcTime = null; // no linear playhead in gran mode
+            this._granGain.gain.setValueAtTime(0, ctx.currentTime);
+            this._granGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.12);
+            this._granVoiceId = this._gran.startVoice({ position: this._granPos(), volume: 1 });
           }
         } else {
-          if (this.grainPlayer) {
-            if (this.playing) {
-              const ctx = Tone.context.rawContext;
-              const now = ctx.currentTime;
-              const XFADE = 0.04;
-              // Fade out grain via grainGain only — leave fadeGain at 1 for incoming regular player
-              this.grainGain.gain.cancelScheduledValues(now);
-              this.grainGain.gain.setValueAtTime(this.grainGain.gain.value, now);
-              this.grainGain.gain.linearRampToValueAtTime(0, now + XFADE);
-              const gp = this.grainPlayer, gg = this.grainGain;
-              setTimeout(() => {
-                try { gp.stop(); gp.disconnect(); gp.dispose(); } catch (e) {}
-                try { gg.disconnect(); gg.dispose(); } catch (e) {}
-              }, (XFADE + 0.02) * 1000);
-            } else {
-              try { this.grainPlayer.stop(); this.grainPlayer.disconnect(); this.grainPlayer.dispose(); } catch (e) {}
-              try { this.grainGain.disconnect(); this.grainGain.dispose(); } catch (e) {}
-            }
-            this.grainPlayer = null;
-            this.grainGain = null;
-          }
-          // Reconnect regular players before resuming
+          this._granTeardown(this.playing ? 0.04 : 0);
           try { this.player.connect(this.fadeGain); } catch(e) {}
           try { this.xfPlayer.connect(this.xfGain); } catch(e) {}
           if (this.playing) {
@@ -3071,112 +3216,63 @@
             else this.play();
           }
         }
-        this._granPhase = 0;
-        this._granLastTick = null;
-        this._granDetuneTarget = undefined;
-        this._granTickCount = 0;
         this._renderTile();
       }
 
-      // Set the grain player's buffer — uses PS buffer if PaulStretch is active
-      _setGrainBuf() {
-        const gp = this.grainPlayer;
-        if (!gp) return;
-        const buf = (this.psStretch > 1 && this._psBuffer) ? this._psBuffer : this.raw;
-        if (typeof gp.buffer.set === 'function') gp.buffer.set(buf);
-        else gp.buffer._buffer = buf;
+      // 0-1 buffer position for the grain voice center
+      _granPos() {
+        return this.loopStart + (this.loopEnd - this.loopStart) * this.grainPosition;
       }
 
-      _applyGrainParams() {
-        const gp = this.grainPlayer;
-        if (!gp) return;
-        this._setGrainBuf();
-        const dur = this._activeDur;
-        gp.grainSize = Math.max(0.05, this.grainSize / 1000);
-        // Minimum overlap = 30ms fixed floor to guarantee click-free crossfades
-        gp.overlap = Math.max(0.03, Math.min(gp.grainSize * 0.9, gp.grainSize - 1 / Math.max(1, this.grainDensity)));
-        gp.loopStart = this.loopStart * dur;
-        gp.loopEnd = this.loopEnd * dur;
-        gp.loop = true;
-        // playbackRate = 1 — grain audio goes through this.ps (PitchShift) for pitch.
-        // Changing playbackRate here would also shift pitch, doubling the effect.
-        gp.playbackRate = 1.0;
-        // detune starts at 0 — pitch shift is handled by this.ps which is downstream.
-        // _granTick modulates detune for pitch spread on top of that.
-        gp.detune = 0;
+      // Spread in seconds: grainSpread fraction of loop span
+      _granSpreadSec() {
+        return (this.loopEnd - this.loopStart) * this._activeDur * this.grainSpread;
       }
 
-      setGrainSize(ms) {
-        this.grainSize = Math.max(10, Math.min(500, ms));
-        const gp = this.grainPlayer;
-        if (gp) {
-          gp.grainSize = Math.max(0.05, this.grainSize / 1000);
-          gp.overlap = Math.max(0.03, Math.min(gp.grainSize * 0.9,
-            gp.grainSize - 1 / Math.max(1, this.grainDensity)));
-          this._updateGranWindow();
-        }
+      // Build params object for GranularEngine.set()
+      _granParams() {
+        return {
+          spread: this._granSpreadSec(),
+          density: this.grainDensity,
+          envelope: { attack: this.grainAttack, release: this.grainRelease },
+          pitch: Math.pow(2, this.grainPitch / 12)
+        };
       }
 
-      setGrainScatter(v) {
-        this.grainScatter = Math.max(0, Math.min(1, v));
-        this._updateGranWindow();
-      }
-
-      setGrainDensity(v) {
-        this.grainDensity = Math.max(1, Math.min(40, v));
-        const gp = this.grainPlayer;
-        if (gp) {
-          gp.overlap = Math.max(0.03, Math.min(gp.grainSize * 0.9,
-            gp.grainSize - 1 / Math.max(1, this.grainDensity)));
-        }
-      }
-
-      setPitchSpread(cents) {
-        this.pitchSpread = Math.max(0, Math.min(100, cents));
-      }
-
-      _updateGranWindow() {
-        const gp = this.grainPlayer;
-        if (!gp) return;
-        const dur = this._activeDur;
-        const ls = this.loopStart * dur;
-        const le = this.loopEnd * dur;
-        const span = Math.max(0.001, le - ls);
-        if (this.grainScatter >= 0.99) {
-          gp.loopStart = ls;
-          gp.loopEnd = le;
+      // Fade out and dispose — xfade=0 for immediate
+      _granTeardown(xfade) {
+        if (!this._gran) return;
+        const ctx = Tone.context.rawContext;
+        if (xfade > 0 && this._granGain) {
+          const gg = this._granGain;
+          gg.gain.cancelScheduledValues(ctx.currentTime);
+          gg.gain.setValueAtTime(gg.gain.value, ctx.currentTime);
+          gg.gain.linearRampToValueAtTime(0, ctx.currentTime + xfade);
+          const g = this._gran;
+          setTimeout(() => { try { g.dispose(); gg.disconnect(); } catch(e){} }, (xfade + 0.1) * 1000);
         } else {
-          // Scatter 0 = narrow window around loop center, Scatter 1 = full loop region.
-          // GrainPlayer's internal random scheduling provides the scatter naturally.
-          const center = ls + span * 0.5;
-          const minHalfW = Math.max(this.grainSize / 1000, span * 0.05);
-          const halfW = minHalfW + (span * 0.5 - minHalfW) * this.grainScatter;
-          gp.loopStart = Math.max(ls, center - halfW);
-          gp.loopEnd = Math.min(le, Math.max(gp.loopStart + this.grainSize / 1000 * 1.1, center + halfW));
+          try { this._gran.dispose(); } catch(e) {}
+          try { this._granGain && this._granGain.disconnect(); } catch(e) {}
         }
+        this._gran = null;
+        this._granGain = null;
+        this._granVoiceId = null;
       }
 
-      // Called from phLoop each frame — handles smooth pitch spread modulation
-      _granTick(now) {
-        if (!this.grainPlayer || !this.playing) return;
-        this._granTickCount = (this._granTickCount || 0) + 1;
-
-        // Pitch spread: GrainPlayer.detune is a plain Cents number (not a Param),
-        // so we lerp directly. Pick a new random target every ~18 frames (~300ms),
-        // then lerp toward it each frame for smooth per-grain pitch variation.
-        if (this.pitchSpread > 0) {
-          if (this._granTickCount % 18 === 0 || this._granDetuneTarget === undefined) {
-            this._granDetuneTarget = (Math.random() * 2 - 1) * this.pitchSpread;
-          }
-          // Lerp detune toward target — smooth, no sudden jumps
-          const cur = this.grainPlayer.detune;
-          this.grainPlayer.detune = cur + (this._granDetuneTarget - cur) * 0.12;
-        } else if (this.grainPlayer.detune !== 0) {
-          // Smoothly return to 0 when spread is off
-          this.grainPlayer.detune = this.grainPlayer.detune * 0.85;
-          if (Math.abs(this.grainPlayer.detune) < 0.5) this.grainPlayer.detune = 0;
-        }
+      // Apply current params to running engine
+      _granApply() {
+        if (!this._gran) return;
+        this._gran.set(this._granParams());
+        if (this._granVoiceId != null)
+          this._gran.updateVoice(this._granVoiceId, { position: this._granPos() });
       }
+
+      setGrainPosition(v) { this.grainPosition = Math.max(0, Math.min(1, v)); this._granApply(); }
+      setGrainSpread(v)   { this.grainSpread   = Math.max(0, Math.min(1, v)); this._granApply(); }
+      setGrainDensity(v)  { this.grainDensity  = Math.max(0, Math.min(1, v)); this._granApply(); }
+      setGrainAttack(v)   { this.grainAttack   = Math.max(0, Math.min(1, v)); this._granApply(); }
+      setGrainRelease(v)  { this.grainRelease  = Math.max(0, Math.min(1, v)); this._granApply(); }
+      setGrainPitch(v)    { this.grainPitch    = Math.max(-24, Math.min(24, v)); this._granApply(); }
 
       // ── Internal: stop the player node without changing state ──
       _stopPlayer() {
@@ -3393,22 +3489,30 @@
         this._stopPlayer();
         this._stopXfLoop();
         clearTimeout(this._filePosTimer);
+        clearTimeout(this._granStopTimer);
         this._filePosTimer = null;
         this._pendingRestart = false;
 
         // ── Granular mode ──
-        if (this.granular && this.grainPlayer) {
-          this._applyGrainParams();
-          const startAt = Tone.context.rawContext.currentTime + 0.005;
-          // Ramp grainGain up smoothly to avoid onset click
-          if (this.grainGain) {
-            this.grainGain.gain.cancelScheduledValues(startAt - 0.005);
-            this.grainGain.gain.setValueAtTime(0, startAt - 0.005);
-            this.grainGain.gain.linearRampToValueAtTime(1, startAt + 0.1);
+        if (this.granular && this._gran) {
+          const _fgCtx = Tone.context.rawContext;
+          // Keep fadeGain at 0 — player is not connected in gran mode
+          this.fadeGain.gain.cancelScheduledValues(_fgCtx.currentTime);
+          this.fadeGain.gain.setValueAtTime(0, _fgCtx.currentTime);
+          // Ramp up granGain
+          if (this._granGain) {
+            const _gg = this._granGain.gain;
+            _gg.cancelScheduledValues(_fgCtx.currentTime);
+            _gg.setValueAtTime(_gg.value, _fgCtx.currentTime);
+            _gg.linearRampToValueAtTime(1, _fgCtx.currentTime + 0.08);
           }
-          try { this.grainPlayer.start(startAt); } catch (e) { console.warn('gran play', e); }
-          this._anchorAcTime = null; // no linear playhead in gran mode
-          this._anchorBufferPos = this._revStart;
+          if (this._granVoiceId == null) {
+            this._gran.set(this._granParams());
+            this._granVoiceId = this._gran.startVoice({ position: this._granPos(), volume: 1 });
+          } else {
+            this._granApply();
+          }
+          this._anchorAcTime = null;
           this.playing = true;
           this._renderTile();
           return;
@@ -3548,7 +3652,7 @@
         this._stopPlayer();
         this._stopXfLoop();
         // Granular mode: use play() instead (no grid quantization for granular)
-        if (this.granular && this.grainPlayer) { this.play(); return; }
+        if (this.granular && this._gran) { this.play(); return; }
         this.player.loop = false;
         this.xfPlayer.loop = false;
 
@@ -3629,16 +3733,16 @@
         this._cancelGrid();
         this._stopPlayer();
         this._stopXfLoop();
-        if (this.grainPlayer) {
-          if (this.grainGain) {
-            const now = Tone.context.rawContext.currentTime;
-            this.grainGain.gain.cancelScheduledValues(now);
-            this.grainGain.gain.setValueAtTime(this.grainGain.gain.value, now);
-            this.grainGain.gain.linearRampToValueAtTime(0, now + 0.03);
-          }
-          setTimeout(() => { try { this.grainPlayer && this.grainPlayer.stop(); } catch(e) {} }, 40);
+        if (this._gran && this._granGain) {
+          const now = Tone.context.rawContext.currentTime;
+          const _gg = this._granGain.gain;
+          _gg.cancelScheduledValues(now);
+          _gg.setValueAtTime(_gg.value, now);
+          _gg.linearRampToValueAtTime(0, now + 0.04);
+          const _vid = this._granVoiceId, _g = this._gran;
+          setTimeout(() => { try { if (_vid != null) _g.stopVoice(_vid); } catch(e){} }, 80);
+          this._granVoiceId = null;
         }
-        this._granLastTick = null;
         clearTimeout(this._filePosTimer);
         this._filePosTimer = null;
         this._pendingRestart = false;
@@ -3912,6 +4016,12 @@
 
         if (!this.playing) return;
 
+        // Granular: update position/spread to reflect new loop bounds — no restart
+        if (this.granular && this._gran) {
+          this._granApply();
+          return;
+        }
+
         if (this.gridSync) {
           this._cancelGrid();
           this._stopPlayer();
@@ -3929,11 +4039,13 @@
         this.filePosition = Math.max(0, Math.min(this.loopEnd - 0.001 / Math.max(0.001, this.duration), norm));
         if (!this.playing) return;
         if (this.gridSync) return; // fire() reads _revFilePos fresh each tick — no restart needed
+        if (this.granular) return; // granular engine manages position via grainPosition param
         this.play();
       }
 
       dispose() {
         this.stop();
+        this._granTeardown(0);
         setTimeout(() => {
           try { this.player.dispose(); } catch (e) { }
           try { this.xfPlayer.dispose(); } catch (e) { }
@@ -4394,6 +4506,7 @@
         const wrap = cardInfo.waveWrap();
         const W = wrap ? (wrap.clientWidth || 284) - 20 : 264;
         const pos = si.playheadPos();
+        if (pos === null) { cph.style.display = 'none'; continue; }
         if (pos !== null) {
           // pos is 0..1 within the loop region; map to full-buffer absolute position (works for both PS and normal mode)
           const absPos = si.loopStart + pos * (si.loopEnd - si.loopStart);
@@ -4431,11 +4544,9 @@
         if (vuC) drawVU(vuC, si);
       }
 
-      // Granular parameter tick + mini tile grain viz
-      const _granNow = performance.now() / 1000;
+      // Granular mini tile grain viz
       for (const [_gsid, _gs] of samples) {
         if (!(_gs instanceof Sample) || !_gs.granular) continue;
-        if (_gs.grainPlayer) _gs._granTick(_granNow);
         // Mini tile grain canvas
         const _gtile = document.getElementById('t' + _gsid);
         if (!_gtile) continue;
@@ -4444,16 +4555,16 @@
         if (!_gs.playing) { _tgc._tgParticles = null; continue; }
         const _tgW = TW, _tgH = TH;
         const _tgCtx = _tgc.getContext('2d');
-        // Init particle pool
         if (!_tgc._tgParticles) _tgc._tgParticles = [];
         const _tgP = _tgc._tgParticles;
-        // Spawn new grains proportional to density
-        const _spawnN = Math.max(1, Math.round(_gs.grainDensity / 30));
+        // Spawn grains scattered around position within loop
+        const _spawnN = Math.max(1, Math.round(_gs.grainDensity * 3));
         for (let _si = 0; _si < _spawnN; _si++) {
-          const _norm = _gs.loopStart + Math.random() * (_gs.loopEnd - _gs.loopStart);
-          const _spread = _gs.pitchSpread / 100; // 0..1
-          const _hue = _spread * (Math.random() * 2 - 1) * 60; // ±60° hue shift
-          _tgP.push({ x: _norm * _tgW, life: 1.0, hue: _hue, h: 4 + (_gs.grainSize / 500) * (_tgH * 0.5) });
+          const _center = _gs.loopStart + (_gs.loopEnd - _gs.loopStart) * _gs.grainPosition;
+          const _spreadN = (_gs.loopEnd - _gs.loopStart) * _gs.grainSpread;
+          const _norm = Math.max(_gs.loopStart, Math.min(_gs.loopEnd, _center + (Math.random() * 2 - 1) * _spreadN * 0.5));
+          const _hue = (_gs.grainPitch / 24) * 60;
+          _tgP.push({ x: _norm * _tgW, life: 1.0, hue: _hue, h: 4 + (_gs.grainRelease * 0.5 + 0.1) * _tgH * 0.4 });
         }
         // Age particles
         for (let _pi = _tgP.length - 1; _pi >= 0; _pi--) {
@@ -4741,10 +4852,12 @@
       s.crossfadeTime = src.crossfadeTime;
       s.muted = src.muted;
       // Copy granular settings
-      s.grainSize = src.grainSize;
-      s.grainScatter = src.grainScatter;
-      s.grainDensity = src.grainDensity;
-      s.pitchSpread = src.pitchSpread;
+      s.grainPosition = src.grainPosition;
+      s.grainSpread   = src.grainSpread;
+      s.grainDensity  = src.grainDensity;
+      s.grainAttack   = src.grainAttack;
+      s.grainRelease  = src.grainRelease;
+      s.grainPitch    = src.grainPitch;
       if (src.granular) s.setGranularMode(true);
 
       // Copy EQ bands
@@ -4978,40 +5091,31 @@
           </div>
           <div class="csec tight gran-sliders">
             <div class="crow">
-              <span class="clbl">Grain Size</span>
-              <input type="text" class="rng-field" value="10">
+              <span class="clbl">Position</span>
+              <input type="text" class="rng-field" value="0%">
               <div class="cslider">
-                <input type="range" class="card-grain-size" min="10" max="500" step="1" value="100">
-                <div class="cslider-thumb"><span class="cslider-lbl">100ms</span><input class="cslider-edit" type="text"></div>
+                <input type="range" class="card-grain-position" min="0" max="1" step="0.01" value="0.5">
+                <div class="cslider-thumb"><span class="cslider-lbl">50%</span><input class="cslider-edit" type="text"></div>
               </div>
-              <input type="text" class="rng-field" value="500">
+              <input type="text" class="rng-field" value="100%">
             </div>
             <div class="crow">
-              <span class="clbl">Scatter</span>
-              <input type="text" class="rng-field" value="0">
+              <span class="clbl">Spread</span>
+              <input type="text" class="rng-field" value="0%">
               <div class="cslider">
-                <input type="range" class="card-grain-scatter" min="0" max="1" step="0.01" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0.00</span><input class="cslider-edit" type="text"></div>
+                <input type="range" class="card-grain-spread" min="0" max="1" step="0.01" value="0.3">
+                <div class="cslider-thumb"><span class="cslider-lbl">30%</span><input class="cslider-edit" type="text"></div>
               </div>
-              <input type="text" class="rng-field" value="1">
+              <input type="text" class="rng-field" value="100%">
             </div>
             <div class="crow">
               <span class="clbl">Density</span>
-              <input type="text" class="rng-field" value="1">
+              <input type="text" class="rng-field" value="0%">
               <div class="cslider">
-                <input type="range" class="card-grain-density" min="1" max="40" step="0.5" value="16">
-                <div class="cslider-thumb"><span class="cslider-lbl">16/s</span><input class="cslider-edit" type="text"></div>
+                <input type="range" class="card-grain-density" min="0" max="1" step="0.01" value="0.85">
+                <div class="cslider-thumb"><span class="cslider-lbl">85%</span><input class="cslider-edit" type="text"></div>
               </div>
-              <input type="text" class="rng-field" value="40">
-            </div>
-            <div class="crow">
-              <span class="clbl">Pitch Sprd</span>
-              <input type="text" class="rng-field" value="0">
-              <div class="cslider">
-                <input type="range" class="card-pitch-spread" min="0" max="100" step="1" value="0">
-                <div class="cslider-thumb"><span class="cslider-lbl">0c</span><input class="cslider-edit" type="text"></div>
-              </div>
-              <input type="text" class="rng-field" value="100">
+              <input type="text" class="rng-field" value="100%">
             </div>
           </div>
           <div class="card-accordion">
@@ -5125,10 +5229,9 @@
       // Convert stored ratio back to slider position: sliderVal = log(ratio)/log(200)*100
       q('.card-ps').value = s.psStretch > 1 ? Math.log(s.psStretch) / Math.log(200) * 100 : 0;
       // Granular initial values
-      q('.card-grain-size').value = s.grainSize;
-      q('.card-grain-scatter').value = s.grainScatter;
-      q('.card-grain-density').value = s.grainDensity;
-      q('.card-pitch-spread').value = s.pitchSpread;
+      q('.card-grain-position').value = s.grainPosition;
+      q('.card-grain-spread').value   = s.grainSpread;
+      q('.card-grain-density').value  = s.grainDensity;
       // Playback mode buttons
       q('.card-mode-loop').classList.toggle('act', !s.reversed && !s.granular && !s.triggerMode);
       q('.card-mode-rev').classList.toggle('act', s.reversed && !s.triggerMode);
@@ -5374,7 +5477,8 @@
         if (!s.granular) return;
         const now = performance.now();
         const loopSpan = s.loopEnd - s.loopStart;
-        const grainLifeMs = Math.max(10, s.grainSize);
+        // Grain life: derived from release param (0..1 → up to ~1.5s), minimum 80ms
+        const grainLifeMs = Math.max(80, s.grainRelease * 1500);
 
         // Age and remove dead particles
         for (let i = granParticles.length - 1; i >= 0; i--) {
@@ -5388,22 +5492,22 @@
 
         // Spawn new grains only when playing
         if (!s.playing) { drawGranCanvas(); return; }
-        // Maintain a pool sized to density (active grains at any time)
-        const targetCount = Math.max(1, Math.round(s.grainDensity));
+        // Maintain a pool sized to density: 0..1 → 1..8 simultaneous grains
+        const targetCount = Math.max(1, Math.round(1 + s.grainDensity * 7));
         const needed = targetCount - granParticles.length;
         for (let i = 0; i < needed; i++) {
-          // Position within loop, modulated by scatter
-          const center = s.loopStart + loopSpan * (s._granPhase || 0.5);
-          const spread = s.grainScatter * loopSpan * 0.5;
-          let norm = center + (Math.random() * 2 - 1) * spread;
+          // Position within loop, modulated by spread
+          const center = s.loopStart + loopSpan * s.grainPosition;
+          const spreadNorm = s.grainSpread * loopSpan * 0.5;
+          let norm = center + (Math.random() * 2 - 1) * spreadNorm;
           norm = Math.max(s.loopStart, Math.min(s.loopEnd, norm));
-          // Grain width in pixels proportional to grainSize
+          // Grain width scaled by spread
           const wrap2 = q('.card-wave-wrap');
           const W2 = wrap2 ? (wrap2.clientWidth || 284) - 20 : 264;
           const minW = 1, maxW = W2 * 0.4;
-          const w = minW + ((s.grainSize - 10) / 490) * (maxW - minW);
-          // Hue shift based on pitchSpread
-          const hueDeg = s.pitchSpread > 0 ? (Math.random() * 2 - 1) * (s.pitchSpread / 100) * 60 : 0;
+          const w = minW + s.grainSpread * (maxW - minW);
+          // Hue shift based on pitch offset
+          const hueDeg = s.grainPitch !== 0 ? (Math.random() * 2 - 1) * Math.abs(s.grainPitch / 24) * 60 : 0;
           granParticles.push({ born: now + Math.random() * grainLifeMs * 0.8, norm, w: Math.max(1, w), opacity: 0, hueDeg });
         }
         drawGranCanvas();
@@ -5777,10 +5881,9 @@
           if (lbl && fmt) lbl.textContent = fmt(v);
         });
       }
-      initGranSlider('card-grain-size',    'setGrainSize',    v => Math.round(v) + 'ms');
-      initGranSlider('card-grain-scatter', 'setGrainScatter', v => (+v).toFixed(2));
-      initGranSlider('card-grain-density', 'setGrainDensity', v => Math.round(v) + '/s');
-      initGranSlider('card-pitch-spread',  'setPitchSpread',  v => Math.round(v) + 'c');
+      initGranSlider('card-grain-position', 'setGrainPosition', v => Math.round(v * 100) + '%');
+      initGranSlider('card-grain-spread',   'setGrainSpread',   v => Math.round(v * 100) + '%');
+      initGranSlider('card-grain-density',  'setGrainDensity',  v => Math.round(v * 100) + '%');
 
       q('.card-pitch').addEventListener('input', e => {
         s.setPitch(parseInt(e.target.value));
@@ -7006,8 +7109,10 @@
           attackTime: s.attackTime, releaseTime: s.releaseTime,
           crossfadeTime: s.crossfadeTime, clipGainDb: s.clipGainDb,
           triggerMode: s.triggerMode,
-          granular: s.granular, grainSize: s.grainSize, grainScatter: s.grainScatter,
-          grainDensity: s.grainDensity, pitchSpread: s.pitchSpread,
+          granular: s.granular,
+          grainPosition: s.grainPosition, grainSpread: s.grainSpread,
+          grainDensity: s.grainDensity, grainAttack: s.grainAttack,
+          grainRelease: s.grainRelease, grainPitch: s.grainPitch,
           eqBands: s.eqBands.map(b => ({ ...b })),
           fxChain: fxChainData,
           audioB64: audioBufferToWavBase64(s.raw)
@@ -7102,10 +7207,12 @@
           s.crossfadeTime = sd.crossfadeTime || 0;
           if (sd.reversed) s.setReverse(true);
           // Restore granular state
-          if (sd.grainSize) s.grainSize = sd.grainSize;
-          if (sd.grainScatter != null) s.grainScatter = sd.grainScatter;
-          if (sd.grainDensity) s.grainDensity = sd.grainDensity;
-          if (sd.pitchSpread != null) s.pitchSpread = sd.pitchSpread;
+          if (sd.grainPosition != null) s.grainPosition = sd.grainPosition;
+          if (sd.grainSpread   != null) s.grainSpread   = sd.grainSpread;
+          if (sd.grainDensity  != null) s.grainDensity  = sd.grainDensity;
+          if (sd.grainAttack   != null) s.grainAttack   = sd.grainAttack;
+          if (sd.grainRelease  != null) s.grainRelease  = sd.grainRelease;
+          if (sd.grainPitch    != null) s.grainPitch    = sd.grainPitch;
           if (sd.triggerMode) s.triggerMode = true;
           if (sd.granular) s.setGranularMode(true);
 
@@ -7431,11 +7538,10 @@
             if (typeof drawFn === 'function') drawFn();
           }
 
-          // Update grain player buffer if gran mode is active
-          if (s.granular && s.grainPlayer) {
-            s._setGrainBuf();
-            s._applyGrainParams();
-            s._updateGranWindow();
+          // Restart granular engine with new buffer if gran mode is active
+          if (s.granular && s._gran) {
+            s.setGranularMode(false);
+            s.setGranularMode(true);
           }
           // Restart playback using the stretched buffer
           if (s.playing) s.play();

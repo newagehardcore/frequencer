@@ -78,6 +78,26 @@ The remaining parameters are grouped into collapsible accordion sections (click 
 
 ---
 
+## Granular Mode
+
+Activate with the **GRAN** button in the playback mode row. The sample's loop region is used as the grain source — the regular player and playhead are replaced by a granular engine.
+
+**Controls** (shown in the GRAN sliders section):
+
+| Slider | Range | Description |
+|--------|-------|-------------|
+| Position | 0–100% | Center position of grain playback within the loop region |
+| Spread | 0–100% | Random scatter of grain start points around Position |
+| Density | 0–100% | Grain trigger rate — low = sparse (~500ms apart), high = dense (~15ms apart) |
+
+- Pitch and playback speed are inherited from the **PITCH+TIME** section and apply to the granular engine just like normal playback.
+- Loop handles still control the source region; moving them updates the engine in real time without restarting.
+- All three controls are LFO-targetable for evolving, modulated textures.
+- The cloud visualization on the card waveform shows grain positions and spread in real time.
+- Switching to LOOP, REV, or TRIG exits granular mode and resumes normal playback.
+
+---
+
 ## Step Sequencer
 
 Add step sequencers to your canvas to trigger samples rhythmically. Connect them to one or more samples via wires.
@@ -134,11 +154,17 @@ Add LFOs to your canvas to modulate any sample parameter (Pitch, Stretch, Volume
 
 ## Audio Chain (per sample)
 
+Normal mode:
 ```
-AudioBuffer → Player(s) → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
+AudioBuffer → Player(s) → FadeGain → ClipGain → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
 ```
 
-A second player (`xfPlayer`) handles crossfade transitions and, in Grid Sync mode, the wrapped portion of a loop when File Position is offset from the loop start. Fades without crossfade are baked into the buffer directly.
+Granular mode:
+```
+AudioBuffer → GranularEngine → GranGain → ClipGain → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
+```
+
+A second player (`xfPlayer`) handles crossfade transitions and, in Grid Sync mode, the wrapped portion of a loop when File Position is offset from the loop start. Fades without crossfade are baked into the buffer directly. In granular mode the regular players are disconnected and the GranularEngine drives the chain directly.
 
 ---
 
