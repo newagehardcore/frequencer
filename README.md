@@ -128,6 +128,91 @@ Add LFOs to your canvas to modulate any sample parameter (Pitch, Stretch, Volume
 
 ---
 
+## Synth Instruments
+
+Add synthesizers to the canvas via the footer buttons.
+
+### Analog Synth (`+ Synth → Analog`)
+
+A polyphonic subtractive synthesizer built on Tone.PolySynth.
+
+- **Oscillator** — Sine, Triangle, Sawtooth, Square, Pulse
+- **ADSR envelope** — Attack, Decay, Sustain, Release
+- **Filter** — LP / HP / BP with Frequency and Q controls
+- **Portamento** — glide between notes
+- **Keyboard** — 2-octave mouse-playable keyboard (C3–B4); octave shift buttons
+
+### FM Synth (`+ Synth → FM`)
+
+A frequency-modulation synthesizer with a built-in library of 32 DX7-style presets.
+
+- **FM Parameters** — Harmonicity (carrier:modulator ratio), Modulation Index
+- **Carrier & Modulation envelopes** — independent ADSR for carrier and modulator
+- **Preset library** — 32 classic DX7 patches; load custom banks via SysEx `.syx` files
+- **Keyboard** — same 2-octave playable keyboard as Analog
+
+Both synth types share volume, pan, and mute/solo controls consistent with the sample tiles.
+
+---
+
+## Riff Sequencer
+
+Add melodic step sequencers to the canvas via `+ Riff`. Each riff connects to one or more synths or samplers via wires and loops a melodic pattern in sync with the transport.
+
+### Step Grid
+
+Up to 64 steps arranged in an 8-column grid. Each step shows its note name and a **velocity bar** — a colored fill from the bottom of the cell representing the step's velocity (full height = full velocity). Click and drag up/down on any step to adjust its velocity.
+
+- **● Rec** — enter step-entry mode; keys/mouse pressed on the keyboard fill the current cursor step and advance automatically
+- **Rest** — skip the cursor step (leave it silent) and advance
+- **Clear** — erase all steps in the pattern
+- **Steps +/−** — increase or decrease the number of active steps (1–64)
+
+### Grid & Subdivision
+
+- **Grid button** — when on, step timing locks to the transport BPM at the selected musical subdivision; when off, use the **Rate** slider for a free-running step interval in seconds
+- **Subdivision** — `1 bar` through `1/32`, with dotted (`.`) and triplet (`T`) variants for each
+
+### Transform Controls
+
+| Control | Action |
+|---------|--------|
+| **Oct ▼▲** | Shift all notes in the pattern up or down one octave |
+| **Semi ▼▲** | Transpose all notes up or down one semitone, snapping to the selected scale |
+| **+ (interval)** | Add a harmony voice at the chosen interval (1–7 semitones, or 8 = octave) above each note, snapped to the current scale |
+
+### Scale & Root
+
+Select a root note and scale from a library of 55+ scales (modes, world scales, jazz scales, and more). When a scale is selected:
+
+- Out-of-scale keys on the keyboard are dimmed
+- All notes entered or transposed snap to the nearest in-scale degree
+- The **+ interval** harmony voice also snaps to the scale
+
+Chromatic (default) disables all snapping.
+
+### Keyboard
+
+A 2-octave mouse-playable keyboard with octave shift buttons. Notes snap to the current scale on input.
+
+**QWERTY input** (when the riff node is focused — click it first):
+
+| Keys | Notes |
+|------|-------|
+| `A W S E D F T G Y H U J` | C C# D D# E F F# G G# A A# B |
+| `K O L P` | C C# D D# (next octave) |
+| `Z` / `X` | Octave down / up |
+| `R` or `Space` | Rest (skip current step) |
+| `← →` | Move step selection left / right |
+| `↑ ↓` | Transpose selected step up / down (scale-snapped) |
+| `Delete` / `Backspace` | Clear selected step |
+
+### Wires
+
+Drag from the riff's wire port onto a synth tile or sampler tile to connect. A riff can drive multiple instruments simultaneously. The connection is shown as a colored wire on the canvas.
+
+---
+
 ## Transport
 
 | Control | Function | Key |

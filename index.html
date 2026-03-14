@@ -265,7 +265,7 @@
       width: 136px;
       height: 56px;
       background: var(--surface);
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.8);
       cursor: grab;
       overflow: hidden;
       z-index: 10;
@@ -296,7 +296,7 @@
     .tile.expanded {
       z-index: 50;
       cursor: default;
-      opacity: 0.15;
+      opacity: 0;
       pointer-events: none;
     }
 
@@ -494,7 +494,7 @@
       z-index: 400;
       width: 280px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.8);
       overflow: hidden;
       max-height: 0;
       opacity: 0;
@@ -1427,7 +1427,7 @@
 
       50% {
         background: #000;
-        border-color: rgba(255,255,255,0.4);
+        border-color: rgba(255,255,255,0.8);
         color: #fff;
       }
     }
@@ -1485,7 +1485,7 @@
       position: absolute;
       width: 220px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.8);
       z-index: 10;
       cursor: default;
       user-select: none;
@@ -1755,7 +1755,7 @@
       position: absolute;
       width: 260px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.8);
       z-index: 10;
       cursor: default;
       user-select: none;
@@ -2232,13 +2232,8 @@
     .lfo-wire-line {
       fill: none;
       stroke-width: 2;
-    }
-    .lfo-wire-under {
       stroke-dasharray: 5 4;
-      opacity: 0.38;
-    }
-    .lfo-wire-over {
-      opacity: 0.8;
+      opacity: 0.55;
     }
 
     .lfo-wire-temp {
@@ -2288,6 +2283,485 @@
       font-size: 9px;
       padding: 3px 4px;
     }
+
+    /* ═══ SYNTH TYPE PICKER ═══ */
+    #synth-type-picker {
+      position: fixed;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.3);
+      z-index: 2000;
+      min-width: 150px;
+      display: none;
+    }
+    #synth-type-picker.open { display: block; }
+    .stp-item {
+      padding: 8px 14px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: rgba(255,255,255,0.65);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .stp-item:last-child { border-bottom: none; }
+    .stp-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .stp-item.stp-disabled { color: rgba(255,255,255,0.2); cursor: default; pointer-events: none; }
+    .stp-soon {
+      font-size: 8px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      opacity: 0.5;
+      margin-left: 6px;
+    }
+
+    /* ═══ SYNTH TILE ═══ */
+    .tile-synth-badge {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+      pointer-events: none;
+      z-index: 3;
+    }
+    .tile.playing .tile-synth-badge { color: rgba(255,255,255,0.8); }
+
+    /* ═══ SYNTH CARD ═══ */
+    .synth-tile {
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    .synth-card {
+      position: fixed;
+      z-index: 400;
+      width: 300px;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.8);
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
+    }
+    .synth-card.open {
+      max-height: 1000px;
+      opacity: 1;
+      pointer-events: all;
+    }
+    .synth-section {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .synth-section:last-child { border-bottom: none; }
+    .synth-section-hdr {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+      margin-bottom: 7px;
+    }
+    .synth-acc-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      user-select: none;
+    }
+    .synth-acc-hdr:hover { color: #fff; }
+    .synth-acc-hdr::after { content: '▸'; font-size: 8px; transition: transform 0.15s; }
+    .synth-acc-hdr.open { color: rgba(255,255,255,0.8); border-bottom-color: transparent; }
+    .synth-acc-hdr.open::after { transform: rotate(90deg); }
+    .synth-acc-body { display: none; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .synth-acc-body.open { display: block; }
+    .synth-kbd-wrap {
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .synth-keyboard {
+      position: relative;
+      height: 72px;
+      display: flex;
+      user-select: none;
+      width: 100%;
+    }
+    .synth-kbd-ctrl {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 4px 10px 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .synth-oct-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6);
+      font-size: 10px;
+      padding: 2px 7px;
+      cursor: pointer;
+      border-radius: 2px;
+    }
+    .synth-oct-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .synth-oct-lbl {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.35);
+      min-width: 28px;
+      text-align: center;
+    }
+    .synth-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+    .synth-row:last-child { margin-bottom: 0; }
+    .synth-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.38);
+      width: 46px;
+      flex-shrink: 0;
+    }
+    .synth-sl-wrap {
+      flex: 1;
+      position: relative;
+    }
+    .synth-sl-wrap input[type=range] {
+      width: 100%;
+      height: 2px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255,255,255,0.14);
+      outline: none;
+      cursor: pointer;
+    }
+    .synth-sl-wrap input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 8px;
+      height: 8px;
+      background: var(--card-color, #fff);
+      cursor: pointer;
+      border-radius: 0;
+    }
+    .synth-val {
+      font-size: 9px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      color: rgba(255,255,255,0.5);
+      width: 48px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .synth-btn-row {
+      display: flex;
+      gap: 4px;
+    }
+    .synth-btn {
+      flex: 1;
+      padding: 5px 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.4);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.08s;
+    }
+    .synth-btn:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
+    .synth-btn.act {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    /* ═══ PIANO KEYBOARD ═══ */
+    .sk-key-white {
+      flex: 1;
+      background: rgba(235,235,235,0.88);
+      border-right: 1px solid #333;
+      border-bottom: 2px solid #333;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+    }
+    .sk-key-white:last-child { border-right: none; }
+    .sk-key-white:hover { background: rgba(210,210,210,0.9); }
+    .sk-key-white.skact { background: var(--card-color, #aaa); opacity: 0.85; }
+    .sk-key-black {
+      position: absolute;
+      top: 0;
+      width: 11px;
+      height: 58%;
+      background: #242424;
+      border: 1px solid #555;
+      border-top: none;
+      cursor: pointer;
+      z-index: 2;
+      transform: translateX(-50%);
+    }
+    .sk-key-black:hover { background: #2a2a2a; }
+    .sk-key-black.skact { background: var(--card-color, #444); filter: brightness(0.7); }
+    /* Scale highlighting — dims out-of-scale keys */
+    .sk-key-white.sk-out-scale { background: rgba(90,90,90,0.7); border-color: #444; }
+    .sk-key-black.sk-out-scale { background: #0a0a0a; border-color: #222; }
+    .sk-key-white.sk-out-scale:hover { background: rgba(120,120,120,0.7); }
+    .sk-key-black.sk-out-scale:hover { background: #151515; }
+    /* skact always wins over scale dim */
+    .sk-key-white.sk-out-scale.skact { background: var(--card-color, #aaa); opacity: 0.85; }
+    .sk-key-black.sk-out-scale.skact { background: var(--card-color, #444); filter: brightness(0.7); }
+
+    /* ═══ FM PRESET LIST ═══ */
+    .fm-preset-list {
+      max-height: 112px;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 5px;
+    }
+    .fm-preset-list::-webkit-scrollbar { width: 4px; }
+    .fm-preset-list::-webkit-scrollbar-track { background: transparent; }
+    .fm-preset-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+    .fm-preset-item {
+      padding: 4px 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .fm-preset-item:last-child { border-bottom: none; }
+    .fm-preset-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .fm-preset-item.fm-preset-active { color: var(--card-color, #fff); background: rgba(255,255,255,0.07); }
+    .fm-sysx-btn {
+      display: block;
+      width: 100%;
+      padding: 5px 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.35);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: left;
+    }
+    .fm-sysx-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+    /* ═══ DRUM PLACEHOLDER ═══ */
+    .drum-placeholder {
+      padding: 24px 16px;
+      text-align: center;
+      color: rgba(255,255,255,0.22);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .synth-scope-canvas {
+      display: block;
+      width: 100%;
+      height: 72px;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.6);
+      margin-bottom: 4px;
+    }
+
+    /* ════════════════════════════════════════════════════
+       RIFF NODE
+    ════════════════════════════════════════════════════ */
+    /* ════════════════════════════════════════════════════
+       RIFF NODE — matches seq-node style
+    ════════════════════════════════════════════════════ */
+    .riff-node {
+      position: absolute;
+      width: 340px;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.8);
+      user-select: none;
+      z-index: 10;
+      cursor: default;
+      font-family: Helvetica, Arial, sans-serif;
+      color: #fff;
+      font-size: 11px;
+    }
+    .riff-node.dragging { z-index: inherit; }
+    .riff-node.collapsed { width: 136px; padding: 0; background: var(--surface, #000); }
+    .riff-node.collapsed .riff-body { display: none; }
+    .riff-node.collapsed .riff-min-footer { display: block; }
+    .riff-min-footer {
+      display: none; height: 16px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.45); padding-left: 6px; line-height: 16px;
+    }
+    .riff-titlebar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; background: #000; cursor: grab;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .riff-titlebar:active { cursor: grabbing; }
+    .riff-node.riff-focused .riff-titlebar { background: rgba(255,255,255,0.05); }
+    .riff-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--riff-color, #fff); }
+    .riff-name {
+      flex: 1; font-size: 11px; font-weight: 700; letter-spacing: -0.03em;
+      text-transform: uppercase; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; color: #fff;
+    }
+    .riff-hdr-btn {
+      background: none; border: none; color: rgba(255,255,255,0.4);
+      font-size: 13px; cursor: pointer; padding: 0 2px; line-height: 1;
+      flex-shrink: 0; font-family: inherit;
+    }
+    .riff-hdr-btn:hover { color: #fff; }
+    .riff-body { display: flex; flex-direction: column; }
+    /* Step grid */
+    .riff-step-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      gap: 3px; padding: 8px 8px 4px;
+    }
+    .riff-step {
+      aspect-ratio: 1; min-height: 22px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      cursor: pointer; transition: background 0.06s, border-color 0.06s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .riff-step.has-note { border-color: rgba(255,255,255,0.3); }
+    .riff-step.selected { border-color: var(--riff-color, #fff) !important; box-shadow: inset 0 0 0 1px var(--riff-color, #fff); }
+    .riff-step.entry-cursor { background: rgba(255,255,255,0.08); border-color: #fff; }
+    .riff-step.playing { background: #fff !important; border-color: #fff !important; }
+    .riff-step.playing .riff-step-note { color: #000 !important; }
+    .riff-step.playing .riff-step-num { color: #000; }
+    .riff-step-num { font-size: 6px; opacity: 0.3; position: absolute; top: 2px; left: 3px; line-height: 1; z-index: 1; }
+    .riff-step-note { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.35); position: relative; z-index: 1; }
+    .riff-step.has-note .riff-step-note { color: #fff; }
+    .riff-step-vel {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--riff-color, #fff);
+      opacity: 0; pointer-events: none;
+    }
+    .riff-step.has-note .riff-step-vel { opacity: 0.85; }
+    .riff-step.playing .riff-step-vel { background: rgba(0,0,0,0.18) !important; opacity: 1; }
+    /* Control rows — match seq padding */
+    .riff-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 8px;
+    }
+    .riff-row.sep { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 5px; }
+    .riff-lbl {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: -0.03em; color: rgba(255,255,255,0.45); flex-shrink: 0;
+    }
+    .riff-sel {
+      background: #000; border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.7); font-size: 9px; font-family: 'Courier New', monospace;
+      padding: 3px 4px; cursor: pointer; flex: 1; min-width: 0;
+    }
+    .riff-sel:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+    /* Step-entry REC / REST buttons */
+    .riff-step-btn {
+      flex: 1; padding: 5px 0; background: #000; border: 1px solid #333;
+      color: #7d7d7d; font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px; font-weight: 700; letter-spacing: -0.03em;
+      text-transform: uppercase; cursor: pointer; transition: all 0.08s;
+    }
+    .riff-step-btn:hover { border-color: #fff; color: #fff; }
+    .riff-step-btn.act { background: #fff; color: #000; border-color: #fff; }
+    .riff-step-btn.rec-act { background: #c00; color: #fff; border-color: #c00; }
+    /* Transform buttons (oct/transpose) */
+    .riff-xfm-btn {
+      width: 20px; height: 20px; background: #000; border: 1px solid #333;
+      color: #7d7d7d; cursor: pointer; font-size: 9px; line-height: 1;
+      font-family: inherit; transition: all 0.08s; padding: 0;
+    }
+    .riff-xfm-btn:hover { border-color: #fff; color: #fff; }
+    /* Steps +/- */
+    .riff-steps-ctrl { display: flex; align-items: center; gap: 4px; }
+    .riff-steps-ctrl button {
+      width: 18px; height: 18px; background: #000; border: 1px solid #333;
+      color: #7d7d7d; cursor: pointer; font-size: 13px; line-height: 1;
+      font-family: inherit; transition: all 0.08s;
+    }
+    .riff-steps-ctrl button:hover { border-color: #fff; color: #fff; }
+    .riff-steps-val { font-size: 10px; min-width: 22px; text-align: center; color: rgba(255,255,255,0.7); }
+    /* Piano roll (record mode) */
+    .riff-pianoroll {
+      display: block; width: 100%; height: 56px;
+      background: #000; border-top: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .riff-rec-status { font-size: 9px; color: rgba(255,255,255,0.4); flex: 1; }
+    @keyframes riff-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .riff-step-btn.rec-act { animation: riff-blink 0.8s infinite; }
+    /* Keyboard section */
+    .riff-kbd-wrap { padding: 4px 8px 2px; }
+    .riff-kbd-hint { font-size: 7px; color: rgba(255,255,255,0.25); text-align: center; padding: 1px 8px 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+    /* Wire */
+    .riff-wire-row { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; }
+    .riff-wire-port {
+      display: block; width: 16px; height: 16px; border-radius: 50%;
+      background: #000; border: 2px solid rgba(255,255,255,0.4);
+      cursor: crosshair; transition: border-color 0.15s, background 0.15s; flex-shrink: 0;
+    }
+    .riff-wire-port:hover { border-color: #fff; background: #1a1a1a; }
+    .riff-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .riff-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
+    .riff-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
+    .riff-dest-unlink { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 10px; padding: 0 2px; }
+    .riff-dest-unlink:hover { color: #f44; }
+    /* ── CHORDS NODE ── */
+    .chords-node {
+      position: absolute; width: 190px; background: #000;
+      border: 1px solid rgba(255,255,255,0.8);
+      user-select: none; z-index: 10; cursor: default;
+      font-family: Helvetica, Arial, sans-serif; color: #fff; font-size: 11px;
+    }
+    .chords-node.collapsed { width: 136px; padding: 0; background: #000; }
+    .chords-node.collapsed .chords-body { display: none; }
+    .chords-node.collapsed .chords-min-footer { display: block; }
+    .chords-min-footer {
+      display: none; height: 16px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.45); padding-left: 6px; line-height: 16px;
+    }
+    .chords-titlebar {
+      display: flex; align-items: center; gap: 8px; padding: 5px 8px;
+      background: #000; cursor: grab; border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .chords-titlebar:active { cursor: grabbing; }
+    .chords-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--chords-color, #fff); }
+    .chords-name { flex: 1; font-size: 11px; font-weight: 700; letter-spacing: -0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .chords-hdr-btn { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 13px; cursor: pointer; padding: 0 2px; font-family: inherit; }
+    .chords-hdr-btn:hover { color: #fff; }
+    .chords-body { padding: 18px 12px 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .chords-soon { font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
+    .chords-wire-port {
+      display: block; width: 16px; height: 16px; border-radius: 50%;
+      background: #000; border: 2px solid rgba(255,255,255,0.4); cursor: crosshair;
+      transition: border-color 0.15s;
+    }
+    .chords-wire-port:hover { border-color: #fff; background: #1a1a1a; }
   </style>
 </head>
 
@@ -2346,6 +2820,15 @@
     </div>
   </div>
 
+  <!-- SYNTH TYPE PICKER -->
+  <div id="synth-type-picker">
+    <div class="stp-item" data-type="analog">Analog</div>
+    <div class="stp-item" data-type="fm">FM (DX7)</div>
+    <div class="stp-item stp-disabled">Wavetable<span class="stp-soon">soon</span></div>
+    <div class="stp-item stp-disabled">Rompler<span class="stp-soon">soon</span></div>
+  </div>
+  <input type="file" id="syx-input" accept=".syx" style="display:none">
+
   <!-- FOOTER -->
   <div id="ftr">
     <div class="fsec">
@@ -2382,6 +2865,21 @@
       </div>
     </div>
     <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-sampler" title="Add Sampler"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        Sampler</button>
+    </div>
+    <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-synth" title="Add Synth"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        Synth</button>
+    </div>
+    <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-drums" title="Add Drum Machine"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        Drums</button>
+    </div>
+    <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-add-lfo" title="Add LFO Modulator"
         style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
         LFO</button>
@@ -2390,6 +2888,16 @@
       <button class="tbtn" id="btn-add-seq" title="Add Step Sequencer"
         style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
         Step</button>
+    </div>
+    <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-riff" title="Add Riff Sequencer"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        Riff</button>
+    </div>
+    <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-chords" title="Add Chords (coming soon)"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        Chords</button>
     </div>
     <div class="finfo">
       <div class="flbl">Samples</div>
@@ -2419,6 +2927,10 @@
     let nextId = 1;
 
     const samples = new Map();
+    const synths  = new Map();
+    const drums   = new Map();
+
+    function getInstrument(id) { return samples.get(id) || synths.get(id) || drums.get(id) || riffs.get(id) || chords.get(id); }
 
     // Pure saturated colors — primary & secondary, then variations in saturation/lightness for 7+
     const COLORS = [
@@ -2486,6 +2998,12 @@
       return seq.rate;
     }
 
+    function midiToNoteName(midi) {
+      const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      const octave = Math.floor(midi / 12) - 1;
+      return notes[midi % 12] + octave;
+    }
+
     class StepSequencer {
       constructor(id, x, y) {
         this.id = id;
@@ -2526,9 +3044,18 @@
           const gateLen = stepData.gate ?? this.gateLength;
           for (const sampleId of this.destinations) {
             const s = samples.get(sampleId);
-            if (!s || !(s instanceof Sample) || s.muted) continue;
-            s.triggerAtTime(time, gateLen, stepData.vol, stepData.pitch);
-            // Next active step's triggerAtTime will interrupt early if it fires before the gate closes
+            if (s instanceof Sample) {
+              if (!s.muted) s.triggerAtTime(time, gateLen, stepData.vol, stepData.pitch);
+            } else {
+              const syn = synths.get(sampleId);
+              if (syn && !syn.muted) {
+                const midiNote = 48 + (stepData.pitch || 0); // C3 = MIDI 48
+                const noteName = midiToNoteName(Math.max(0, Math.min(127, midiNote)));
+                const gateDurSec = gateLen * stepDur;
+                const vel = Math.max(0, Math.min(1, stepData.vol || 1));
+                syn.triggerAtTime(noteName, gateDurSec, time, vel);
+              }
+            }
           }
         }, this.getStepInterval());
       }
@@ -2556,6 +3083,343 @@
 
     // sampleId → seqId: tracks which sequencer controls a given sample
     const sampleSeqMap = new Map();
+
+    // ════════════════════════════════════════════════════
+    // RIFF SEQUENCER SYSTEM
+    // ════════════════════════════════════════════════════
+    const riffs = new Map();
+    let nextRiffId = 1;
+    const MAX_RIFFS = 8;
+    const RIFF_W = 340;
+    const riffNodes = new Map(); // riffId → { el, updateDestList, setPlayStep }
+    let _riffColorIdx = 0;
+    const RIFF_COLORS = ['#ff6600','#cc00cc','#0099ff','#00cc66','#ff0066','#ffcc00','#6600ff','#00cccc'];
+    function nextRiffColor() { return RIFF_COLORS[_riffColorIdx++ % RIFF_COLORS.length]; }
+
+    let _activeRiffId = null; // which riff node receives QWERTY input
+
+    // QWERTY → note-within-octave mapping (code → [noteName, octaveOffset])
+    const RIFF_QWERTY_MAP = {
+      'KeyA': ['C',  0], 'KeyW': ['C#', 0], 'KeyS': ['D',  0], 'KeyE': ['D#', 0],
+      'KeyD': ['E',  0], 'KeyF': ['F',  0], 'KeyT': ['F#', 0], 'KeyG': ['G',  0],
+      'KeyY': ['G#', 0], 'KeyH': ['A',  0], 'KeyU': ['A#', 0], 'KeyJ': ['B',  0],
+      'KeyK': ['C',  1], 'KeyO': ['C#', 1], 'KeyL': ['D',  1], 'KeyP': ['D#', 1],
+    };
+
+    // Helper: convert note name to absolute semitone (C0 = 0)
+    function noteToSemis(noteName) {
+      const NM = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+      const m = noteName.match(/^([A-Ga-g][#b]?)(\d+)$/);
+      if (!m) return 60;
+      return (parseInt(m[2]) + 1) * 12 + (NM[m[1]] ?? 0);
+    }
+
+    // Scale definitions — semitone intervals from root (0–11)
+    const RIFF_SCALES = {
+      // ── Western diatonic & modes ──
+      'Chromatic':           [0,1,2,3,4,5,6,7,8,9,10,11],
+      'Major (Ionian)':      [0,2,4,5,7,9,11],
+      'Dorian':              [0,2,3,5,7,9,10],
+      'Phrygian':            [0,1,3,5,7,8,10],
+      'Lydian':              [0,2,4,6,7,9,11],
+      'Mixolydian':          [0,2,4,5,7,9,10],
+      'Natural Minor (Aeolian)': [0,2,3,5,7,8,10],
+      'Locrian':             [0,1,3,5,6,8,10],
+      // ── Minor variants ──
+      'Harmonic Minor':      [0,2,3,5,7,8,11],
+      'Melodic Minor':       [0,2,3,5,7,9,11],
+      'Dorian ♭2 (Phrygian ♮6)': [0,1,3,5,7,9,10],
+      'Lydian Augmented':    [0,2,4,6,8,9,11],
+      'Lydian Dominant':     [0,2,4,6,7,9,10],
+      'Mixolydian ♭6':       [0,2,4,5,7,8,10],
+      'Locrian ♮2':          [0,2,3,5,6,8,10],
+      'Altered (Super Locrian)': [0,1,3,4,6,8,10],
+      // ── Pentatonic & blues ──
+      'Pentatonic Major':    [0,2,4,7,9],
+      'Pentatonic Minor':    [0,3,5,7,10],
+      'Blues':               [0,3,5,6,7,10],
+      'Blues Major':         [0,2,3,4,7,9],
+      // ── Symmetrical ──
+      'Whole Tone':          [0,2,4,6,8,10],
+      'Diminished (HW)':     [0,1,3,4,6,7,9,10],
+      'Diminished (WH)':     [0,2,3,5,6,8,9,11],
+      'Augmented':           [0,3,4,7,8,11],
+      // ── Middle Eastern & Mediterranean ──
+      'Double Harmonic (Byzantine)': [0,1,4,5,7,8,11],
+      'Hungarian Minor':     [0,2,3,6,7,8,11],
+      'Hungarian Major':     [0,3,4,6,7,9,10],
+      'Phrygian Dominant':   [0,1,4,5,7,8,10],
+      'Flamenco':            [0,1,4,5,7,8,11],
+      'Arabic (Hijaz Kar)':  [0,2,4,5,6,8,10],
+      'Persian':             [0,1,4,5,6,8,11],
+      'Enigmatic':           [0,1,4,6,8,10,11],
+      'Neapolitan Minor':    [0,1,3,5,7,8,11],
+      'Neapolitan Major':    [0,1,3,5,7,9,11],
+      // ── Eastern European ──
+      'Ukrainian Dorian':    [0,2,3,6,7,9,10],
+      'Romanian Minor':      [0,2,3,6,7,9,10],
+      'Gypsy (Hungarian)':   [0,1,4,5,7,8,10],
+      // ── Asian & world ──
+      'Hirajoshi (Japan)':   [0,2,3,7,8],
+      'In (Japan)':          [0,1,5,7,8],
+      'Insen (Japan)':       [0,1,5,7,10],
+      'Iwato (Japan)':       [0,1,5,6,10],
+      'Yo (Japan)':          [0,2,5,7,9],
+      'Okinawan Rykyu':      [0,4,5,7,11],
+      'Pelog (Bali)':        [0,1,3,7,8],
+      'Slendro (Java)':      [0,2,5,7,10],
+      'Chinese':             [0,4,6,7,11],
+      'Mongolian':           [0,2,4,7,9],
+      'Egyptian':            [0,2,5,7,10],
+      'Balinese':            [0,1,3,7,8],
+      // ── Misc & experimental ──
+      'Prometheus':          [0,2,4,6,9,10],
+      'Acoustic':            [0,2,4,6,7,9,10],
+      'Tritone':             [0,1,4,6,7,10],
+      'Leading Whole Tone':  [0,2,4,6,8,10,11],
+      'Bebop Dominant':      [0,2,4,5,7,9,10,11],
+      'Bebop Major':         [0,2,4,5,7,8,9,11],
+    };
+    const RIFF_NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+    // Snap a note name to the nearest note in the given scale semitones (relative to root)
+    function snapToScale(noteName, rootName, scaleIntervals) {
+      if (!scaleIntervals || scaleIntervals.length === 12) return noteName; // chromatic = pass through
+      const NM = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+      const m = noteName.match(/^([A-Ga-g][#b]?)(\d+)$/);
+      if (!m) return noteName;
+      const notePC = NM[m[1]] ?? 0;
+      const oct = parseInt(m[2]);
+      const rootPC = NM[rootName] ?? 0;
+      // Semitone offset from root (mod 12)
+      const offset = ((notePC - rootPC) % 12 + 12) % 12;
+      // Find nearest scale interval
+      let best = scaleIntervals[0], bestDist = 12;
+      for (const si of scaleIntervals) {
+        const d = Math.min(Math.abs(si - offset), 12 - Math.abs(si - offset));
+        if (d < bestDist) { bestDist = d; best = si; }
+      }
+      // Reconstruct note name
+      const snappedPC = (rootPC + best) % 12;
+      return RIFF_NOTE_NAMES[snappedPC] + oct;
+    }
+
+    // Mark keyboard keys as in/out of scale
+    function applyScaleToKeyboard(kbdEl, rootName, scaleIntervals) {
+      if (!kbdEl) return;
+      const NM = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+      const rootPC = NM[rootName] ?? 0;
+      const isChromatic = !scaleIntervals || scaleIntervals.length === 12;
+      kbdEl.querySelectorAll('.sk-key-white, .sk-key-black').forEach(k => {
+        const nm = k.dataset.note?.match(/^([A-Ga-g][#b]?)/);
+        if (!nm) return;
+        const pc = NM[nm[1]] ?? 0;
+        const offset = ((pc - rootPC) % 12 + 12) % 12;
+        const inScale = isChromatic || scaleIntervals.includes(offset);
+        k.classList.toggle('sk-out-scale', !isChromatic && !inScale);
+      });
+    }
+
+    // CHORDS SYSTEM
+    const chords = new Map();
+    let nextChordsId = 1;
+    const chordsNodes = new Map();
+    let _chordsColorIdx = 0;
+    const CHORDS_COLORS = ['#00cccc','#ff6600','#cc00cc','#0099ff','#00cc66','#ff0066','#ffcc00','#6600ff'];
+    function nextChordsColor() { return CHORDS_COLORS[_chordsColorIdx++ % CHORDS_COLORS.length]; }
+
+    class RiffSequencer {
+      constructor(id, x, y) {
+        this.id = id;
+        this.name = 'Riff ' + id;
+        this.x = x; this.y = y;
+        this.color = nextRiffColor();
+        this.mode = 'step';           // 'step' | 'record'
+        this.numSteps = 16;
+        this.steps = Array.from({length: 64}, () => ({ note: null, vel: 1.0 })); // null = rest
+        this.notes = [];              // [{note, time, duration}] seconds — record mode
+        this.subdiv = '16n';
+        this.gridSync = true;
+        this.rate = 0.125;    // seconds per step (free mode)
+        this.harmony = 0;     // semitones for harmony voice (0 = off)
+        this.loopBars = 1;
+        this.quantize = true;
+        this.scaleRoot = 'C';
+        this.scale = 'Chromatic';
+        this.destinations = [];       // array of instrument IDs
+        this._scheduleId = null;
+        this._part = null;
+        this._seqPhaseTransport = null;
+        this.recording = false;
+        this._recordStartWall = 0;
+        this._activeRecordNotes = new Map(); // note → wallStartSec
+        this._recordedNotes = [];
+      }
+
+      schedule() {
+        this.unschedule();
+        if (!audioReady) return;
+        if (this.mode === 'step') this._scheduleStep();
+        else this._schedulePart();
+      }
+
+      _scheduleStep() {
+        let stepIdx = 0;
+        this._seqPhaseTransport = null;
+        const interval = this.gridSync ? this.subdiv : this.rate;
+        this._scheduleId = Tone.Transport.scheduleRepeat((time) => {
+          if (stepIdx === 0) {
+            const lookahead = time - Tone.context.rawContext.currentTime;
+            this._seqPhaseTransport = Tone.Transport.seconds + lookahead;
+          }
+          const step = stepIdx % this.numSteps;
+          stepIdx++;
+          riffNodes.get(this.id)?.setPlayStep(step);
+          const stepData = this.steps[step];
+          if (!stepData || !stepData.note) return;
+          const stepDur = this.gridSync
+            ? Tone.Time(this.subdiv).toSeconds()
+            : this.rate;
+          // Cap note duration to just under one step so voices always free before the next trigger
+          const noteDur = Math.min(stepDur * 0.85, stepDur - 0.01);
+          const vel = stepData.vel ?? 1.0;
+          const notes = [stepData.note];
+          if (this.harmony) {
+            const harmMidi = noteToSemis(stepData.note) + this.harmony;
+            const harmRaw = midiToNoteName(harmMidi);
+            const intervals = RIFF_SCALES[this.scale] || RIFF_SCALES['Chromatic'];
+            notes.push(snapToScale(harmRaw, this.scaleRoot, intervals));
+          }
+          // Light up keyboard keys for played notes
+          const kbdProxy = riffKbdProxies.get(this.id);
+          for (const n of notes) {
+            kbdProxy?._noteHighlight?.(n, true);
+            setTimeout(() => kbdProxy?._noteHighlight?.(n, false), (noteDur + 0.05) * 1000);
+          }
+          for (const instrId of this.destinations) {
+            const instr = getInstrument(instrId);
+            if (!instr || instr.muted) continue;
+            for (const n of notes) {
+              if (instr instanceof SynthInstrument) {
+                instr.triggerAtTime(n, noteDur, time, vel);
+              } else if (instr instanceof Sample) {
+                const semis = noteToSemis(n) - noteToSemis('C4');
+                instr.triggerAtTime(time, 0.8, vel, semis);
+              }
+            }
+          }
+        }, interval);
+      }
+
+      _schedulePart() {
+        if (!this.notes.length) return;
+        const bpm = Tone.Transport.bpm.value;
+        const loopDurSec = this.loopBars * 4 * (60 / bpm);
+        const events = this.notes.map(n => ({ time: n.time, note: n.note, duration: n.duration }));
+        this._part = new Tone.Part((time, val) => {
+          for (const instrId of this.destinations) {
+            const instr = getInstrument(instrId);
+            if (!instr || instr.muted) continue;
+            if (instr instanceof SynthInstrument) {
+              instr._poly.triggerAttackRelease(val.note, val.duration, time, 1.0);
+              instr._noteHighlight?.(val.note, true);
+              Tone.Transport.scheduleOnce(() => instr._noteHighlight?.(val.note, false), '+' + val.duration);
+            } else if (instr instanceof Sample) {
+              const semis = noteToSemis(val.note) - noteToSemis('C4');
+              instr.triggerAtTime(time, val.duration, 1.0, semis);
+            }
+          }
+        }, events);
+        this._part.loop = true;
+        this._part.loopStart = 0;
+        this._part.loopEnd = loopDurSec;
+        this._part.start('+0');
+      }
+
+      unschedule() {
+        if (this._scheduleId !== null) {
+          Tone.Transport.clear(this._scheduleId);
+          this._scheduleId = null;
+        }
+        if (this._part) {
+          this._part.stop();
+          this._part.dispose();
+          this._part = null;
+        }
+        this._seqPhaseTransport = null;
+        // Release all voices on connected synths so no voice gets stuck between reschedules
+        for (const instrId of this.destinations) {
+          const instr = getInstrument(instrId);
+          if (instr instanceof SynthInstrument) {
+            try { instr._poly.releaseAll(); } catch(e) {}
+          }
+        }
+      }
+
+      reschedule() { if (audioReady) this.schedule(); }
+
+      startRecording() {
+        this._recordedNotes = [];
+        this._activeRecordNotes.clear();
+        this._recordStartWall = performance.now() / 1000;
+        this.recording = true;
+      }
+
+      recordNoteOn(note) {
+        if (!this.recording) return;
+        const t = performance.now() / 1000 - this._recordStartWall;
+        this._activeRecordNotes.set(note, t);
+      }
+
+      recordNoteOff(note) {
+        if (!this.recording) return;
+        const t = performance.now() / 1000 - this._recordStartWall;
+        const start = this._activeRecordNotes.get(note);
+        if (start !== undefined) {
+          this._recordedNotes.push({ note, time: start, duration: Math.max(0.05, t - start) });
+          this._activeRecordNotes.delete(note);
+        }
+      }
+
+      stopRecording() {
+        this.recording = false;
+        // Close any held notes
+        const now = performance.now() / 1000 - this._recordStartWall;
+        for (const [note, start] of this._activeRecordNotes) {
+          this._recordedNotes.push({ note, time: start, duration: Math.max(0.05, now - start) });
+        }
+        this._activeRecordNotes.clear();
+
+        if (this.quantize) {
+          const bpm = Tone.Transport.bpm.value;
+          const subdivSec = Tone.Time(this.subdiv).toSeconds();
+          this._recordedNotes = this._recordedNotes.map(n => {
+            const qt = Math.round(n.time / subdivSec) * subdivSec;
+            const qd = Math.max(subdivSec * 0.5, Math.round(n.duration / subdivSec) * subdivSec);
+            return { ...n, time: qt, duration: qd };
+          });
+        }
+
+        this.notes = this._recordedNotes.slice();
+        this._recordedNotes = [];
+        this.reschedule();
+      }
+
+      addDestination(id) { if (!this.destinations.includes(id)) this.destinations.push(id); }
+      removeDestination(id) { this.destinations = this.destinations.filter(d => d !== id); }
+    }
+
+    class ChordsInstrument {
+      constructor(id, x, y) {
+        this.id = id;
+        this.name = 'Chords ' + id;
+        this.x = x; this.y = y;
+        this.color = nextChordsColor();
+        this.destinations = [];
+      }
+      addDestination(id) { if (!this.destinations.includes(id)) this.destinations.push(id); }
+      removeDestination(id) { this.destinations = this.destinations.filter(d => d !== id); }
+    }
 
     // Maps cslider CSS classes to { prop, min, max, label }
     const LFO_PARAM_MAP = {
@@ -2601,6 +3465,24 @@
       'card-grain-position': { prop: 'grainPosition', min: 0, max: 1, label: 'GrPos',     setter: 'setGrainPosition', fmtVal: v => Math.round(v * 100) + '%', isGran: true },
       'card-grain-spread':   { prop: 'grainSpread',   min: 0, max: 1, label: 'GrSpread',  setter: 'setGrainSpread',   fmtVal: v => Math.round(v * 100) + '%', isGran: true },
       'card-grain-density':  { prop: 'grainDensity',  min: 0, max: 1, label: 'GrDensity', setter: 'setGrainDensity',  fmtVal: v => Math.round(v * 100) + '%', isGran: true },
+      // Analog synth params
+      'sc-atk':   { prop: 'attack',      min: 0.001, max: 5,     label: 'Attack',    isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
+      'sc-dec':   { prop: 'decay',       min: 0.001, max: 5,     label: 'Decay',     isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
+      'sc-sus':   { prop: 'sustain',     min: 0,     max: 1,     label: 'Sustain',   isSynth: true, updater: 'updateEnvelope', fmtVal: v => Math.round(v * 100) + '%' },
+      'sc-rel':   { prop: 'release',     min: 0.001, max: 8,     label: 'Release',   isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
+      'sc-ffreq': { prop: 'filterFreq',  min: 20,    max: 20000, label: 'Cutoff',    isSynth: true, updater: 'updateFilter',   fmtVal: v => v >= 1000 ? (v / 1000).toFixed(1) + ' kHz' : Math.round(v) + ' Hz' },
+      'sc-fq':    { prop: 'filterQ',     min: 0.01,  max: 20,    label: 'Reso',      isSynth: true, updater: 'updateFilter',   fmtVal: v => v.toFixed(2) },
+      // FM synth params
+      'fm-harm':  { prop: 'harmonicity',     min: 0.1, max: 20, label: 'Harmonicity',  isSynth: true, updater: 'updateFMParams', fmtVal: v => v.toFixed(2) },
+      'fm-modi':  { prop: 'modulationIndex', min: 0,   max: 20, label: 'Mod Index',    isSynth: true, updater: 'updateFMParams', fmtVal: v => v.toFixed(1) },
+      'fm-atk':   { prop: 'attack',      min: 0.001, max: 5, label: 'Car. Attack',  isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
+      'fm-dec':   { prop: 'decay',       min: 0.001, max: 5, label: 'Car. Decay',   isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
+      'fm-sus':   { prop: 'sustain',     min: 0,     max: 1, label: 'Car. Sustain', isSynth: true, updater: 'updateEnvelope', fmtVal: v => Math.round(v * 100) + '%' },
+      'fm-rel':   { prop: 'release',     min: 0.001, max: 8, label: 'Car. Release', isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
+      'fm-matk':  { prop: 'modAttack',   min: 0.001, max: 5, label: 'Mod. Attack',  isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
+      'fm-mdec':  { prop: 'modDecay',    min: 0.001, max: 5, label: 'Mod. Decay',   isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
+      'fm-msus':  { prop: 'modSustain',  min: 0,     max: 1, label: 'Mod. Sustain', isSynth: true, updater: 'updateModEnv',   fmtVal: v => Math.round(v * 100) + '%' },
+      'fm-mrel':  { prop: 'modRelease',  min: 0.001, max: 8, label: 'Mod. Release', isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
     };
 
     // LFO preset shape generators (return breakpoint arrays [{x:0..1, y:0..1}])
@@ -4234,6 +5116,402 @@
     }
 
     // ════════════════════════════════════════════════════
+    // ANALOG PRESET LIBRARY
+    // ════════════════════════════════════════════════════
+    const ANALOG_PRESETS = [
+      { name: 'Init',        oscType:'sawtooth', filterType:'lowpass',  filterFreq:8000, filterQ:1.0,  attack:0.001, decay:0.3,  sustain:0.8,  release:0.5  },
+      { name: 'Acid Bass',   oscType:'sawtooth', filterType:'lowpass',  filterFreq:400,  filterQ:12.0, attack:0.001, decay:0.2,  sustain:0.0,  release:0.1  },
+      { name: 'Sub Bass',    oscType:'sine',     filterType:'lowpass',  filterFreq:200,  filterQ:1.0,  attack:0.001, decay:0.5,  sustain:0.0,  release:0.15 },
+      { name: 'Reese Bass',  oscType:'sawtooth', filterType:'lowpass',  filterFreq:300,  filterQ:2.0,  attack:0.001, decay:0.8,  sustain:0.7,  release:0.2  },
+      { name: 'Saw Lead',    oscType:'sawtooth', filterType:'lowpass',  filterFreq:3500, filterQ:3.0,  attack:0.01,  decay:0.2,  sustain:0.6,  release:0.3  },
+      { name: 'Sq Lead',     oscType:'square',   filterType:'lowpass',  filterFreq:2000, filterQ:2.0,  attack:0.005, decay:0.15, sustain:0.5,  release:0.2  },
+      { name: 'Tri Lead',    oscType:'triangle', filterType:'lowpass',  filterFreq:4000, filterQ:1.5,  attack:0.005, decay:0.2,  sustain:0.55, release:0.25 },
+      { name: 'PWM Keys',    oscType:'square',   filterType:'lowpass',  filterFreq:1500, filterQ:1.5,  attack:0.02,  decay:0.5,  sustain:0.7,  release:0.4  },
+      { name: 'Pluck',       oscType:'sawtooth', filterType:'lowpass',  filterFreq:5000, filterQ:8.0,  attack:0.001, decay:0.18, sustain:0.0,  release:0.12 },
+      { name: 'Strings',     oscType:'sawtooth', filterType:'lowpass',  filterFreq:1800, filterQ:1.0,  attack:0.35,  decay:0.4,  sustain:0.8,  release:0.9  },
+      { name: 'Brass',       oscType:'sawtooth', filterType:'lowpass',  filterFreq:2500, filterQ:4.0,  attack:0.08,  decay:0.3,  sustain:0.75, release:0.2  },
+      { name: 'Warm Pad',    oscType:'sawtooth', filterType:'lowpass',  filterFreq:800,  filterQ:1.5,  attack:0.6,   decay:0.5,  sustain:0.9,  release:1.5  },
+      { name: 'Hollow Pad',  oscType:'triangle', filterType:'lowpass',  filterFreq:1200, filterQ:2.0,  attack:0.4,   decay:0.4,  sustain:0.85, release:1.2  },
+      { name: 'Sweep',       oscType:'sawtooth', filterType:'lowpass',  filterFreq:600,  filterQ:5.0,  attack:1.0,   decay:0.6,  sustain:0.7,  release:1.8  },
+      { name: 'Organ',       oscType:'sine',     filterType:'lowpass',  filterFreq:8000, filterQ:1.0,  attack:0.001, decay:2.0,  sustain:1.0,  release:0.05 },
+      { name: 'Bell',        oscType:'sine',     filterType:'bandpass', filterFreq:1500, filterQ:10.0, attack:0.001, decay:2.5,  sustain:0.0,  release:1.2  },
+      { name: 'HP Zap',      oscType:'sawtooth', filterType:'highpass', filterFreq:3000, filterQ:6.0,  attack:0.001, decay:0.12, sustain:0.0,  release:0.08 },
+    ];
+
+    // ════════════════════════════════════════════════════
+    // DX7 PRESET LIBRARY + SYSEX PARSER
+    // ════════════════════════════════════════════════════
+    const DX7_PRESETS = [
+      { name: 'E.PIANO 1',    harmonicity: 2.0, modulationIndex: 8.0,  attack: 0.001, decay: 1.2, sustain: 0.15, release: 0.8,  modAttack: 0.001, modDecay: 0.8,  modSustain: 0.20, modRelease: 0.5 },
+      { name: 'E.PIANO 2',    harmonicity: 3.0, modulationIndex: 10.0, attack: 0.001, decay: 0.8, sustain: 0.10, release: 0.6,  modAttack: 0.001, modDecay: 0.5,  modSustain: 0.15, modRelease: 0.4 },
+      { name: 'BRIGHT PIANO', harmonicity: 1.0, modulationIndex: 5.0,  attack: 0.001, decay: 1.5, sustain: 0.05, release: 1.0,  modAttack: 0.001, modDecay: 1.0,  modSustain: 0.10, modRelease: 0.7 },
+      { name: 'BRASS 1',      harmonicity: 1.0, modulationIndex: 3.0,  attack: 0.05,  decay: 0.5, sustain: 0.80, release: 0.15, modAttack: 0.05,  modDecay: 0.3,  modSustain: 0.70, modRelease: 0.1 },
+      { name: 'BRASS 2',      harmonicity: 2.0, modulationIndex: 4.5,  attack: 0.03,  decay: 0.4, sustain: 0.90, release: 0.12, modAttack: 0.03,  modDecay: 0.25, modSustain: 0.80, modRelease: 0.1 },
+      { name: 'STRINGS',      harmonicity: 3.5, modulationIndex: 2.5,  attack: 0.20,  decay: 0.8, sustain: 0.85, release: 0.6,  modAttack: 0.10,  modDecay: 0.5,  modSustain: 0.75, modRelease: 0.4 },
+      { name: 'VELO STRINGS', harmonicity: 2.0, modulationIndex: 3.0,  attack: 0.15,  decay: 0.6, sustain: 0.90, release: 0.5,  modAttack: 0.08,  modDecay: 0.4,  modSustain: 0.80, modRelease: 0.35},
+      { name: 'BASS 1',       harmonicity: 2.0, modulationIndex: 6.0,  attack: 0.001, decay: 0.6, sustain: 0.00, release: 0.1,  modAttack: 0.001, modDecay: 0.35, modSustain: 0.00, modRelease: 0.08},
+      { name: 'SLAP BASS',    harmonicity: 1.5, modulationIndex: 8.0,  attack: 0.001, decay: 0.3, sustain: 0.00, release: 0.08, modAttack: 0.001, modDecay: 0.2,  modSustain: 0.00, modRelease: 0.05},
+      { name: 'SYN BASS',     harmonicity: 1.0, modulationIndex: 9.0,  attack: 0.001, decay: 0.4, sustain: 0.00, release: 0.1,  modAttack: 0.001, modDecay: 0.25, modSustain: 0.00, modRelease: 0.08},
+      { name: 'MARIMBA',      harmonicity: 4.0, modulationIndex: 14.0, attack: 0.001, decay: 0.5, sustain: 0.00, release: 0.3,  modAttack: 0.001, modDecay: 0.3,  modSustain: 0.00, modRelease: 0.2 },
+      { name: 'BELL',         harmonicity: 7.0, modulationIndex: 12.0, attack: 0.001, decay: 3.5, sustain: 0.00, release: 1.5,  modAttack: 0.001, modDecay: 2.5,  modSustain: 0.00, modRelease: 1.0 },
+      { name: 'CHURCH BELL',  harmonicity: 5.0, modulationIndex: 16.0, attack: 0.001, decay: 5.0, sustain: 0.00, release: 2.5,  modAttack: 0.001, modDecay: 4.0,  modSustain: 0.00, modRelease: 2.0 },
+      { name: 'VIBRAPHONE',   harmonicity: 6.0, modulationIndex: 8.0,  attack: 0.001, decay: 2.5, sustain: 0.15, release: 1.2,  modAttack: 0.001, modDecay: 2.0,  modSustain: 0.10, modRelease: 0.9 },
+      { name: 'CLAVINET',     harmonicity: 3.0, modulationIndex: 12.0, attack: 0.001, decay: 0.3, sustain: 0.10, release: 0.08, modAttack: 0.001, modDecay: 0.15, modSustain: 0.00, modRelease: 0.06},
+      { name: 'ORGAN 1',      harmonicity: 2.0, modulationIndex: 0.8,  attack: 0.001, decay: 2.0, sustain: 1.00, release: 0.04, modAttack: 0.001, modDecay: 2.0,  modSustain: 1.00, modRelease: 0.04},
+      { name: 'ORGAN 2',      harmonicity: 4.0, modulationIndex: 1.2,  attack: 0.001, decay: 2.0, sustain: 1.00, release: 0.04, modAttack: 0.001, modDecay: 2.0,  modSustain: 1.00, modRelease: 0.04},
+      { name: 'FLUTE',        harmonicity: 1.0, modulationIndex: 2.5,  attack: 0.10,  decay: 0.2, sustain: 0.90, release: 0.2,  modAttack: 0.05,  modDecay: 0.15, modSustain: 0.80, modRelease: 0.15},
+      { name: 'OBOE',         harmonicity: 3.0, modulationIndex: 5.0,  attack: 0.04,  decay: 0.3, sustain: 0.85, release: 0.2,  modAttack: 0.02,  modDecay: 0.2,  modSustain: 0.70, modRelease: 0.15},
+      { name: 'CHOIR',        harmonicity: 1.0, modulationIndex: 3.5,  attack: 0.35,  decay: 0.5, sustain: 0.90, release: 0.8,  modAttack: 0.20,  modDecay: 0.4,  modSustain: 0.80, modRelease: 0.6 },
+      { name: 'PAD 1',        harmonicity: 0.5, modulationIndex: 2.0,  attack: 0.50,  decay: 0.8, sustain: 0.90, release: 1.0,  modAttack: 0.30,  modDecay: 0.6,  modSustain: 0.70, modRelease: 0.8 },
+      { name: 'WARM PAD',     harmonicity: 0.5, modulationIndex: 1.5,  attack: 0.40,  decay: 0.7, sustain: 0.95, release: 1.2,  modAttack: 0.25,  modDecay: 0.5,  modSustain: 0.85, modRelease: 1.0 },
+      { name: 'SWEEP PAD',    harmonicity: 2.0, modulationIndex: 5.0,  attack: 0.80,  decay: 1.0, sustain: 0.80, release: 1.5,  modAttack: 0.50,  modDecay: 0.8,  modSustain: 0.60, modRelease: 1.2 },
+      { name: 'LEAD SYNTH',   harmonicity: 1.0, modulationIndex: 7.0,  attack: 0.01,  decay: 0.3, sustain: 0.70, release: 0.25, modAttack: 0.01,  modDecay: 0.2,  modSustain: 0.50, modRelease: 0.2 },
+      { name: 'GUITAR',       harmonicity: 1.0, modulationIndex: 4.5,  attack: 0.001, decay: 1.8, sustain: 0.00, release: 0.5,  modAttack: 0.001, modDecay: 0.9,  modSustain: 0.00, modRelease: 0.3 },
+      { name: 'HARMONICA',    harmonicity: 2.0, modulationIndex: 8.0,  attack: 0.04,  decay: 0.2, sustain: 0.80, release: 0.12, modAttack: 0.02,  modDecay: 0.12, modSustain: 0.60, modRelease: 0.1 },
+      { name: 'METALLIC',     harmonicity: 7.0, modulationIndex: 18.0, attack: 0.001, decay: 1.5, sustain: 0.05, release: 0.8,  modAttack: 0.001, modDecay: 1.0,  modSustain: 0.00, modRelease: 0.5 },
+      { name: 'PLUCK',        harmonicity: 5.0, modulationIndex: 11.0, attack: 0.001, decay: 0.4, sustain: 0.00, release: 0.2,  modAttack: 0.001, modDecay: 0.25, modSustain: 0.00, modRelease: 0.15},
+      { name: 'TINE',         harmonicity: 3.0, modulationIndex: 7.0,  attack: 0.001, decay: 1.8, sustain: 0.08, release: 0.9,  modAttack: 0.001, modDecay: 1.2,  modSustain: 0.05, modRelease: 0.6 },
+      { name: 'DIGITAL RAIN', harmonicity: 3.0, modulationIndex: 15.0, attack: 0.40,  decay: 0.8, sustain: 0.50, release: 1.0,  modAttack: 0.20,  modDecay: 0.6,  modSustain: 0.30, modRelease: 0.8 },
+      { name: 'CRYSTAL',      harmonicity: 9.0, modulationIndex: 20.0, attack: 0.001, decay: 2.0, sustain: 0.00, release: 1.0,  modAttack: 0.001, modDecay: 1.5,  modSustain: 0.00, modRelease: 0.7 },
+    ];
+
+    function getDX7CarrierModPair(alg) {
+      const pairs = [
+        {ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:2},{ci:0,mi:2},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},
+        {ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},
+        {ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:1},{ci:0,mi:2},{ci:0,mi:2},{ci:0,mi:3},{ci:0,mi:3},{ci:0,mi:3},
+        {ci:0,mi:3},{ci:0,mi:3},{ci:0,mi:3},{ci:0,mi:3},{ci:0,mi:4},{ci:0,mi:4},{ci:0,mi:4},{ci:0,mi:5},
+      ];
+      return pairs[Math.max(0, Math.min(31, alg))];
+    }
+
+    function parseDX7SysEx(data) {
+      const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+      let voiceData = null;
+      if (bytes.length >= 4104 && bytes[0] === 0xF0 && bytes[1] === 0x43 && bytes[3] === 0x09) {
+        voiceData = bytes.slice(6, 6 + 4096);
+      } else if (bytes.length >= 4096) {
+        voiceData = bytes.slice(0, 4096);
+      } else { return null; }
+      const presets = [];
+      for (let v = 0; v < 32; v++) {
+        const base = v * 128;
+        let name = '';
+        for (let i = 118; i < 128; i++) { const c = voiceData[base + i] & 0x7F; name += (c >= 32 && c < 127) ? String.fromCharCode(c) : ' '; }
+        name = name.trim() || ('PATCH ' + (v + 1));
+        const algorithm = voiceData[base + 110] & 0x1F;
+        const ops = [];
+        for (let op = 0; op < 6; op++) {
+          const ob = base + op * 17;
+          ops.push({ egR: [voiceData[ob],voiceData[ob+1],voiceData[ob+2],voiceData[ob+3]], egL: [voiceData[ob+4],voiceData[ob+5],voiceData[ob+6],voiceData[ob+7]], level: voiceData[ob+14]&0x7F, coarse: (voiceData[ob+15]&0x1F)||1 });
+        }
+        const { ci, mi } = getDX7CarrierModPair(algorithm);
+        const car = ops[ci], mod = ops[mi];
+        const t = (r, max) => Math.max(0.001, ((99 - Math.max(0, r)) / 99) * max);
+        presets.push({
+          name,
+          harmonicity:     Math.max(0.1, Math.min(20, mod.coarse / car.coarse)),
+          modulationIndex: Math.max(0,   Math.min(20, (mod.level / 99) * 20)),
+          attack:    t(car.egR[0], 5.0), decay:     t(car.egR[1], 4.0), sustain: car.egL[2]/99, release:    t(car.egR[3], 5.0),
+          modAttack: t(mod.egR[0], 5.0), modDecay:  t(mod.egR[1], 4.0), modSustain: mod.egL[2]/99, modRelease: t(mod.egR[3], 5.0),
+        });
+      }
+      return presets;
+    }
+
+    // ════════════════════════════════════════════════════
+    // SYNTH INSTRUMENTS
+    // ════════════════════════════════════════════════════
+
+    class SynthInstrument {
+      constructor(id, name, x, y) {
+        this.id = id; this.name = name; this.x = x; this.y = y;
+        this.color = nextColor();
+        this.muted = false;
+        this._currentDb = 0;
+        this.synthType = 'base';
+
+        const _ch = cv.clientHeight || 500, _cw = cv.clientWidth || 800;
+        const _ratio = Math.max(0, Math.min(1, y / _ch));
+        const _initDb = Math.max(-60, Math.min(6, 6 - Math.pow(_ratio / 0.88, 1.6) * 66));
+        const _initPan = Math.max(-1, Math.min(1, (x / _cw) * 2 - 1));
+        this._currentDb = _initDb;
+
+        this.vol      = new Tone.Volume(_initDb).connect(masterSamplesGain);
+        this.meter    = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
+        this.vol.connect(this.meter);
+        this.pan      = new Tone.Panner(_initPan).connect(this.vol);
+        this._analyser = new Tone.Analyser('waveform', 128);
+        this.vol.connect(this._analyser);
+
+        this.fxCatalog = [
+          { id: 'eq', name: 'EQ' },
+          { id: 'reverb', name: 'Reverb' },
+          { id: 'delay', name: 'Delay' },
+          { id: 'tremolo', name: 'Tremolo' },
+          { id: 'dist', name: 'Distortion' },
+          { id: 'chorus', name: 'Chorus' },
+          { id: 'phaser', name: 'Phaser' },
+          { id: 'bitcrush', name: 'Bit Crush' },
+        ];
+        this.fxChain = [];
+        this._fxUidCounter = 0;
+      }
+      updateVol() {
+        const ch = cv.clientHeight || 500;
+        const ratio = Math.max(0, Math.min(1, this.y / ch));
+        this._currentDb = Math.max(-60, Math.min(6, 6 - Math.pow(ratio / 0.88, 1.6) * 66));
+        this.vol.volume.value = this._effectiveDb();
+      }
+      updatePan() {
+        const cw = cv.clientWidth || 800;
+        this.pan.pan.value = Math.max(-1, Math.min(1, (this.x / cw) * 2 - 1));
+      }
+      _noteHighlight(note, on) {}  // wired up by buildPianoKeyboard
+      triggerAtTime(note, dur, time, vel) {
+        this._noteHighlight(note, true);
+        try { this._poly.triggerAttackRelease(note, dur, time, vel); } catch(e) {}
+        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+      }
+      _effectiveDb() {
+        if (this.muted) return -Infinity;
+        if (soloId !== null && soloId !== this.id) return -Infinity;
+        return this._currentDb;
+      }
+      _renderTile() {
+        const tile = document.getElementById('t' + this.id);
+        if (!tile) return;
+        tile.classList.toggle('muted', this.muted);
+        tile.style.borderColor = this.color + '55';
+        const mbtn = tile.querySelector('.tile-mbtn');
+        if (mbtn) mbtn.classList.toggle('mute-on', this.muted);
+      }
+      noteOn(note, vel = 100) {}
+      noteOff(note) {}
+      allNotesOff() {}
+      rebuildFxChain() {
+        try { this.vol.disconnect(); } catch(e) {}
+        for (const inst of this.fxChain) {
+          try { (inst.outputNode || inst.node).disconnect(); } catch(e) {}
+        }
+        let prev = this.vol;
+        for (const inst of this.fxChain) {
+          if (!inst.node) continue;
+          prev.connect(inst.node);
+          prev = inst.outputNode || inst.node;
+        }
+        prev.connect(masterSamplesGain);
+        this.vol.connect(this.meter);
+        this.vol.connect(this._analyser);
+      }
+
+      _fxDefaultParams(type) {
+        const d = {
+          reverb:   { decay: 2.5, preDelay: 0.01, wet: 0.4 },
+          delay:    { delayTime: 0.25, feedback: 0.35, wet: 0.4 },
+          tremolo:  { frequency: 4, depth: 0.7, wet: 1 },
+          dist:     { distortion: 0.4, wet: 0.8 },
+          chorus:   { frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 },
+          phaser:   { frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.6 },
+          bitcrush: { bits: 8, wet: 0.8 },
+        };
+        return { ...(d[type] || {}) };
+      }
+
+      _createFxNode(type, params) {
+        switch (type) {
+          case 'reverb':   return new Tone.Reverb({ decay: params.decay, preDelay: params.preDelay, wet: params.wet });
+          case 'delay':    return new Tone.FeedbackDelay({ delayTime: params.delayTime, feedback: params.feedback, wet: params.wet });
+          case 'tremolo':  return new Tone.Tremolo({ frequency: params.frequency, depth: params.depth, wet: params.wet }).start();
+          case 'dist':     return new Tone.Distortion({ distortion: params.distortion, wet: params.wet });
+          case 'chorus':   return new Tone.Chorus({ frequency: params.frequency, delayTime: params.delayTime, depth: params.depth, wet: params.wet }).start();
+          case 'phaser':   return new Tone.Phaser({ frequency: params.frequency, octaves: params.octaves, baseFrequency: params.baseFrequency, wet: params.wet });
+          case 'bitcrush': return new Tone.BitCrusher({ bits: params.bits, wet: params.wet });
+          default: return null;
+        }
+      }
+
+      _createEqInstance() {
+        const defaultBands = [
+          { type: 'highpass', freq: 20, q: 0.707 },
+          { type: 'peaking', freq: 200, gain: 0, q: 1 },
+          { type: 'peaking', freq: 1000, gain: 0, q: 1 },
+          { type: 'peaking', freq: 8000, gain: 0, q: 1 },
+          { type: 'lowpass', freq: 22050, q: 0.707 },
+        ];
+        const bands = defaultBands.map(b => ({ ...b }));
+        const filters = bands.map(b => {
+          const f = new Tone.Filter({ type: b.type, frequency: b.freq, Q: b.q });
+          if (b.type === 'peaking') f.gain.value = 0;
+          return f;
+        });
+        for (let i = 3; i >= 0; i--) filters[i].connect(filters[i + 1]);
+        const applyBand = (i) => {
+          const f = filters[i], b = bands[i];
+          f.frequency.value = b.freq;
+          f.Q.value = b.q;
+          if (b.type === 'peaking') f.gain.value = b.gain || 0;
+        };
+        return { node: filters[0], outputNode: filters[4], bands, filters, applyBand };
+      }
+
+      addFxInstance(type) {
+        let inst;
+        if (type === 'eq') {
+          const eq = this._createEqInstance();
+          inst = { uid: ++this._fxUidCounter, type: 'eq', node: eq.node, outputNode: eq.outputNode, eqData: eq, params: {}, postFader: true };
+        } else {
+          const params = this._fxDefaultParams(type);
+          const node = this._createFxNode(type, params);
+          if (!node) return null;
+          inst = { uid: ++this._fxUidCounter, type, node, params, postFader: true };
+        }
+        this.fxChain.push(inst);
+        this.rebuildFxChain();
+        return inst;
+      }
+
+      removeFxInstance(uid) {
+        const idx = this.fxChain.findIndex(i => i.uid === uid);
+        if (idx < 0) return;
+        const inst = this.fxChain[idx];
+        if (inst.eqData) {
+          for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch(e) {} }
+        } else {
+          try { inst.node.disconnect(); } catch(e) {}
+          try { inst.node.dispose(); } catch(e) {}
+        }
+        this.fxChain.splice(idx, 1);
+        this.rebuildFxChain();
+      }
+
+      dispose() {
+        for (const inst of this.fxChain) {
+          if (inst.eqData) { for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch(e) {} } }
+          else { try { inst.node.disconnect(); inst.node.dispose(); } catch(e) {} }
+        }
+        try { this.pan.dispose(); } catch(e) {}
+        try { this.vol.dispose(); } catch(e) {}
+        try { this.meter.dispose(); } catch(e) {}
+        try { this._analyser.dispose(); } catch(e) {}
+      }
+    }
+
+    class AnalogSynth extends SynthInstrument {
+      constructor(id, name, x, y) {
+        super(id, name, x, y);
+        this.synthType    = 'analog';
+        this.oscType      = 'sawtooth';
+        this.attack       = 0.01;
+        this.decay        = 0.15;
+        this.sustain      = 0.6;
+        this.release      = 0.4;
+        this.filterType   = 'lowpass';
+        this.filterFreq   = 2500;
+        this.filterQ      = 1.0;
+        this.portamento   = 0;
+        this.currentPreset = 0;
+
+        this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
+        this._poly = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: this.oscType },
+          envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release },
+          portamento: this.portamento,
+        }).connect(this._filter);
+        this._poly.maxPolyphony = 16;
+      }
+      get presetList() { return ANALOG_PRESETS; }
+      loadPreset(p) {
+        Object.assign(this, { oscType: p.oscType, filterType: p.filterType, filterFreq: p.filterFreq, filterQ: p.filterQ, attack: p.attack, decay: p.decay, sustain: p.sustain, release: p.release });
+        this.updateOscType(); this.updateFilter(); this.updateEnvelope();
+      }
+      noteOn(note, vel = 100) { this._poly.triggerAttack(note, Tone.now(), vel / 127); }
+      noteOff(note) { this._poly.triggerRelease(note, Tone.now()); }
+      allNotesOff() { this._poly.releaseAll(); }
+      updateOscType()   { try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {} }
+      updateEnvelope()  { this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
+      updateFilter()    { this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
+      dispose() {
+        this.allNotesOff();
+        try { this._poly.dispose(); } catch(e) {}
+        try { this._filter.dispose(); } catch(e) {}
+        super.dispose();
+      }
+    }
+
+    class FMSynthInstrument extends SynthInstrument {
+      constructor(id, name, x, y) {
+        super(id, name, x, y);
+        this.synthType       = 'fm';
+        this.harmonicity     = 3.0;
+        this.modulationIndex = 8.0;
+        this.attack          = 0.001;
+        this.decay           = 1.2;
+        this.sustain         = 0.15;
+        this.release         = 0.8;
+        this.modAttack       = 0.001;
+        this.modDecay        = 0.8;
+        this.modSustain      = 0.2;
+        this.modRelease      = 0.5;
+        this.currentPreset   = 0;
+        this._customPresets  = [];
+        this._usingCustom    = false;
+
+        this._poly = new Tone.PolySynth(Tone.FMSynth, {
+          harmonicity: this.harmonicity,
+          modulationIndex: this.modulationIndex,
+          envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
+          modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
+        }).connect(this.pan);
+        this._poly.maxPolyphony = 16;
+        this.loadPreset(DX7_PRESETS[0]);
+      }
+      noteOn(note, vel = 100) { this._poly.triggerAttack(note, Tone.now(), vel / 127); }
+      noteOff(note) { this._poly.triggerRelease(note, Tone.now()); }
+      allNotesOff() { this._poly.releaseAll(); }
+      updateFMParams() { this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); }
+      updateEnvelope() { this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
+      updateModEnv()   { this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); }
+      get presetList() { return this._usingCustom ? this._customPresets : DX7_PRESETS; }
+      loadPreset(preset) {
+        Object.assign(this, {
+          harmonicity: preset.harmonicity, modulationIndex: preset.modulationIndex,
+          attack: preset.attack, decay: preset.decay, sustain: preset.sustain, release: preset.release,
+          modAttack: preset.modAttack, modDecay: preset.modDecay, modSustain: preset.modSustain, modRelease: preset.modRelease,
+        });
+        this._poly.set({
+          harmonicity: this.harmonicity, modulationIndex: this.modulationIndex,
+          envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
+          modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
+        });
+      }
+      loadSysEx(data) {
+        const presets = parseDX7SysEx(data);
+        if (!presets || !presets.length) return false;
+        this._customPresets = presets;
+        this._usingCustom = true;
+        this.currentPreset = 0;
+        this.loadPreset(presets[0]);
+        return true;
+      }
+      dispose() {
+        this.allNotesOff();
+        try { this._poly.dispose(); } catch(e) {}
+        super.dispose();
+      }
+    }
+
+    class DrumMachine extends SynthInstrument {
+      constructor(id, name, x, y) {
+        super(id, name, x, y);
+        this.synthType = 'drums';
+        this.name = name || 'DRUMS';
+      }
+      noteOn() {} noteOff() {} allNotesOff() {}
+      dispose() { super.dispose(); }
+    }
+
+    // ════════════════════════════════════════════════════
     // TILE CREATION & WAVEFORM
     // ════════════════════════════════════════════════════
     function createTile(s) {
@@ -4413,6 +5691,97 @@
       if (wc) drawTileWave(wc, s);
     }
 
+    function drawSynthScope(canvas, synth) {
+      const W = canvas.width, H = canvas.height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(0, 0, W, H);
+      if (!synth._analyser) return;
+      const data = synth._analyser.getValue();
+      if (!data || data.length < 2) return;
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+      ctx.strokeStyle = synth.color + 'cc';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / (data.length - 1)) * W;
+        const y = (0.5 - data[i] * 0.85) * H;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function createSynthTile(synth) {
+      const t = document.createElement('div');
+      t.className = 'tile synth-tile';
+      t.id = 't' + synth.id;
+      t.style.left = (synth.x - TW / 2) + 'px';
+      t.style.top  = (synth.y - TH / 2) + 'px';
+      t.style.setProperty('--col', synth.color);
+      const wc = document.createElement('canvas');
+      wc.className = 'tile-canvas'; wc.width = TW; wc.height = TH;
+      t.appendChild(wc);
+
+      const vu = document.createElement('canvas');
+      vu.className = 'tile-vu-canvas'; vu.width = 10; vu.height = 42;
+      t.appendChild(vu);
+
+      const badge = document.createElement('div');
+      badge.className = 'tile-synth-badge';
+      badge.textContent = synth.synthType.toUpperCase();
+      t.appendChild(badge);
+
+      const lb = document.createElement('div');
+      lb.className = 'tile-lbl';
+      lb.textContent = synth.name;
+      t.appendChild(lb);
+
+      const mbtn = document.createElement('button');
+      mbtn.className = 'tile-mbtn'; mbtn.textContent = 'M'; mbtn.title = 'Mute';
+      if (synth.muted) mbtn.classList.add('mute-on');
+      mbtn.onclick = (e) => {
+        e.stopPropagation();
+        synth.muted = !synth.muted;
+        synth.vol.volume.value = synth._effectiveDb();
+        synth._renderTile();
+      };
+      t.appendChild(mbtn);
+
+      const sbtn = document.createElement('button');
+      sbtn.className = 'tile-sbtn'; sbtn.textContent = 'S'; sbtn.title = 'Solo';
+      if (soloId === synth.id) sbtn.classList.add('solo-on');
+      sbtn.onclick = (e) => {
+        e.stopPropagation();
+        soloId = (soloId === synth.id) ? null : synth.id;
+        applyAllVols(); refreshSoloVis();
+      };
+      t.appendChild(sbtn);
+
+      requestAnimationFrame(() => drawSynthScope(wc, synth));
+      makeDraggable(t, synth);
+
+      t.addEventListener('click', (e) => {
+        if (!t._dragged) {
+          if (openCards.has(synth.id)) closeSynthCard(synth.id);
+          else openSynthCard(synth.id, t);
+        }
+      });
+      t.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        const note = 'C4';
+        synth.noteOn(note, 100);
+        setTimeout(() => synth.noteOff(note), 600);
+      });
+      t.addEventListener('contextmenu', (e) => { e.preventDefault(); openSynthCard(synth.id, t); });
+
+      cv.appendChild(t);
+      updateEmpty();
+      return t;
+    }
+
     function hexToRgba(hex, alpha) {
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
@@ -4444,6 +5813,7 @@
           tile.style.top = nt + 'px';
           s.x = nl + TW / 2; s.y = nt + TH / 2;
           s.updateVol(); s.updatePan();
+          updateLfoWires();
         };
         const mu = () => {
           tile.classList.remove('dragging');
@@ -4500,17 +5870,17 @@
       // Card playheads — one per open card
       for (const [cid, cardInfo] of openCards) {
         const si = samples.get(cid);
-        const cph = cardInfo.phEl();
+        const cph = cardInfo.phEl?.();
         if (!cph) continue;
         if (!(si instanceof Sample) || !si.playing) { cph.style.display = 'none'; continue; }
-        const wrap = cardInfo.waveWrap();
+        const wrap = cardInfo.waveWrap?.();
         const W = wrap ? (wrap.clientWidth || 284) - 20 : 264;
         const pos = si.playheadPos();
         if (pos === null) { cph.style.display = 'none'; continue; }
         if (pos !== null) {
           // pos is 0..1 within the loop region; map to full-buffer absolute position (works for both PS and normal mode)
           const absPos = si.loopStart + pos * (si.loopEnd - si.loopStart);
-          const { start: vs, width: vw } = cardInfo.getZView();
+          const { start: vs, width: vw } = cardInfo.getZView?.() ?? { start: 0, width: 1 };
           const viewPos = (absPos - vs) / vw;
           if (viewPos >= 0 && viewPos <= 1) {
             cph.style.left = viewPos * W + 'px';
@@ -4531,7 +5901,7 @@
       for (const [cid, cardInfo] of openCards) {
         const si = samples.get(cid);
         if (!(si instanceof Sample) || !si.meter) continue;
-        const vuC = cardInfo.vuCanvas && cardInfo.vuCanvas();
+        const vuC = cardInfo.vuCanvas?.();
         if (vuC) drawVU(vuC, si);
       }
 
@@ -4542,6 +5912,32 @@
         if (!tile) continue;
         const vuC = tile.querySelector('.tile-vu-canvas');
         if (vuC) drawVU(vuC, si);
+      }
+
+      // Synth tiles: oscilloscope + VU
+      for (const [sid, synth] of synths) {
+        if (!(synth instanceof SynthInstrument)) continue;
+        const tile = document.getElementById('t' + sid);
+        if (tile) {
+          const wc = tile.querySelector('.tile-canvas');
+          if (wc) drawSynthScope(wc, synth);
+          const vuC = tile.querySelector('.tile-vu-canvas');
+          if (vuC) drawVU(vuC, synth);
+        }
+        // Also draw to open card scope canvas
+        const cardInfo = openCards.get(sid);
+        if (cardInfo) {
+          const cardScope = cardInfo.el.querySelector('.synth-scope-canvas');
+          if (cardScope) drawSynthScope(cardScope, synth);
+        }
+      }
+      // Drum tiles: VU
+      for (const [did, drum] of drums) {
+        if (!(drum instanceof SynthInstrument)) continue;
+        const tile = document.getElementById('t' + did);
+        if (!tile) continue;
+        const vuC = tile.querySelector('.tile-vu-canvas');
+        if (vuC) drawVU(vuC, drum);
       }
 
       // Granular mini tile grain viz
@@ -4773,15 +6169,14 @@
     }
 
     function refreshSoloVis() {
-      for (const [id, s] of samples) {
+      const allIds = [...samples.keys(), ...synths.keys(), ...drums.keys()];
+      for (const id of allIds) {
         const t = document.getElementById('t' + id);
         if (!t) continue;
         t.classList.toggle('soloed', soloId !== null && id === soloId);
         t.classList.toggle('solo-dim', soloId !== null && id !== soloId);
         const sbtn = t.querySelector('.tile-sbtn');
         if (sbtn) sbtn.classList.toggle('solo-on', soloId === id);
-
-        // Sync card if open
         if (openCards.has(id)) {
           const card = openCards.get(id).el;
           const btn = card.querySelector('.card-solo-btn');
@@ -4791,9 +6186,9 @@
     }
 
     function applyAllVols() {
-      for (const [, s] of samples) {
-        if (s instanceof Sample) s.vol.volume.value = s._effectiveDb();
-      }
+      for (const [, s] of samples) { if (s instanceof Sample) s.vol.volume.value = s._effectiveDb(); }
+      for (const [, s] of synths)  { if (s instanceof SynthInstrument) s.vol.volume.value = s._effectiveDb(); }
+      for (const [, s] of drums)   { if (s instanceof SynthInstrument) s.vol.volume.value = s._effectiveDb(); }
     }
 
     function removeSample(id) {
@@ -4825,6 +6220,543 @@
       }
       updateLfoWires();
       updateEmpty();
+    }
+
+    function removeSynth(id) {
+      const synth = synths.get(id) || drums.get(id);
+      if (synth instanceof SynthInstrument) synth.dispose();
+      const t = document.getElementById('t' + id);
+      if (t) t.remove();
+      synths.delete(id);
+      drums.delete(id);
+      if (openCards.has(id)) closeSynthCard(id);
+      if (soloId === id) { soloId = null; applyAllVols(); refreshSoloVis(); }
+      updateEmpty();
+    }
+
+    function openSynthCard(id, tile) {
+      const synth = synths.get(id) || drums.get(id);
+      if (!(synth instanceof SynthInstrument)) return;
+      if (openCards.has(id)) { openCards.get(id).el.style.zIndex = ++cardZTop; return; }
+      if (!tile) tile = document.getElementById('t' + id);
+      createSynthCard(synth, tile);
+      updateSampleList();
+    }
+
+    function closeSynthCard(id) {
+      const info = openCards.get(id);
+      if (!info) return;
+      info.el.remove();
+      openCards.delete(id);
+      const tile = document.getElementById('t' + id);
+      if (tile) tile.classList.remove('active', 'expanded');
+      updateSampleList();
+    }
+
+    function _positionCard(el, tile, w, h) {
+      const tR = tile ? tile.getBoundingClientRect() : { left: window.innerWidth / 2 - w / 2, top: 80 };
+      const margin = 8;
+      let cx = tR.left + TW / 2 - w / 2;
+      let cy = tR.top;
+      cx = Math.max(margin, Math.min(window.innerWidth  - w - margin, cx));
+      cy = Math.max(margin + 40, Math.min(window.innerHeight - h - 60, cy));
+      el.style.left = cx + 'px';
+      el.style.top  = cy + 'px';
+      el.style.zIndex = ++cardZTop;
+    }
+
+    function _makeSynthCardDrag(el, synth) {
+      el.addEventListener('mousedown', () => el.style.zIndex = ++cardZTop);
+      el.querySelector('.card-titlebar').addEventListener('mousedown', e => {
+        if (e.button !== 0 || e.target.closest('button')) return;
+        e.preventDefault();
+        const ox = e.clientX, oy = e.clientY;
+        const oL = parseFloat(el.style.left) || 0, oT = parseFloat(el.style.top) || 0;
+        const cvRect = cv.getBoundingClientRect();
+        const tileEl = document.getElementById('t' + synth.id);
+        const mm = ev => {
+          const nx = oL + (ev.clientX - ox);
+          const ny = oT + (ev.clientY - oy);
+          el.style.left = nx + 'px';
+          el.style.top  = ny + 'px';
+          // Keep tile in sync (card is 300px wide, tile is 136px; center offset = 150, tile left offset = 82)
+          if (tileEl) {
+            tileEl.style.left = (nx - cvRect.left + 82) + 'px';
+            tileEl.style.top  = (ny - cvRect.top) + 'px';
+          }
+          synth.x = nx - cvRect.left + 150;
+          synth.y = ny - cvRect.top + 28;
+          synth.updateVol(); synth.updatePan();
+          updateLfoWires();
+        };
+        const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+    }
+
+    function buildPianoKeyboard(container, synth) {
+      container.style.setProperty('--card-color', synth.color);
+      const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      const WHITE_IN_OCT = [0,2,4,5,7,9,11]; // semitones that are white keys
+      const BLACK_IN_OCT = [1,3,6,8,10];
+      // Black key offsets relative to white key index within octave
+      // C#=after C(0), D#=after D(1), F#=after F(3), G#=after G(4), A#=after A(5)
+      const BLACK_WHITE_IDX = { 1:0, 3:1, 6:3, 8:4, 10:5 };
+
+      let kbdOctave = 3; // base octave (shows two octaves: kbdOctave and kbdOctave+1)
+      const kbdEl = document.createElement('div');
+      kbdEl.className = 'synth-keyboard';
+      kbdEl.style.setProperty('--card-color', synth.color);
+
+      // Keyboard wraps full width, controls row below
+      const kbdWrap = document.createElement('div');
+      kbdWrap.className = 'synth-kbd-wrap';
+      kbdWrap.appendChild(kbdEl);
+
+      const kbdCtrl = document.createElement('div');
+      kbdCtrl.className = 'synth-kbd-ctrl';
+      const octDown = document.createElement('button');
+      octDown.className = 'synth-oct-btn'; octDown.textContent = '◂';
+      const octLbl = document.createElement('span');
+      octLbl.className = 'synth-oct-lbl';
+      const octUp = document.createElement('button');
+      octUp.className = 'synth-oct-btn'; octUp.textContent = '▸';
+      kbdCtrl.appendChild(octDown); kbdCtrl.appendChild(octLbl); kbdCtrl.appendChild(octUp);
+
+      function buildKeys() {
+        kbdEl.innerHTML = '';
+        octLbl.textContent = 'C' + kbdOctave;
+        const notes = [];
+        for (let oct = kbdOctave; oct <= kbdOctave + 1; oct++) {
+          WHITE_IN_OCT.forEach((semi, wOctIdx) => {
+            notes.push({ note: NOTE_NAMES[semi] + oct, white: true, wIdx: (oct - kbdOctave) * 7 + wOctIdx });
+          });
+          BLACK_IN_OCT.forEach(semi => {
+            notes.push({ note: NOTE_NAMES[semi] + oct, white: false, wIdx: (oct - kbdOctave) * 7 + BLACK_WHITE_IDX[semi] });
+          });
+        }
+        const whites = notes.filter(n => n.white).sort((a,b) => a.wIdx - b.wIdx);
+        const blacks = notes.filter(n => !n.white);
+        whites.forEach(n => {
+          const k = document.createElement('div');
+          k.className = 'sk-key-white'; k.dataset.note = n.note;
+          kbdEl.appendChild(k);
+        });
+        const wKeyW = 100 / 14;
+        blacks.forEach(n => {
+          const k = document.createElement('div');
+          k.className = 'sk-key-black'; k.dataset.note = n.note;
+          k.style.left = ((n.wIdx + 0.65) * wKeyW) + '%';
+          kbdEl.appendChild(k);
+        });
+        wireEvents();
+      }
+
+      const activeNotes = new Set();
+      function wireEvents() {
+        kbdEl.querySelectorAll('.sk-key-white, .sk-key-black').forEach(k => {
+          const note = k.dataset.note;
+          k.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); kbdNoteOn(note, k); });
+          k.addEventListener('mouseenter', e => { if (e.buttons === 1) kbdNoteOn(note, k); });
+          k.addEventListener('mouseleave', () => kbdNoteOff(note, k));
+          k.addEventListener('mouseup', () => kbdNoteOff(note, k));
+        });
+      }
+      const kbdNoteOn = (note, el) => {
+        if (activeNotes.has(note)) return;
+        activeNotes.add(note);
+        if (el) el.classList.add('skact');
+        synth.noteOn(note, 100);
+      };
+      const kbdNoteOff = (note, el) => {
+        if (!activeNotes.has(note)) return;
+        activeNotes.delete(note);
+        if (el) el.classList.remove('skact');
+        synth.noteOff(note);
+      };
+      document.addEventListener('mouseup', () => {
+        activeNotes.forEach(note => {
+          const k = kbdEl.querySelector(`[data-note="${note}"]`);
+          if (k) k.classList.remove('skact');
+          synth.noteOff(note);
+        });
+        activeNotes.clear();
+      });
+
+      octDown.addEventListener('click', e => { e.stopPropagation(); if (kbdOctave > 0) { kbdOctave--; buildKeys(); } });
+      octUp.addEventListener('click',   e => { e.stopPropagation(); if (kbdOctave < 8) { kbdOctave++; buildKeys(); } });
+
+      // Wire synth._noteHighlight so external triggers (seq, etc.) light up keys
+      synth._noteHighlight = (note, on) => {
+        const k = kbdEl.querySelector(`[data-note="${note}"]`);
+        if (k) k.classList.toggle('skact', on);
+      };
+
+      buildKeys();
+      container.appendChild(kbdWrap);
+      container.appendChild(kbdCtrl);
+    }
+
+    function createSynthCard(synth, tile) {
+      if (synth.synthType === 'analog') createAnalogSynthCard(synth, tile);
+      else if (synth.synthType === 'fm') createFMSynthCard(synth, tile);
+      else createDrumCard(synth, tile);
+    }
+
+    function createAnalogSynthCard(synth, tile) {
+      const el = document.createElement('div');
+      el.className = 'synth-card';
+      el.style.setProperty('--card-color', synth.color);
+
+      const mkCsl = (cls, min, max, step, val) =>
+        `<div class="cslider"><input type="range" class="${cls}" min="${min}" max="${max}" step="${step}" value="${val}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div>`;
+
+      el.innerHTML = `
+        <div class="card-titlebar">
+          <div class="card-color-dot" style="background:${synth.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+          <div class="card-name">ANALOG · ${synth.name}</div>
+          <button class="card-dup" title="Duplicate">⧉</button>
+          <button class="card-remove" title="Remove">🗑</button>
+          <button class="card-close" title="Close">✕</button>
+        </div>
+        <div style="padding:8px 10px 4px">
+          <canvas class="synth-scope-canvas" width="260" height="72"></canvas>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">PRESETS</div>
+          <div class="card-acc-body">
+            <div class="csec"><div class="fm-preset-list sc-preset-list"></div></div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">OSCILLATOR + FILTER</div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="synth-btn-row" style="margin-bottom:8px">
+                <button class="synth-btn ${synth.oscType==='sine'?'act':''}"     data-osc="sine">Sine</button>
+                <button class="synth-btn ${synth.oscType==='sawtooth'?'act':''}" data-osc="sawtooth">Saw</button>
+                <button class="synth-btn ${synth.oscType==='square'?'act':''}"   data-osc="square">Square</button>
+                <button class="synth-btn ${synth.oscType==='triangle'?'act':''}" data-osc="triangle">Tri</button>
+              </div>
+              <div class="synth-row" style="margin-bottom:6px">
+                <div class="synth-lbl">Type</div>
+                <div class="synth-btn-row" style="flex:1">
+                  <button class="synth-btn ${synth.filterType==='lowpass'?'act':''}"  data-flt="lowpass">LP</button>
+                  <button class="synth-btn ${synth.filterType==='highpass'?'act':''}" data-flt="highpass">HP</button>
+                  <button class="synth-btn ${synth.filterType==='bandpass'?'act':''}" data-flt="bandpass">BP</button>
+                </div>
+              </div>
+              <div class="crow"><span class="clbl">Cutoff</span>${mkCsl('sc-ffreq','20','20000','1',synth.filterFreq)}</div>
+              <div class="crow"><span class="clbl">Reso</span>${mkCsl('sc-fq','0.01','20','0.01',synth.filterQ)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">ENVELOPE</div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="crow"><span class="clbl">Attack</span>${mkCsl('sc-atk','0.001','5','0.001',synth.attack)}</div>
+              <div class="crow"><span class="clbl">Decay</span>${mkCsl('sc-dec','0.001','5','0.001',synth.decay)}</div>
+              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('sc-sus','0','1','0.01',synth.sustain)}</div>
+              <div class="crow"><span class="clbl">Release</span>${mkCsl('sc-rel','0.001','8','0.001',synth.release)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">EFFECTS</div>
+          <div class="card-acc-body">
+            <div class="fx-section" id="fx-section-${synth.id}"></div>
+          </div>
+        </div>
+        <div id="sc-kbd-${synth.id}"></div>`;
+
+      const q = sel => el.querySelector(sel), qa = sel => el.querySelectorAll(sel);
+
+      const renderAnalogPresets = () => {
+        const list = q('.sc-preset-list');
+        if (!list) return;
+        list.innerHTML = '';
+        ANALOG_PRESETS.forEach((p, i) => {
+          const item = document.createElement('div');
+          item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+          item.textContent = p.name;
+          item.addEventListener('click', () => {
+            synth.currentPreset = i;
+            synth.loadPreset(p);
+            renderAnalogPresets();
+            qa('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+            qa('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+            q('.sc-ffreq').value = synth.filterFreq; q('.sc-ffreq').closest('.cslider')?._syncPos?.();
+            q('.sc-fq').value    = synth.filterQ;    q('.sc-fq').closest('.cslider')?._syncPos?.();
+            q('.sc-atk').value   = synth.attack;     q('.sc-atk').closest('.cslider')?._syncPos?.();
+            q('.sc-dec').value   = synth.decay;      q('.sc-dec').closest('.cslider')?._syncPos?.();
+            q('.sc-sus').value   = synth.sustain;    q('.sc-sus').closest('.cslider')?._syncPos?.();
+            q('.sc-rel').value   = synth.release;    q('.sc-rel').closest('.cslider')?._syncPos?.();
+          });
+          list.appendChild(item);
+        });
+      };
+      renderAnalogPresets();
+
+      q('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
+      q('.card-remove').addEventListener('click', (e) => { e.stopPropagation(); removeSynth(synth.id); });
+
+      qa('[data-osc]').forEach(btn => btn.addEventListener('click', () => {
+        synth.oscType = btn.dataset.osc;
+        qa('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+        synth.updateOscType();
+      }));
+      qa('[data-flt]').forEach(btn => btn.addEventListener('click', () => {
+        synth.filterType = btn.dataset.flt;
+        qa('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+        synth.updateFilter();
+      }));
+
+      const fmtFreq = v => v >= 1000 ? (v / 1000).toFixed(1) + ' kHz' : Math.round(v) + ' Hz';
+      const fmtPct  = v => Math.round(v * 100) + '%';
+
+      initCslider(q('.sc-ffreq').closest('.cslider'), fmtFreq);
+      initCslider(q('.sc-fq').closest('.cslider'),    v => v.toFixed(2));
+      initCslider(q('.sc-atk').closest('.cslider'),   fmtFade);
+      initCslider(q('.sc-dec').closest('.cslider'),   fmtFade);
+      initCslider(q('.sc-sus').closest('.cslider'),   fmtPct);
+      initCslider(q('.sc-rel').closest('.cslider'),   fmtFade);
+
+      q('.sc-ffreq').addEventListener('input', () => { synth.filterFreq = parseFloat(q('.sc-ffreq').value); synth.updateFilter(); });
+      q('.sc-fq').addEventListener('input',    () => { synth.filterQ    = parseFloat(q('.sc-fq').value);    synth.updateFilter(); });
+      q('.sc-atk').addEventListener('input',   () => { synth.attack     = parseFloat(q('.sc-atk').value);   synth.updateEnvelope(); });
+      q('.sc-dec').addEventListener('input',   () => { synth.decay      = parseFloat(q('.sc-dec').value);   synth.updateEnvelope(); });
+      q('.sc-sus').addEventListener('input',   () => { synth.sustain    = parseFloat(q('.sc-sus').value);   synth.updateEnvelope(); });
+      q('.sc-rel').addEventListener('input',   () => { synth.release    = parseFloat(q('.sc-rel').value);   synth.updateEnvelope(); });
+
+      // Accordion toggles
+      qa('.card-acc-hdr').forEach(hdr => {
+        hdr.addEventListener('click', () => {
+          hdr.classList.toggle('open');
+          const body = hdr.nextElementSibling;
+          if (body) body.classList.toggle('open');
+          requestAnimationFrame(updateLfoWires);
+        });
+      });
+
+      // Duplicate
+      q('.card-dup').addEventListener('click', e => { e.stopPropagation(); duplicateSynth(synth); });
+
+      _positionCard(el, tile, 300, 500);
+      _makeSynthCardDrag(el, synth);
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('open'));
+      openCards.set(synth.id, { el });
+      if (tile) tile.classList.add('active', 'expanded');
+      requestAnimationFrame(() => buildPianoKeyboard(q(`#sc-kbd-${synth.id}`), synth));
+      buildFxSection(el, synth);
+    }
+
+    function duplicateSynth(synth) {
+      const id = nextId++;
+      const offset = 24;
+      let dup;
+      if (synth.synthType === 'analog') {
+        dup = new AnalogSynth(id, synth.name, synth.x + offset, synth.y + offset);
+        dup.oscType = synth.oscType; dup.attack = synth.attack; dup.decay = synth.decay;
+        dup.sustain = synth.sustain; dup.release = synth.release;
+        dup.filterType = synth.filterType; dup.filterFreq = synth.filterFreq; dup.filterQ = synth.filterQ;
+        dup.updateOscType(); dup.updateEnvelope(); dup.updateFilter();
+      } else if (synth.synthType === 'fm') {
+        dup = new FMSynthInstrument(id, synth.name, synth.x + offset, synth.y + offset);
+        dup.loadPreset({ name: synth.name, harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex, attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release, modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease });
+      } else { return; }
+      synths.set(id, dup);
+      const t = createSynthTile(dup);
+      updateSampleList();
+    }
+
+    function createFMSynthCard(synth, tile) {
+      const el = document.createElement('div');
+      el.className = 'synth-card';
+      el.style.setProperty('--card-color', synth.color);
+
+      const renderPresetList = () => {
+        const list = el.querySelector('.fm-preset-list');
+        if (!list) return;
+        list.innerHTML = '';
+        synth.presetList.forEach((p, i) => {
+          const item = document.createElement('div');
+          item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+          item.textContent = p.name;
+          item.addEventListener('click', () => {
+            synth.currentPreset = i;
+            synth.loadPreset(p);
+            renderPresetList();
+            syncFMSliders();
+          });
+          list.appendChild(item);
+        });
+      };
+
+      const fmtHarm = v => v.toFixed(2);
+      const fmtModI = v => v.toFixed(1);
+
+      el.innerHTML = `
+        <div class="card-titlebar">
+          <div class="card-color-dot" style="background:${synth.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+          <div class="card-name">FM · ${synth.name}</div>
+          <button class="card-dup" title="Duplicate">⧉</button>
+          <button class="card-remove" title="Remove">🗑</button>
+          <button class="card-close" title="Close">✕</button>
+        </div>
+        <div style="padding:8px 10px 4px">
+          <canvas class="synth-scope-canvas" width="260" height="72"></canvas>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">PRESETS <span style="opacity:0.4;font-weight:400;text-transform:none;letter-spacing:0;font-size:8px;margin-left:4px">${synth._usingCustom ? 'Custom SysEx' : 'Built-in'}</span></div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="fm-preset-list"></div>
+              <button class="fm-sysx-btn">Load DX7 SysEx (.syx) ▸</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">FM PARAMETERS</div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="crow"><span class="clbl">Harm.</span><div class="cslider"><input type="range" class="fm-harm" min="0.1" max="20" step="0.01" value="${synth.harmonicity}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Mod Idx</span><div class="cslider"><input type="range" class="fm-modi" min="0" max="20" step="0.1" value="${synth.modulationIndex}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">CARRIER ENVELOPE</div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="crow"><span class="clbl">Attack</span><div class="cslider"><input type="range" class="fm-atk" min="0.001" max="5" step="0.001" value="${synth.attack}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Decay</span><div class="cslider"><input type="range" class="fm-dec" min="0.001" max="5" step="0.001" value="${synth.decay}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Sustain</span><div class="cslider"><input type="range" class="fm-sus" min="0" max="1" step="0.01" value="${synth.sustain}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Release</span><div class="cslider"><input type="range" class="fm-rel" min="0.001" max="8" step="0.001" value="${synth.release}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">MODULATOR ENVELOPE</div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="crow"><span class="clbl">Attack</span><div class="cslider"><input type="range" class="fm-matk" min="0.001" max="5" step="0.001" value="${synth.modAttack}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Decay</span><div class="cslider"><input type="range" class="fm-mdec" min="0.001" max="5" step="0.001" value="${synth.modDecay}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Sustain</span><div class="cslider"><input type="range" class="fm-msus" min="0" max="1" step="0.01" value="${synth.modSustain}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+              <div class="crow"><span class="clbl">Release</span><div class="cslider"><input type="range" class="fm-mrel" min="0.001" max="8" step="0.001" value="${synth.modRelease}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">EFFECTS</div>
+          <div class="card-acc-body">
+            <div class="fx-section" id="fx-section-${synth.id}"></div>
+          </div>
+        </div>
+        <div id="fm-kbd-${synth.id}"></div>`;
+
+      const q = sel => el.querySelector(sel), qa = sel => el.querySelectorAll(sel);
+
+      const syncFMSliders = () => {
+        const pairs = [
+          ['.fm-harm',  'harmonicity',     fmtHarm],
+          ['.fm-modi',  'modulationIndex', fmtModI],
+          ['.fm-atk',   'attack',          fmtFade],
+          ['.fm-dec',   'decay',           fmtFade],
+          ['.fm-sus',   'sustain',         v => (v*100).toFixed(0)+'%'],
+          ['.fm-rel',   'release',         fmtFade],
+          ['.fm-matk',  'modAttack',       fmtFade],
+          ['.fm-mdec',  'modDecay',        fmtFade],
+          ['.fm-msus',  'modSustain',      v => (v*100).toFixed(0)+'%'],
+          ['.fm-mrel',  'modRelease',      fmtFade],
+        ];
+        pairs.forEach(([cls, prop]) => {
+          const sl = q(cls);
+          if (sl) { sl.value = synth[prop]; sl.closest('.cslider')?._syncPos?.(); }
+        });
+      };
+
+      q('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
+      q('.card-remove').addEventListener('click', (e) => { e.stopPropagation(); removeSynth(synth.id); });
+
+      const fmtPct = v => Math.round(v * 100) + '%';
+
+      initCslider(q('.fm-harm').closest('.cslider'),  fmtHarm);
+      initCslider(q('.fm-modi').closest('.cslider'),  fmtModI);
+      initCslider(q('.fm-atk').closest('.cslider'),   fmtFade);
+      initCslider(q('.fm-dec').closest('.cslider'),   fmtFade);
+      initCslider(q('.fm-sus').closest('.cslider'),   fmtPct);
+      initCslider(q('.fm-rel').closest('.cslider'),   fmtFade);
+      initCslider(q('.fm-matk').closest('.cslider'),  fmtFade);
+      initCslider(q('.fm-mdec').closest('.cslider'),  fmtFade);
+      initCslider(q('.fm-msus').closest('.cslider'),  fmtPct);
+      initCslider(q('.fm-mrel').closest('.cslider'),  fmtFade);
+
+      q('.fm-harm').addEventListener('input',  () => { synth.harmonicity     = parseFloat(q('.fm-harm').value);  synth.updateFMParams(); });
+      q('.fm-modi').addEventListener('input',  () => { synth.modulationIndex = parseFloat(q('.fm-modi').value);  synth.updateFMParams(); });
+      q('.fm-atk').addEventListener('input',   () => { synth.attack          = parseFloat(q('.fm-atk').value);   synth.updateEnvelope(); });
+      q('.fm-dec').addEventListener('input',   () => { synth.decay           = parseFloat(q('.fm-dec').value);   synth.updateEnvelope(); });
+      q('.fm-sus').addEventListener('input',   () => { synth.sustain         = parseFloat(q('.fm-sus').value);   synth.updateEnvelope(); });
+      q('.fm-rel').addEventListener('input',   () => { synth.release         = parseFloat(q('.fm-rel').value);   synth.updateEnvelope(); });
+      q('.fm-matk').addEventListener('input',  () => { synth.modAttack       = parseFloat(q('.fm-matk').value);  synth.updateModEnv(); });
+      q('.fm-mdec').addEventListener('input',  () => { synth.modDecay        = parseFloat(q('.fm-mdec').value);  synth.updateModEnv(); });
+      q('.fm-msus').addEventListener('input',  () => { synth.modSustain      = parseFloat(q('.fm-msus').value);  synth.updateModEnv(); });
+      q('.fm-mrel').addEventListener('input',  () => { synth.modRelease      = parseFloat(q('.fm-mrel').value);  synth.updateModEnv(); });
+
+      // Accordion toggles
+      qa('.card-acc-hdr').forEach(hdr => {
+        hdr.addEventListener('click', () => {
+          hdr.classList.toggle('open');
+          const body = hdr.nextElementSibling;
+          if (body) body.classList.toggle('open');
+          requestAnimationFrame(updateLfoWires);
+        });
+      });
+
+      // Duplicate
+      q('.card-dup').addEventListener('click', e => { e.stopPropagation(); duplicateSynth(synth); });
+
+      // SysEx loader
+      q('.fm-sysx-btn').addEventListener('click', () => {
+        const inp = document.getElementById('syx-input');
+        // Store reference so we know which synth to load into
+        inp._targetSynthId = synth.id;
+        inp.click();
+      });
+
+      renderPresetList();
+      _positionCard(el, tile, 300, 540);
+      _makeSynthCardDrag(el, synth);
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('open'));
+      openCards.set(synth.id, { el });
+      if (tile) tile.classList.add('active', 'expanded');
+      requestAnimationFrame(() => buildPianoKeyboard(q(`#fm-kbd-${synth.id}`), synth));
+      buildFxSection(el, synth);
+    }
+
+    function createDrumCard(synth, tile) {
+      const el = document.createElement('div');
+      el.className = 'synth-card';
+      el.style.setProperty('--card-color', synth.color);
+      el.innerHTML = `
+        <div class="card-titlebar">
+          <div class="card-color-dot" style="background:${synth.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+          <div class="card-name">DRUMS · ${synth.name}</div>
+          <button class="card-close" title="Close">✕</button>
+          <button class="card-remove" title="Remove">🗑</button>
+        </div>
+        <div class="drum-placeholder">Drum Machine<br><span style="font-size:8px;font-weight:400;text-transform:none;letter-spacing:0;opacity:0.5;margin-top:6px;display:block">Coming soon</span></div>`;
+      el.querySelector('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
+      el.querySelector('.card-remove').addEventListener('click', (e) => { e.stopPropagation(); removeSynth(synth.id); });
+      _positionCard(el, tile, 300, 120);
+      _makeSynthCardDrag(el, synth);
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('open'));
+      openCards.set(synth.id, { el });
+      if (tile) tile.classList.add('active', 'expanded');
     }
 
     function duplicateSample(src) {
@@ -4910,7 +6842,8 @@
     }
 
     function updateEmpty() {
-      document.getElementById('empty').classList.toggle('gone', samples.size > 0);
+      const total = samples.size + synths.size + drums.size;
+      document.getElementById('empty').classList.toggle('gone', total > 0);
       document.getElementById('sc').textContent = samples.size;
       updateSampleList();
     }
@@ -4918,16 +6851,19 @@
     function updateSampleList() {
       const el = document.getElementById('sample-list');
       el.innerHTML = '';
-      for (const [id, s] of samples) {
+      const addItem = (id, name, closer, opener) => {
         const item = document.createElement('div');
         item.className = 'slist-item' + (openCards.has(id) ? ' open' : '');
-        item.textContent = s.name.length > 20 ? s.name.slice(0, 20) : s.name;
+        item.textContent = (name.length > 20 ? name.slice(0, 20) : name);
         item.addEventListener('click', () => {
-          if (openCards.has(id)) { closeCard(id); } else { openCard(id); }
+          if (openCards.has(id)) { closer(id); } else { opener(id); }
           updateSampleList();
         });
         el.appendChild(item);
-      }
+      };
+      for (const [id, s] of samples) addItem(id, s.name, closeCard, openCard);
+      for (const [id, s] of synths)  addItem(id, s.name, closeSynthCard, openSynthCard);
+      for (const [id, s] of drums)   addItem(id, s.name, closeSynthCard, openSynthCard);
     }
 
     // ════════════════════════════════════════════════════
@@ -4941,6 +6877,9 @@
     }
 
     function openCard(id, tile) {
+      // Route to synth/drum card if applicable
+      if (synths.has(id) || drums.has(id)) { openSynthCard(id, tile); return; }
+
       const s = samples.get(id);
       if (!(s instanceof Sample)) return;
 
@@ -6759,6 +8698,7 @@
       Tone.Transport.start();
       for (const [, s] of samples) if (s instanceof Sample && !s.playing) startSample(s);
       for (const [, seq] of seqs) seq.reschedule();
+      for (const [, riff] of riffs) riff.reschedule();
       if (metroOn) buildMetro();
       beatTick();
     }
@@ -6777,6 +8717,7 @@
       Tone.Transport.position = 0;
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
       for (const [, seq] of seqs) seq.unschedule();
+      for (const [, riff] of riffs) riff.unschedule();
       // beat-pos removed
       cancelAnimationFrame(beatRaf);
     }
@@ -7093,7 +9034,7 @@
     }
 
     function saveProject() {
-      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [], seqs: [] };
+      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [], seqs: [], riffs: [] };
       for (const [, s] of samples) {
         if (!(s instanceof Sample)) continue;
         const fxChainData = s.fxChain.map(inst => {
@@ -7145,6 +9086,19 @@
           destinations: [...seq.destinations],
           gateLength: seq.gateLength,
           gridSync: seq.gridSync, subdiv: seq.subdiv, rate: seq.rate
+        });
+      }
+      // Save riffs
+      for (const [, riff] of riffs) {
+        projectData.riffs.push({
+          id: riff.id, name: riff.name, x: riff.x, y: riff.y, color: riff.color,
+          mode: riff.mode, numSteps: riff.numSteps,
+          steps: riff.steps.map(s => ({ ...s })),
+          notes: riff.notes.map(n => ({ ...n })),
+          subdiv: riff.subdiv, gridSync: riff.gridSync, rate: riff.rate,
+          loopBars: riff.loopBars, quantize: riff.quantize,
+          scale: riff.scale, scaleRoot: riff.scaleRoot, harmony: riff.harmony,
+          destinations: [...riff.destinations]
         });
       }
       const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
@@ -7305,6 +9259,45 @@
               if (targetId != null) connectSeqToSample(seq, targetId);
             }
           }
+        }
+      }
+
+      // Restore riffs
+      for (const rid of [...riffs.keys()]) removeRiff(rid);
+      if (Array.isArray(data.riffs)) {
+        for (const rd of data.riffs) {
+          const rid = nextRiffId++;
+          const riff = new RiffSequencer(rid, rd.x || 400, rd.y || 300);
+          riff.name = rd.name || ('Riff ' + rid);
+          if (rd.color) riff.color = rd.color;
+          riff.mode = rd.mode || 'step';
+          riff.numSteps = rd.numSteps || 16;
+          if (Array.isArray(rd.steps)) {
+            const loaded = rd.steps.slice(0, 64).map(s => ({ note: s.note || null, vel: s.vel ?? 1.0 }));
+            while (loaded.length < 64) loaded.push({ note: null, vel: 1.0 });
+            riff.steps = loaded;
+          }
+          if (Array.isArray(rd.notes)) riff.notes = rd.notes.map(n => ({ ...n }));
+          riff.subdiv = rd.subdiv || '16n';
+          riff.gridSync = rd.gridSync !== undefined ? rd.gridSync : true;
+          riff.rate = rd.rate || 0.125;
+          riff.loopBars = rd.loopBars || 1;
+          riff.scale = rd.scale || 'Chromatic';
+          riff.scaleRoot = rd.scaleRoot || 'C';
+          riff.harmony = rd.harmony || 0;
+          riff.quantize = rd.quantize !== false;
+          riffs.set(rid, riff);
+          createRiffNode(riff);
+          if (Array.isArray(rd.destinations)) {
+            for (const oldId of rd.destinations) {
+              const targetId = idMap[oldId] ?? (getInstrument(oldId) ? oldId : null);
+              if (targetId != null) {
+                riff.addDestination(targetId);
+                riffNodes.get(rid)?.updateDestList();
+              }
+            }
+          }
+          updateLfoWires();
         }
       }
 
@@ -7904,7 +9897,7 @@
         const list = q('.lfo-dest-list');
         list.innerHTML = '';
         for (const d of lfo.destinations) {
-          const s = samples.get(d.sampleId);
+          const s = samples.get(d.sampleId) || synths.get(d.sampleId) || drums.get(d.sampleId);
           const pInfo = LFO_PARAM_MAP[d.param];
           if (!s || !pInfo) continue;
 
@@ -8485,17 +10478,17 @@
       seq.addDestination(sampleId);
       sampleSeqMap.set(sampleId, seq.id);
       // Stop sample's internal playback — sequencer takes over
-      const s = samples.get(sampleId);
+      const s = samples.get(sampleId) || synths.get(sampleId);
       if (s instanceof Sample) {
         s.stop();
         s.playing = false;
         s._renderTile();
-        // Mark tile visually
-        const tile = document.getElementById('t' + sampleId);
-        if (tile) {
-          tile.classList.add('seq-controlled');
-          tile.style.setProperty('--seq-ctrl-color', seq.color);
-        }
+      }
+      // Mark tile visually
+      const tile = document.getElementById('t' + sampleId);
+      if (tile) {
+        tile.classList.add('seq-controlled');
+        tile.style.setProperty('--seq-ctrl-color', seq.color);
       }
       seqNodes.get(seq.id)?.updateDestList();
       // Set trigger mode on sample and update open card if any
@@ -8527,11 +10520,768 @@
         tile.classList.remove('seq-controlled');
         tile.style.removeProperty('--seq-ctrl-color');
       }
-      const s = samples.get(sampleId);
+      const s = samples.get(sampleId) || synths.get(sampleId);
       if (s instanceof Sample) {
         s.stop(); // stop any ongoing playback — sample waits in trigger mode
+      } else if (s instanceof SynthInstrument) {
+        s.allNotesOff();
       }
       updateLfoWires();
+    }
+
+    // ════════════════════════════════════════════════════
+    // ── Riff note transform helpers ──
+    function riffShiftOctave(riff, delta) {
+      const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      function shiftNote(note) {
+        if (!note) return note;
+        const m = note.match(/^([A-G]#?)(\d+)$/);
+        if (!m) return note;
+        const newOct = parseInt(m[2]) + delta;
+        if (newOct < 0 || newOct > 9) return note;
+        return m[1] + newOct;
+      }
+      for (const s of riff.steps) if (s.note) s.note = shiftNote(s.note);
+      for (const n of riff.notes) if (n.note) n.note = shiftNote(n.note);
+    }
+
+    function riffTranspose(riff, delta) {
+      const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+      const isChromatic = intervals.length === 12;
+      const NM = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+      const rootPC = NM[riff.scaleRoot] ?? 0;
+      const dir = delta >= 0 ? 1 : -1;
+
+      function transposeNote(note) {
+        if (!note) return note;
+        const target = Math.max(12, Math.min(119, noteToSemis(note) + delta));
+        if (isChromatic) return midiToNoteName(target);
+        // Walk from target in direction of delta until we land on an in-scale pitch
+        for (let d = 0; d <= 12; d++) {
+          const candidate = target + d * dir;
+          if (candidate < 12 || candidate > 119) break;
+          const offset = ((candidate % 12) - rootPC % 12 + 12) % 12;
+          if (intervals.includes(offset)) return midiToNoteName(candidate);
+        }
+        return midiToNoteName(target);
+      }
+      for (const s of riff.steps) if (s.note) s.note = transposeNote(s.note);
+      for (const n of riff.notes) if (n.note) n.note = transposeNote(n.note);
+    }
+
+    // RIFF NODE
+    // ════════════════════════════════════════════════════
+    function createRiffNode(riff) {
+      const el = document.createElement('div');
+      el.className = 'riff-node';
+      el.id = 'riff-' + riff.id;
+      el.style.left = (riff.x - RIFF_W / 2) + 'px';
+      el.style.top  = (riff.y - 160) + 'px';
+      el.style.setProperty('--riff-color', riff.color);
+
+      // Build scale options HTML
+      const scaleOptsHtml = Object.keys(RIFF_SCALES).map(name =>
+        `<option value="${name}"${name === riff.scale ? ' selected' : ''}>${name}</option>`
+      ).join('');
+      const rootOptsHtml = RIFF_NOTE_NAMES.map(n =>
+        `<option value="${n}"${n === riff.scaleRoot ? ' selected' : ''}>${n}</option>`
+      ).join('');
+
+      el.innerHTML = `
+        <div class="riff-titlebar">
+          <div class="riff-color-dot"></div>
+          <div class="riff-name">${riff.name}</div>
+          <button class="riff-hdr-btn riff-dup-btn" title="Duplicate">⧉</button>
+          <button class="riff-hdr-btn riff-remove-btn" title="Remove">🗑</button>
+          <button class="riff-hdr-btn riff-min-btn" title="Minimize">✕</button>
+        </div>
+        <div class="riff-min-footer">${riff.name}</div>
+        <div class="riff-body">
+          <!-- STEP GRID -->
+          <div class="riff-step-grid"></div>
+          <!-- STEP ACTION ROW: REC + REST -->
+          <div class="riff-row" style="gap:4px;padding-top:4px">
+            <button class="riff-step-btn riff-stepentry-btn">● Rec</button>
+            <button class="riff-step-btn riff-rest-btn">Rest</button>
+            <button class="riff-step-btn riff-clear-btn">Clear</button>
+            <span class="riff-lbl" style="margin-left:4px">Steps</span>
+            <div class="riff-steps-ctrl">
+              <button class="riff-steps-dec">−</button>
+              <span class="riff-steps-val">${riff.numSteps}</span>
+              <button class="riff-steps-inc">+</button>
+            </div>
+          </div>
+          <!-- GRID + SUBDIVISION ROW -->
+          <div class="riff-row" style="padding-bottom:2px">
+            <button class="cbtn riff-grid-btn" style="flex:0 0 auto;padding:4px 8px;font-size:9px">Grid</button>
+            <select class="riff-subdiv-sel riff-sel" style="flex:1">
+              <option value="1n">1 bar</option>
+              <option value="1n.">1 bar .</option>
+              <option value="2n">1/2</option>
+              <option value="2n.">1/2 .</option>
+              <option value="2t">1/2 T</option>
+              <option value="4n">1/4</option>
+              <option value="4n.">1/4 .</option>
+              <option value="4t">1/4 T</option>
+              <option value="8n">1/8</option>
+              <option value="8n.">1/8 .</option>
+              <option value="8t">1/8 T</option>
+              <option value="16n">1/16</option>
+              <option value="16n.">1/16 .</option>
+              <option value="16t">1/16 T</option>
+              <option value="32n">1/32</option>
+              <option value="32n.">1/32 .</option>
+              <option value="32t">1/32 T</option>
+            </select>
+          </div>
+          <!-- RATE ROW (free mode) -->
+          <div class="riff-row riff-rate-row">
+            <span class="riff-lbl">Rate</span>
+            <div class="cslider riff-rate-slider">
+              <input type="range" class="riff-rate-input" min="0.04" max="2" step="0.01" value="${riff.rate}">
+              <div class="cslider-thumb"><span class="cslider-lbl">${riff.rate.toFixed(2)}s</span><input class="cslider-edit" type="text"></div>
+            </div>
+          </div>
+          <!-- TRANSFORM ROW -->
+          <div class="riff-row sep" style="gap:4px">
+            <span class="riff-lbl">Oct</span>
+            <button class="riff-xfm-btn riff-oct-dn" title="Octave down">▼</button>
+            <button class="riff-xfm-btn riff-oct-up" title="Octave up">▲</button>
+            <span class="riff-lbl" style="margin-left:4px">Semi</span>
+            <button class="riff-xfm-btn riff-trans-dn" title="Transpose down">▼</button>
+            <button class="riff-xfm-btn riff-trans-up" title="Transpose up">▲</button>
+            <span class="riff-lbl" style="margin-left:4px">+</span>
+            <select class="riff-harm-sel riff-sel" style="flex:1">
+              <option value="0">None</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="12">8</option>
+            </select>
+          </div>
+          <!-- SCALE ROW -->
+          <div class="riff-row">
+            <span class="riff-lbl">Root</span>
+            <select class="riff-root-sel riff-sel" style="flex:0 0 auto;width:46px">${rootOptsHtml}</select>
+            <span class="riff-lbl">Scale</span>
+            <select class="riff-scale-sel riff-sel">${scaleOptsHtml}</select>
+          </div>
+          <!-- KEYBOARD -->
+          <div class="riff-kbd-wrap" id="riff-kbd-${riff.id}"></div>
+          <div class="riff-kbd-hint">A–J = white keys &nbsp;·&nbsp; W E T Y U = sharps &nbsp;·&nbsp; Z / X = oct ↓↑ &nbsp;·&nbsp; R = rest</div>
+          <!-- WIRE -->
+          <div class="riff-wire-row sep">
+            <div class="riff-wire-port" title="Drag to connect to a synth or sampler"></div>
+            <div class="riff-dest-list"></div>
+          </div>
+        </div>
+      `;
+
+      const q = sel => el.querySelector(sel);
+
+      // ── Step-entry state ──
+      let selectedStep = -1;
+      let stepEntryActive = false;
+      let entryCursor = 0; // position during step entry
+
+      // ── Step grid ──
+      function buildStepGrid() {
+        const grid = q('.riff-step-grid');
+        grid.innerHTML = '';
+        for (let i = 0; i < riff.numSteps; i++) {
+          const stepData = riff.steps[i];
+          const cell = document.createElement('div');
+          cell.className = 'riff-step' + (stepData.note ? ' has-note' : '');
+          cell.dataset.idx = i;
+
+          const velBar = document.createElement('div');
+          velBar.className = 'riff-step-vel';
+          velBar.style.height = ((stepData.vel ?? 1.0) * 100) + '%';
+          cell.appendChild(velBar);
+
+          const numSpan = document.createElement('span');
+          numSpan.className = 'riff-step-num';
+          numSpan.textContent = i + 1;
+          cell.appendChild(numSpan);
+
+          const noteSpan = document.createElement('span');
+          noteSpan.className = 'riff-step-note';
+          noteSpan.textContent = stepData.note || '—';
+          cell.appendChild(noteSpan);
+
+          if (!stepEntryActive && i === selectedStep) cell.classList.add('selected');
+          if (stepEntryActive && i === entryCursor) cell.classList.add('entry-cursor');
+
+          cell.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            const startY = e.clientY;
+            const startVel = riff.steps[i].vel ?? 1.0;
+            let dragged = false;
+
+            const onMove = mv => {
+              const dy = startY - mv.clientY;
+              if (!dragged && Math.abs(dy) > 4) dragged = true;
+              if (!dragged) return;
+              riff.steps[i].vel = Math.max(0.05, Math.min(1.0, startVel + dy / 70));
+              updateVelBar(i);
+            };
+            const onUp = () => {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+              if (!dragged) {
+                if (stepEntryActive) { entryCursor = i; refreshEntryCursor(); }
+                else toggleStepSelect(i);
+              }
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          });
+          cell.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); clearStep(i); });
+          grid.appendChild(cell);
+        }
+        q('.riff-steps-val').textContent = riff.numSteps;
+      }
+
+      function updateVelBar(idx) {
+        const cell = q(`.riff-step[data-idx="${idx}"]`);
+        if (!cell) return;
+        const bar = cell.querySelector('.riff-step-vel');
+        if (bar) bar.style.height = ((riff.steps[idx].vel ?? 1.0) * 100) + '%';
+      }
+
+      function refreshEntryCursor() {
+        el.querySelectorAll('.riff-step.entry-cursor').forEach(c => c.classList.remove('entry-cursor'));
+        q(`.riff-step[data-idx="${entryCursor}"]`)?.classList.add('entry-cursor');
+      }
+
+      function toggleStepSelect(idx) {
+        if (selectedStep === idx) {
+          selectedStep = -1;
+          q(`.riff-step[data-idx="${idx}"]`)?.classList.remove('selected');
+        } else {
+          if (selectedStep >= 0) q(`.riff-step[data-idx="${selectedStep}"]`)?.classList.remove('selected');
+          selectedStep = idx;
+          q(`.riff-step[data-idx="${idx}"]`)?.classList.add('selected');
+        }
+        setRiffFocus(riff.id);
+      }
+
+      function clearStep(idx) {
+        riff.steps[idx].note = null;
+        riff.steps[idx].vel = 1.0;
+        const cell = q(`.riff-step[data-idx="${idx}"]`);
+        if (cell) {
+          cell.classList.remove('has-note');
+          cell.querySelector('.riff-step-note').textContent = '—';
+          const bar = cell.querySelector('.riff-step-vel');
+          if (bar) bar.style.height = '100%';
+        }
+      }
+
+      function assignNoteToStep(idx, note) {
+        // Snap to scale
+        const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+        note = snapToScale(note, riff.scaleRoot, intervals);
+        riff.steps[idx].note = note;
+        const cell = q(`.riff-step[data-idx="${idx}"]`);
+        if (cell) { cell.classList.add('has-note'); cell.querySelector('.riff-step-note').textContent = note; }
+      }
+
+      function advanceEntry() {
+        entryCursor = (entryCursor + 1) % riff.numSteps;
+        refreshEntryCursor();
+      }
+
+      // ── Step-entry REC button ──
+      const stepEntryBtn = q('.riff-stepentry-btn');
+      stepEntryBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        stepEntryActive = !stepEntryActive;
+        stepEntryBtn.classList.toggle('rec-act', stepEntryActive);
+        if (stepEntryActive) {
+          // Deselect manual selection, start at step 0 (or selectedStep)
+          entryCursor = selectedStep >= 0 ? selectedStep : 0;
+          selectedStep = -1;
+          el.querySelectorAll('.riff-step.selected').forEach(c => c.classList.remove('selected'));
+        } else {
+          el.querySelectorAll('.riff-step.entry-cursor').forEach(c => c.classList.remove('entry-cursor'));
+        }
+        buildStepGrid();
+        setRiffFocus(riff.id);
+      });
+
+      // ── Rest button ──
+      q('.riff-rest-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        if (stepEntryActive) {
+          advanceEntry();
+        } else if (selectedStep >= 0) {
+          clearStep(selectedStep);
+          // advance manual selection
+          const next = (selectedStep + 1) % riff.numSteps;
+          q(`.riff-step[data-idx="${selectedStep}"]`)?.classList.remove('selected');
+          selectedStep = next;
+          q(`.riff-step[data-idx="${next}"]`)?.classList.add('selected');
+        }
+        setRiffFocus(riff.id);
+      });
+
+      // ── Clear button ──
+      q('.riff-clear-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        for (let i = 0; i < riff.steps.length; i++) riff.steps[i].note = null;
+        riff.notes = [];
+        selectedStep = -1;
+        entryCursor = 0;
+        buildStepGrid();
+        riff.reschedule();
+        setRiffFocus(riff.id);
+      });
+
+      // ── Steps inc/dec ──
+      q('.riff-steps-inc').addEventListener('click', e => {
+        e.stopPropagation();
+        if (riff.numSteps < 64) { riff.numSteps++; buildStepGrid(); riff.reschedule(); }
+      });
+      q('.riff-steps-dec').addEventListener('click', e => {
+        e.stopPropagation();
+        if (riff.numSteps > 1) {
+          riff.numSteps--;
+          if (selectedStep >= riff.numSteps) selectedStep = -1;
+          if (entryCursor >= riff.numSteps) entryCursor = 0;
+          buildStepGrid(); riff.reschedule();
+        }
+      });
+
+      // ── Grid sync ──
+      const gridBtn = q('.riff-grid-btn');
+      const subdivSel = q('.riff-subdiv-sel');
+      const rateRow = q('.riff-rate-row');
+      subdivSel.value = riff.subdiv;
+      gridBtn.classList.toggle('act', riff.gridSync);
+      const rateSlider = q('.riff-rate-slider');
+      const rateInput = q('.riff-rate-input');
+      initCslider(rateSlider, v => parseFloat(v).toFixed(2) + 's');
+
+      function updateGridUI() {
+        const on = riff.gridSync;
+        subdivSel.style.opacity = on ? '1' : '0.4';
+        subdivSel.style.pointerEvents = on ? 'all' : 'none';
+        rateRow.style.opacity = on ? '0.3' : '1';
+        rateRow.style.pointerEvents = on ? 'none' : 'all';
+      }
+      updateGridUI();
+
+      gridBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        riff.gridSync = !riff.gridSync;
+        gridBtn.classList.toggle('act', riff.gridSync);
+        updateGridUI();
+        riff.reschedule();
+      });
+      subdivSel.addEventListener('change', e => {
+        e.stopPropagation();
+        riff.subdiv = subdivSel.value;
+        if (riff.gridSync) riff.reschedule();
+      });
+      rateInput.addEventListener('input', e => {
+        riff.rate = parseFloat(e.target.value);
+        if (!riff.gridSync) riff.reschedule();
+      });
+
+      // ── Scale controls ──
+      function applyScale() {
+        const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+        // Re-snap all existing steps to the new scale
+        for (let i = 0; i < riff.steps.length; i++) {
+          if (riff.steps[i].note) {
+            riff.steps[i].note = snapToScale(riff.steps[i].note, riff.scaleRoot, intervals);
+          }
+        }
+        // Re-snap recorded notes
+        for (const n of riff.notes) n.note = snapToScale(n.note, riff.scaleRoot, intervals);
+        buildStepGrid();
+        if (isPlaying) riff.reschedule();
+        // Update keyboard highlight
+        const kbdEl = el.querySelector('.synth-keyboard');
+        applyScaleToKeyboard(kbdEl, riff.scaleRoot, intervals);
+      }
+      q('.riff-root-sel').addEventListener('change', e => { riff.scaleRoot = e.target.value; applyScale(); });
+      q('.riff-scale-sel').addEventListener('change', e => { riff.scale = e.target.value; applyScale(); });
+
+      // ── Transform controls ──
+      q('.riff-oct-dn').addEventListener('click', e => {
+        e.stopPropagation();
+        riffShiftOctave(riff, -1); buildStepGrid(); riff.reschedule();
+      });
+      q('.riff-oct-up').addEventListener('click', e => {
+        e.stopPropagation();
+        riffShiftOctave(riff, 1); buildStepGrid(); riff.reschedule();
+      });
+      q('.riff-trans-dn').addEventListener('click', e => {
+        e.stopPropagation();
+        riffTranspose(riff, -1); buildStepGrid(); riff.reschedule();
+      });
+      q('.riff-trans-up').addEventListener('click', e => {
+        e.stopPropagation();
+        riffTranspose(riff, 1); buildStepGrid(); riff.reschedule();
+      });
+      q('.riff-harm-sel').value = riff.harmony;
+      q('.riff-harm-sel').addEventListener('change', e => {
+        e.stopPropagation();
+        riff.harmony = parseInt(e.target.value);
+      });
+
+      // ── Piano keyboard ──
+      // _snapMap: tracks original note → snapped note so noteOff releases the right pitch
+      const _snapMap = new Map();
+      const kbdProxy = {
+        color: riff.color,
+        _noteHighlight: () => {},
+        // Returns the snapped version of a note under the current scale (used by QWERTY handler)
+        snapNote: (note) => {
+          const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+          return snapToScale(note, riff.scaleRoot, intervals);
+        },
+        noteOn: (note) => {
+          setRiffFocus(riff.id);
+          const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+          const snapped = snapToScale(note, riff.scaleRoot, intervals);
+          _snapMap.set(note, snapped); // remember snap so noteOff can release correctly
+          if (riff.recording) riff.recordNoteOn(snapped);
+          if (stepEntryActive) {
+            assignNoteToStep(entryCursor, snapped);
+            advanceEntry();
+          } else if (selectedStep >= 0) {
+            assignNoteToStep(selectedStep, snapped);
+            const next = (selectedStep + 1) % riff.numSteps;
+            q(`.riff-step[data-idx="${selectedStep}"]`)?.classList.remove('selected');
+            selectedStep = next;
+            q(`.riff-step[data-idx="${next}"]`)?.classList.add('selected');
+          }
+          for (const instrId of riff.destinations) {
+            const instr = getInstrument(instrId);
+            if (!instr || instr.muted) continue;
+            if (instr instanceof SynthInstrument) instr.noteOn(snapped, 100);
+            else if (instr instanceof Sample) {
+              instr.triggerAtTime(Tone.now(), 0.5, 1.0, noteToSemis(snapped) - noteToSemis('C4'));
+            }
+          }
+        },
+        noteOff: (note) => {
+          // Use the snapped note that was actually triggered — prevents stuck notes
+          const snapped = _snapMap.get(note) ?? note;
+          _snapMap.delete(note);
+          if (riff.recording) riff.recordNoteOff(snapped);
+          for (const instrId of riff.destinations) {
+            const instr = getInstrument(instrId);
+            if (instr instanceof SynthInstrument) instr.noteOff(snapped);
+          }
+        }
+      };
+      requestAnimationFrame(() => {
+        buildPianoKeyboard(q(`#riff-kbd-${riff.id}`), kbdProxy);
+        requestAnimationFrame(() => applyScale());
+      });
+      riffKbdProxies.set(riff.id, kbdProxy);
+
+      // ── Wire port ──
+      q('.riff-wire-port').addEventListener('mousedown', e => {
+        e.stopPropagation(); e.preventDefault();
+        startRiffWireDrag(riff, e);
+      });
+
+      // ── Dest list ──
+      function updateDestList() {
+        const list = q('.riff-dest-list');
+        list.innerHTML = '';
+        for (const instrId of riff.destinations) {
+          const instr = getInstrument(instrId);
+          if (!instr) continue;
+          const item = document.createElement('div');
+          item.className = 'riff-dest-item';
+          item.innerHTML = `<span class="riff-dest-name">${(instr.name||'').substring(0,14)}</span><button class="riff-dest-unlink" title="Disconnect">✕</button>`;
+          item.querySelector('.riff-dest-unlink').addEventListener('click', e => {
+            e.stopPropagation();
+            riff.removeDestination(instrId);
+            updateDestList(); updateLfoWires();
+          });
+          list.appendChild(item);
+        }
+      }
+      updateDestList();
+
+      // ── Remove / Dup / Min ──
+      q('.riff-remove-btn').addEventListener('click', e => { e.stopPropagation(); removeRiff(riff.id); });
+      q('.riff-dup-btn').addEventListener('click', e => { e.stopPropagation(); duplicateRiff(riff); });
+      q('.riff-min-btn').addEventListener('click', e => { e.stopPropagation(); el.classList.toggle('collapsed'); });
+
+      // ── Titlebar drag ──
+      let titleMoved = false;
+      q('.riff-titlebar').addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop; titleMoved = false;
+        const ox = e.clientX, oy = e.clientY;
+        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
+        el.classList.add('dragging');
+        const mm = ev => {
+          const dx = ev.clientX - ox, dy = ev.clientY - oy;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) titleMoved = true;
+          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
+          riff.x = oL + dx + RIFF_W / 2; riff.y = oT + dy; updateLfoWires();
+        };
+        const mu = () => { el.classList.remove('dragging'); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+      });
+      q('.riff-titlebar').addEventListener('click', e => {
+        if (!e.target.closest('button') && !titleMoved) { e.stopPropagation(); el.classList.toggle('collapsed'); }
+      });
+
+      // ── Collapsed drag ──
+      let minMoved = false;
+      el.addEventListener('mousedown', e => {
+        if (!el.classList.contains('collapsed')) return;
+        e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop; minMoved = false;
+        const ox = e.clientX, oy = e.clientY;
+        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
+        el.classList.add('dragging');
+        const mm = ev => {
+          const dx = ev.clientX - ox, dy = ev.clientY - oy;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) minMoved = true;
+          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
+          riff.x = oL + dx + RIFF_W / 2; riff.y = oT + dy; updateLfoWires();
+        };
+        const mu = () => { el.classList.remove('dragging'); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+      });
+      el.addEventListener('click', e => { if (el.classList.contains('collapsed') && !minMoved) el.classList.remove('collapsed'); });
+      el.addEventListener('mousedown', () => setRiffFocus(riff.id));
+
+      el.style.zIndex = ++cardZTop;
+      cv.appendChild(el);
+      buildStepGrid();
+
+      const nodeInfo = {
+        el,
+        updateDestList,
+        clearSelectedStep: () => {
+          // Used by keydown Delete handler
+          if (stepEntryActive && entryCursor >= 0) { clearStep(entryCursor); advanceEntry(); return; }
+          if (selectedStep >= 0) clearStep(selectedStep);
+        },
+        advanceRest: () => {
+          // Used by keydown R handler
+          if (stepEntryActive) { advanceEntry(); return; }
+          if (selectedStep >= 0) {
+            clearStep(selectedStep);
+            const next = (selectedStep + 1) % riff.numSteps;
+            q(`.riff-step[data-idx="${selectedStep}"]`)?.classList.remove('selected');
+            selectedStep = next;
+            q(`.riff-step[data-idx="${next}"]`)?.classList.add('selected');
+          }
+        },
+        setPlayStep: (step) => {
+          el.querySelectorAll('.riff-step.playing').forEach(c => c.classList.remove('playing'));
+          q(`.riff-step[data-idx="${step}"]`)?.classList.add('playing');
+        },
+        moveSelection: (delta) => {
+          const base = stepEntryActive ? entryCursor : selectedStep;
+          if (base < 0 && !stepEntryActive) return;
+          const next = ((base < 0 ? 0 : base) + delta + riff.numSteps) % riff.numSteps;
+          if (stepEntryActive) {
+            entryCursor = next;
+            refreshEntryCursor();
+          } else {
+            if (selectedStep >= 0) q(`.riff-step[data-idx="${selectedStep}"]`)?.classList.remove('selected');
+            selectedStep = next;
+            q(`.riff-step[data-idx="${next}"]`)?.classList.add('selected');
+          }
+        },
+        transposeSelectedStep: (delta) => {
+          const idx = stepEntryActive ? entryCursor : selectedStep;
+          if (idx < 0 || !riff.steps[idx]?.note) return;
+          const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+          const isChromatic = intervals.length === 12;
+          const NM = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+          const rootPC = NM[riff.scaleRoot] ?? 0;
+          const dir = delta >= 0 ? 1 : -1;
+          const target = Math.max(12, Math.min(119, noteToSemis(riff.steps[idx].note) + delta));
+          let result = midiToNoteName(target);
+          if (!isChromatic) {
+            for (let d = 0; d <= 12; d++) {
+              const candidate = target + d * dir;
+              if (candidate < 12 || candidate > 119) break;
+              const offset = ((candidate % 12) - rootPC % 12 + 12) % 12;
+              if (intervals.includes(offset)) { result = midiToNoteName(candidate); break; }
+            }
+          }
+          riff.steps[idx].note = result;
+          const cell = q(`.riff-step[data-idx="${idx}"]`);
+          if (cell) cell.querySelector('.riff-step-note').textContent = result;
+          riff.reschedule();
+        }
+      };
+      riffNodes.set(riff.id, nodeInfo);
+      if (isPlaying) riff.schedule();
+      return nodeInfo;
+    }
+
+    const riffKbdProxies = new Map(); // riffId → kbdProxy (so QWERTY can call noteOn/Off)
+
+    function setRiffFocus(id) {
+      if (_activeRiffId === id) return;
+      if (_activeRiffId !== null) {
+        const prev = riffNodes.get(_activeRiffId);
+        if (prev) prev.el.classList.remove('riff-focused');
+      }
+      _activeRiffId = id;
+      if (id !== null) {
+        const cur = riffNodes.get(id);
+        if (cur) cur.el.classList.add('riff-focused');
+      }
+    }
+
+    function removeRiff(id) {
+      const riff = riffs.get(id);
+      if (!riff) return;
+      riff.unschedule();
+      const nodeInfo = riffNodes.get(id);
+      if (nodeInfo) nodeInfo.el.remove();
+      riffNodes.delete(id);
+      riffKbdProxies.delete(id);
+      riffs.delete(id);
+      if (_activeRiffId === id) _activeRiffId = null;
+      updateLfoWires();
+    }
+
+    function duplicateRiff(src) {
+      if (riffs.size >= MAX_RIFFS) return;
+      const id = nextRiffId++;
+      const riff = new RiffSequencer(id, src.x + 20, src.y + 20);
+      riff.mode = src.mode;
+      riff.numSteps = src.numSteps;
+      riff.steps = src.steps.map(s => ({ ...s }));
+      riff.notes = src.notes.map(n => ({ ...n }));
+      riff.subdiv = src.subdiv;
+      riff.gridSync = src.gridSync;
+      riff.rate = src.rate;
+      riff.loopBars = src.loopBars;
+      riff.quantize = src.quantize;
+      riffs.set(id, riff);
+      createRiffNode(riff);
+    }
+
+    function startRiffWireDrag(riff, startEvent) {
+      const wiresSvg = document.getElementById('lfo-wires');
+      const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      tempLine.classList.add('seq-wire-temp');
+      tempLine.style.stroke = riff.color;
+      wiresSvg.appendChild(tempLine);
+
+      const port = riffNodes.get(riff.id)?.el.querySelector('.riff-wire-port');
+      const portRect = port.getBoundingClientRect();
+      const sx = portRect.left + portRect.width / 2;
+      const sy = portRect.top + portRect.height / 2;
+
+      document.querySelectorAll('.tile').forEach(t => { t.style.outline = '2px dashed rgba(255,255,255,0.3)'; });
+      document.querySelectorAll('.sample-card, .synth-card').forEach(c => { c.style.outline = '2px dashed rgba(255,255,255,0.3)'; });
+
+      const mm = ev => { tempLine.setAttribute('d', `M${sx},${sy} L${ev.clientX},${ev.clientY}`); };
+      const mu = ev => {
+        document.removeEventListener('mousemove', mm);
+        document.removeEventListener('mouseup', mu);
+        tempLine.remove();
+        document.querySelectorAll('.tile').forEach(t => { t.style.outline = ''; });
+        document.querySelectorAll('.sample-card, .synth-card').forEach(c => { c.style.outline = ''; });
+
+        const target = document.elementFromPoint(ev.clientX, ev.clientY);
+        if (!target) return;
+        const card = target.closest('.sample-card, .synth-card');
+        if (card) {
+          const instrId = findSampleIdFromCard(card);
+          if (instrId !== null && (samples.has(instrId) || synths.has(instrId))) {
+            riff.addDestination(instrId);
+            riffNodes.get(riff.id)?.updateDestList();
+            updateLfoWires();
+          }
+          return;
+        }
+        const tile = target.closest('.tile');
+        if (!tile) return;
+        const instrId = parseInt(tile.id.slice(1));
+        if (isNaN(instrId) || (!samples.has(instrId) && !synths.has(instrId))) return;
+        riff.addDestination(instrId);
+        riffNodes.get(riff.id)?.updateDestList();
+        updateLfoWires();
+      };
+      document.addEventListener('mousemove', mm);
+      document.addEventListener('mouseup', mu);
+    }
+
+    // ── Chords node ──
+    function createChordsNode(chordsInst) {
+      const el = document.createElement('div');
+      el.className = 'chords-node';
+      el.id = 'chords-' + chordsInst.id;
+      el.style.left = (chordsInst.x - 95) + 'px';
+      el.style.top  = (chordsInst.y - 60) + 'px';
+      el.style.setProperty('--chords-color', chordsInst.color);
+      el.innerHTML = `
+        <div class="chords-titlebar">
+          <div class="chords-color-dot"></div>
+          <div class="chords-name">${chordsInst.name}</div>
+          <button class="chords-hdr-btn chords-remove-btn" title="Remove">🗑</button>
+          <button class="chords-hdr-btn chords-min-btn" title="Minimize">✕</button>
+        </div>
+        <div class="chords-min-footer">${chordsInst.name}</div>
+        <div class="chords-body">
+          <div class="chords-soon">Coming Soon</div>
+          <div class="chords-wire-port" title="Drag to connect"></div>
+        </div>
+      `;
+      const q = sel => el.querySelector(sel);
+      q('.chords-remove-btn').addEventListener('click', e => { e.stopPropagation(); removeChords(chordsInst.id); });
+      q('.chords-min-btn').addEventListener('click', e => { e.stopPropagation(); el.classList.toggle('collapsed'); });
+
+      let titleMoved = false;
+      q('.chords-titlebar').addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        e.preventDefault(); e.stopPropagation();
+        el.style.zIndex = ++cardZTop;
+        titleMoved = false;
+        const ox = e.clientX, oy = e.clientY;
+        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
+        el.classList.add('dragging');
+        const mm = ev => {
+          const dx = ev.clientX - ox, dy = ev.clientY - oy;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) titleMoved = true;
+          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
+          chordsInst.x = oL + dx + 95; chordsInst.y = oT + dy;
+        };
+        const mu = () => { el.classList.remove('dragging'); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+      q('.chords-titlebar').addEventListener('click', e => {
+        if (!e.target.closest('button') && !titleMoved) el.classList.toggle('collapsed');
+      });
+
+      el.style.zIndex = ++cardZTop;
+      cv.appendChild(el);
+      chordsNodes.set(chordsInst.id, { el });
+    }
+
+    function removeChords(id) {
+      chordsNodes.get(id)?.el.remove();
+      chordsNodes.delete(id);
+      chords.delete(id);
     }
 
     // ── Wire drag system ──
@@ -8546,8 +11296,8 @@
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;
 
-      // Highlight potential targets: sample card sliders + seq param sliders
-      document.querySelectorAll('.sample-card .cslider').forEach(sl => {
+      // Highlight potential targets: sample card sliders, synth card sliders + seq param sliders
+      document.querySelectorAll('.sample-card .cslider, .synth-card .cslider').forEach(sl => {
         sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
       });
       document.querySelectorAll('.seq-node .seq-steps-slider, .seq-node .seq-gate-slider').forEach(sl => {
@@ -8567,7 +11317,7 @@
         document.removeEventListener('mouseup', mu);
         tempLine.remove();
         // Remove highlights
-        document.querySelectorAll('.sample-card .cslider').forEach(sl => { sl.style.outline = ''; });
+        document.querySelectorAll('.sample-card .cslider, .synth-card .cslider').forEach(sl => { sl.style.outline = ''; });
         document.querySelectorAll('.seq-node .seq-steps-slider, .seq-node .seq-gate-slider').forEach(sl => { sl.style.outline = ''; });
 
         // Check if dropped on a target
@@ -8602,7 +11352,7 @@
           return;
         }
 
-        const cardEl = (sliderWrap || eqCanvas).closest('.sample-card');
+        const cardEl = (sliderWrap || eqCanvas).closest('.sample-card, .synth-card');
         if (!cardEl) return;
 
         let paramClass = null;
@@ -8666,19 +11416,17 @@
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;
 
-      // Highlight potential targets: tiles and open sample cards
+      // Highlight potential targets: tiles and open cards
       document.querySelectorAll('.tile').forEach(t => {
         t.style.outline = '2px dashed rgba(255,255,255,0.3)';
       });
-      document.querySelectorAll('.sample-card').forEach(c => {
+      document.querySelectorAll('.sample-card, .synth-card').forEach(c => {
         c.style.outline = '2px dashed rgba(255,255,255,0.3)';
       });
 
       const mm = ev => {
         const ex = ev.clientX, ey = ev.clientY;
-        const cx1 = sx, cy1 = sy + 40;
-        const cx2 = ex, cy2 = ey - 40;
-        tempLine.setAttribute('d', `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`);
+        tempLine.setAttribute('d', `M${sx},${sy} L${ex},${ey}`);
       };
 
       const mu = ev => {
@@ -8686,22 +11434,22 @@
         document.removeEventListener('mouseup', mu);
         tempLine.remove();
         document.querySelectorAll('.tile').forEach(t => { t.style.outline = ''; });
-        document.querySelectorAll('.sample-card').forEach(c => { c.style.outline = ''; });
+        document.querySelectorAll('.sample-card, .synth-card').forEach(c => { c.style.outline = ''; });
 
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
         if (!target) return;
 
-        // Check open sample card first, then tile
-        const card = target.closest('.sample-card');
+        // Check open card first, then tile
+        const card = target.closest('.sample-card, .synth-card');
         if (card) {
-          const sampleId = findSampleIdFromCard(card);
-          if (sampleId !== null && samples.has(sampleId)) connectSeqToSample(seq, sampleId);
+          const instrId = findSampleIdFromCard(card);
+          if (instrId !== null && (samples.has(instrId) || synths.has(instrId))) connectSeqToSample(seq, instrId);
           return;
         }
         const tile = target.closest('.tile');
         if (!tile) return;
         const sampleId = parseInt(tile.id.slice(1));
-        if (isNaN(sampleId) || !samples.has(sampleId)) return;
+        if (isNaN(sampleId) || (!samples.has(sampleId) && !synths.has(sampleId))) return;
         connectSeqToSample(seq, sampleId);
       };
 
@@ -8718,162 +11466,117 @@
 
     // ── Wire rendering ──
     // SVG is position:fixed at (0,0) so all coordinates are raw viewport coords
+    function _wire(svg, cls, color, sx, sy, ex, ey) {
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.classList.add('lfo-wire-line', cls);
+      p.style.stroke = color;
+      p.setAttribute('d', `M${sx},${sy} L${ex},${ey}`);
+      svg.appendChild(p);
+    }
+
     function updateLfoWires() {
-      const wiresSvg = document.getElementById('lfo-wires');
-      wiresSvg.querySelectorAll('.lfo-wire-line').forEach(w => w.remove());
+      const svg = document.getElementById('lfo-wires');
+      svg.querySelectorAll('.lfo-wire-line').forEach(w => w.remove());
 
-      // ── Build SVG mask: white everywhere, black over each card ──
-      let defs = wiresSvg.querySelector('defs');
-      if (!defs) {
-        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        wiresSvg.insertBefore(defs, wiresSvg.firstChild);
-      }
-      let mask = defs.querySelector('#wire-card-mask');
-      if (!mask) {
-        mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
-        mask.id = 'wire-card-mask';
-        mask.setAttribute('maskUnits', 'userSpaceOnUse');
-        mask.setAttribute('x', '-9999');
-        mask.setAttribute('y', '-9999');
-        mask.setAttribute('width', '19998');
-        mask.setAttribute('height', '19998');
-        defs.appendChild(mask);
-      }
-      mask.innerHTML = '';
-      const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      bg.setAttribute('x', '-9999'); bg.setAttribute('y', '-9999');
-      bg.setAttribute('width', '19998'); bg.setAttribute('height', '19998');
-      bg.setAttribute('fill', 'white');
-      mask.appendChild(bg);
-      document.querySelectorAll('.sample-card, .lfo-node, .seq-node').forEach(cardEl => {
-        const r = cardEl.getBoundingClientRect();
-        const mr = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        mr.setAttribute('x', r.left);
-        mr.setAttribute('y', r.top);
-        mr.setAttribute('width', r.width);
-        mr.setAttribute('height', r.height);
-        mr.setAttribute('fill', 'black');
-        mask.appendChild(mr);
-      });
-
+      // ── LFO → sample/synth wires ──
       for (const [, lfo] of lfos) {
         const nodeInfo = lfoNodes.get(lfo.id);
         if (!nodeInfo) continue;
         const port = nodeInfo.el.querySelector('.lfo-wire-port');
-        if (!port) continue;
-        // When collapsed the port is display:none — use the node's own center instead
         let sx, sy;
-        if (nodeInfo.el.classList.contains('collapsed')) {
-          const elRect = nodeInfo.el.getBoundingClientRect();
-          sx = elRect.left + elRect.width / 2;
-          sy = elRect.top + elRect.height / 2;
+        if (nodeInfo.el.classList.contains('collapsed') || !port) {
+          const r = nodeInfo.el.getBoundingClientRect();
+          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
         } else {
-          const portRect = port.getBoundingClientRect();
-          sx = portRect.left + portRect.width / 2;
-          sy = portRect.top + portRect.height / 2;
+          const r = port.getBoundingClientRect();
+          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
         }
 
         for (const d of lfo.destinations) {
-          // Find the target slider — works whether card is open or not
           const cardInfo = openCards.get(d.sampleId);
-          if (!cardInfo) continue;
-
           let targetEl = null;
-          const pInfo = LFO_PARAM_MAP[d.param];
-          if (pInfo && pInfo.isEq && !d.fxUid) {
-            targetEl = cardInfo.el.querySelector('.card-eq-canvas');
-          } else if (d.fxUid) {
-            const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${d.fxUid}"]`);
-            if (panel) {
-              if (pInfo && pInfo.isEq) targetEl = panel.querySelector('.card-eq-canvas');
-              else targetEl = panel.querySelector('.' + d.param)?.closest('.cslider');
+
+          if (cardInfo) {
+            const pInfo = LFO_PARAM_MAP[d.param];
+            if (pInfo && pInfo.isEq && !d.fxUid) {
+              targetEl = cardInfo.el.querySelector('.card-eq-canvas');
+            } else if (d.fxUid) {
+              const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${d.fxUid}"]`);
+              if (panel) {
+                if (pInfo && pInfo.isEq) targetEl = panel.querySelector('.card-eq-canvas');
+                else targetEl = panel.querySelector('.' + d.param)?.closest('.cslider');
+              }
+            } else {
+              const slider = cardInfo.el.querySelector('.' + d.param);
+              if (slider) targetEl = slider.closest('.cslider') || slider;
             }
+            if (targetEl) {
+              const r = targetEl.getBoundingClientRect();
+              if (r.width === 0 && r.height === 0) targetEl = null;
+            }
+            if (!targetEl) targetEl = cardInfo.el;
           } else {
-            const slider = cardInfo.el.querySelector('.' + d.param);
-            if (slider) targetEl = slider.closest('.cslider') || slider;
+            targetEl = document.getElementById('t' + d.sampleId);
           }
 
           if (!targetEl) continue;
-          const sliderRect = targetEl.getBoundingClientRect();
-          const ex = sliderRect.left + sliderRect.width / 2;
-          const ey = sliderRect.top + sliderRect.height / 2;
-
-          const cx1 = sx, cy1 = sy + 40;
-          const cx2 = ex, cy2 = ey - 40;
-          const pathD = `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
-
-          // Dotted underlay — always drawn, shows through cards as a hint
-          const under = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          under.classList.add('lfo-wire-line', 'lfo-wire-under');
-          under.style.stroke = lfo.color;
-          under.setAttribute('d', pathD);
-          wiresSvg.appendChild(under);
-
-          // Solid overlay — masked out where cards sit
-          const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          over.classList.add('lfo-wire-line', 'lfo-wire-over');
-          over.style.stroke = lfo.color;
-          over.setAttribute('d', pathD);
-          over.setAttribute('mask', 'url(#wire-card-mask)');
-          wiresSvg.appendChild(over);
+          const tr = targetEl.getBoundingClientRect();
+          _wire(svg, 'lfo-wire-line', lfo.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
         }
       }
 
-      // ── Seq wires (seq wire-port → sample tile or waveform canvas) ──
-      wiresSvg.querySelectorAll('.seq-wire-line').forEach(w => w.remove());
+      // ── Seq → sample/synth wires ──
+      svg.querySelectorAll('.seq-wire-line').forEach(w => w.remove());
       for (const [, seq] of seqs) {
         const nodeInfo = seqNodes.get(seq.id);
         if (!nodeInfo || !seq.destinations.length) continue;
-
         const port = nodeInfo.el.querySelector('.seq-wire-port');
         let sx, sy;
         if (nodeInfo.el.classList.contains('collapsed') || !port) {
-          const elRect = nodeInfo.el.getBoundingClientRect();
-          sx = elRect.left + elRect.width / 2;
-          sy = elRect.top + elRect.height / 2;
+          const r = nodeInfo.el.getBoundingClientRect();
+          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
         } else {
-          const portRect = port.getBoundingClientRect();
-          sx = portRect.left + portRect.width / 2;
-          sy = portRect.top + portRect.height / 2;
+          const r = port.getBoundingClientRect();
+          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
         }
-
         for (const sampleId of seq.destinations) {
           const cardInfo = openCards.get(sampleId);
-          let targetEl;
-          if (cardInfo) {
-            // Point to the center of the waveform canvas when card is open
-            targetEl = cardInfo.el.querySelector('.card-wave-canvas') || cardInfo.el;
-          } else {
-            targetEl = document.getElementById('t' + sampleId);
-          }
+          let targetEl = cardInfo
+            ? (cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas') || cardInfo.el)
+            : document.getElementById('t' + sampleId);
           if (!targetEl) continue;
-          const tRect = targetEl.getBoundingClientRect();
-          const ex = tRect.left + tRect.width / 2;
-          const ey = tRect.top + tRect.height / 2;
-
-          const cx1 = sx, cy1 = sy + 40;
-          const cx2 = ex, cy2 = ey - 40;
-          const pathD = `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
-
-          // Dotted underlay (shows through cards)
-          const under = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          under.classList.add('seq-wire-line', 'lfo-wire-under');
-          under.style.stroke = seq.color;
-          under.setAttribute('d', pathD);
-          wiresSvg.appendChild(under);
-
-          // Solid overlay masked out where cards sit
-          const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          over.classList.add('seq-wire-line', 'lfo-wire-over');
-          over.style.stroke = seq.color;
-          over.setAttribute('d', pathD);
-          over.setAttribute('mask', 'url(#wire-card-mask)');
-          wiresSvg.appendChild(over);
+          const tr = targetEl.getBoundingClientRect();
+          _wire(svg, 'seq-wire-line', seq.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
         }
       }
 
-      // ── LFO→Seq wires ──
-      wiresSvg.querySelectorAll('.lfo-seq-wire').forEach(w => w.remove());
+      // ── Riff → sample/synth wires ──
+      svg.querySelectorAll('.riff-wire-line').forEach(w => w.remove());
+      for (const [, riff] of riffs) {
+        const nodeInfo = riffNodes.get(riff.id);
+        if (!nodeInfo || !riff.destinations.length) continue;
+        const port = nodeInfo.el.querySelector('.riff-wire-port');
+        let sx, sy;
+        if (nodeInfo.el.classList.contains('collapsed') || !port) {
+          const r = nodeInfo.el.getBoundingClientRect();
+          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
+        } else {
+          const r = port.getBoundingClientRect();
+          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
+        }
+        for (const instrId of riff.destinations) {
+          const cardInfo = openCards.get(instrId);
+          let targetEl = cardInfo
+            ? (cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas') || cardInfo.el)
+            : document.getElementById('t' + instrId);
+          if (!targetEl) continue;
+          const tr = targetEl.getBoundingClientRect();
+          _wire(svg, 'riff-wire-line', riff.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
+        }
+      }
+
+      // ── LFO → Seq wires ──
+      svg.querySelectorAll('.lfo-seq-wire').forEach(w => w.remove());
       for (const [, lfo] of lfos) {
         if (!lfo.seqDestinations.length) continue;
         const lfoNodeInfo = lfoNodes.get(lfo.id);
@@ -8881,39 +11584,19 @@
         const lfoPort = lfoNodeInfo.el.querySelector('.lfo-wire-port');
         let lsx, lsy;
         if (lfoNodeInfo.el.classList.contains('collapsed') || !lfoPort) {
-          const elRect = lfoNodeInfo.el.getBoundingClientRect();
-          lsx = elRect.left + elRect.width / 2;
-          lsy = elRect.top + elRect.height / 2;
+          const r = lfoNodeInfo.el.getBoundingClientRect();
+          lsx = r.left + r.width / 2; lsy = r.top + r.height / 2;
         } else {
-          const portRect = lfoPort.getBoundingClientRect();
-          lsx = portRect.left + portRect.width / 2;
-          lsy = portRect.top + portRect.height / 2;
+          const r = lfoPort.getBoundingClientRect();
+          lsx = r.left + r.width / 2; lsy = r.top + r.height / 2;
         }
         for (const d of lfo.seqDestinations) {
           const seqNodeInfo = seqNodes.get(d.seqId);
           if (!seqNodeInfo) continue;
-          const inputCls = d.param === 'numSteps' ? '.seq-steps-slider' : '.seq-gate-slider';
-          const sliderEl = seqNodeInfo.el.querySelector(inputCls);
+          const sliderEl = seqNodeInfo.el.querySelector(d.param === 'numSteps' ? '.seq-steps-slider' : '.seq-gate-slider');
           if (!sliderEl) continue;
-          const sRect = sliderEl.getBoundingClientRect();
-          const ex = sRect.left + sRect.width / 2;
-          const ey = sRect.top + sRect.height / 2;
-          const cx1 = lsx, cy1 = lsy + 30;
-          const cx2 = ex, cy2 = ey - 30;
-          const pathD = `M${lsx},${lsy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
-
-          const under = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          under.classList.add('lfo-seq-wire', 'lfo-wire-under');
-          under.style.stroke = lfo.color;
-          under.setAttribute('d', pathD);
-          wiresSvg.appendChild(under);
-
-          const over = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          over.classList.add('lfo-seq-wire', 'lfo-wire-over');
-          over.style.stroke = lfo.color;
-          over.setAttribute('d', pathD);
-          over.setAttribute('mask', 'url(#wire-card-mask)');
-          wiresSvg.appendChild(over);
+          const sr = sliderEl.getBoundingClientRect();
+          _wire(svg, 'lfo-seq-wire', lfo.color, lsx, lsy, sr.left + sr.width / 2, sr.top + sr.height / 2);
         }
       }
     }
@@ -9014,12 +11697,26 @@
 
         // Apply modulation to destinations
         for (const d of lfo.destinations) {
-          const s = samples.get(d.sampleId);
-          if (!s || !(s instanceof Sample)) continue;
+          const s = samples.get(d.sampleId) || synths.get(d.sampleId);
+          if (!s) continue;
           const pInfo = LFO_PARAM_MAP[d.param];
           if (!pInfo) continue;
 
           const modVal = d.min + val * (d.max - d.min);
+
+          // Synth instrument modulation
+          if (pInfo.isSynth && s instanceof SynthInstrument) {
+            s[pInfo.prop] = modVal;
+            if (pInfo.updater && typeof s[pInfo.updater] === 'function') s[pInfo.updater]();
+            const cardInfo = openCards.get(d.sampleId);
+            if (cardInfo) {
+              const slider = cardInfo.el.querySelector('.' + d.param);
+              if (slider) { slider.value = modVal; slider.closest('.cslider')?._syncPos?.(); }
+            }
+            continue;
+          }
+          // Allow FX chain modulation on synths too; skip only for sample-specific paths
+          if (!(s instanceof Sample) && !d.fxUid) continue;
 
           // Apply to Sample / FX / EQ
           if (d.fxUid) {
@@ -9138,6 +11835,77 @@
     }
 
     // ── Add LFO button ──
+    // ── + SAMPLER / + SYNTH / + DRUMS buttons ──
+    document.getElementById('btn-add-sampler').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      document.getElementById('file-input').click();
+    });
+
+    (function() {
+      const picker = document.getElementById('synth-type-picker');
+      const btn    = document.getElementById('btn-add-synth');
+      const addSynth = (type) => {
+        if (!audioReady) { alert('Please initialize audio first.'); return; }
+        const id = nextId++;
+        const pos = findFreePosition(TW, TH);
+        const x = pos.x + TW / 2, y = pos.y + TH / 2;
+        let synth;
+        if (type === 'analog') synth = new AnalogSynth(id, 'ANALOG ' + id, x, y);
+        else                   synth = new FMSynthInstrument(id, 'FM ' + id, x, y);
+        synths.set(id, synth);
+        const t = createSynthTile(synth);
+        openSynthCard(id, t);
+      };
+      btn.addEventListener('click', (e) => {
+        if (!audioReady) { alert('Please initialize audio first.'); return; }
+        const rect = btn.getBoundingClientRect();
+        picker.style.left = rect.left + 'px';
+        picker.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+        picker.style.top = 'auto';
+        picker.classList.toggle('open');
+        e.stopPropagation();
+      });
+      picker.querySelectorAll('.stp-item:not(.stp-disabled)').forEach(item => {
+        item.addEventListener('click', () => {
+          picker.classList.remove('open');
+          addSynth(item.dataset.type);
+        });
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#synth-type-picker') && !e.target.closest('#btn-add-synth'))
+          picker.classList.remove('open');
+      });
+    })();
+
+    document.getElementById('btn-add-drums').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      const id = nextId++;
+      const pos = findFreePosition(TW, TH);
+      const x = pos.x + TW / 2, y = pos.y + TH / 2;
+      const drum = new DrumMachine(id, 'DRUMS ' + id, x, y);
+      drums.set(id, drum);
+      const t = createSynthTile(drum);
+      openSynthCard(id, t);
+    });
+
+    // SysEx file loader
+    document.getElementById('syx-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      const buf = await file.arrayBuffer();
+      const targetId = document.getElementById('syx-input')._targetSynthId;
+      const synth = synths.get(targetId);
+      if (!(synth instanceof FMSynthInstrument)) return;
+      if (!synth.loadSysEx(buf)) { alert('Could not parse SysEx file. Expected DX7 32-voice bank (.syx, 4104 bytes).'); return; }
+      // Refresh open card
+      if (openCards.has(targetId)) {
+        closeSynthCard(targetId);
+        const t = document.getElementById('t' + targetId);
+        openSynthCard(targetId, t);
+      }
+    });
+
     document.getElementById('btn-add-lfo').addEventListener('click', () => {
       const id = nextLfoId++;
       const pos = findFreePosition(LFO_W, 200);
@@ -9204,6 +11972,27 @@
       createSeqNode(seq);
     });
 
+    // ── Add Riff button ──
+    document.getElementById('btn-add-riff').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      if (riffs.size >= MAX_RIFFS) return;
+      const id = nextRiffId++;
+      const pos = findFreePosition(RIFF_W, 360);
+      const riff = new RiffSequencer(id, pos.x + RIFF_W / 2, pos.y + 160);
+      riffs.set(id, riff);
+      createRiffNode(riff);
+    });
+
+    // ── Add Chords button ──
+    document.getElementById('btn-add-chords').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      const id = nextChordsId++;
+      const pos = findFreePosition(190, 120);
+      const ch = new ChordsInstrument(id, pos.x + 95, pos.y + 60);
+      chords.set(id, ch);
+      createChordsNode(ch);
+    });
+
     // ════════════════════════════════════════════════════
     // DRAG & DROP
     // ════════════════════════════════════════════════════
@@ -9256,15 +12045,113 @@
     // ════════════════════════════════════════════════════
     // KEYBOARD
     // ════════════════════════════════════════════════════
+    // Track held QWERTY notes so we don't re-trigger on keydown repeat
+    const _riffHeldKeys = new Set();
+
     document.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+      // ── QWERTY keyboard → active riff ──
+      if (_activeRiffId !== null && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const riff = riffs.get(_activeRiffId);
+        const proxy = riffKbdProxies.get(_activeRiffId);
+        const nodeInfo = riffNodes.get(_activeRiffId);
+        if (riff && proxy && nodeInfo) {
+          // Octave shift: z / x
+          if (e.code === 'KeyZ') {
+            e.preventDefault();
+            const oct = nodeInfo.el.querySelector('.synth-oct-btn:first-child');
+            if (oct) oct.click();
+            return;
+          }
+          if (e.code === 'KeyX') {
+            e.preventDefault();
+            const oct = nodeInfo.el.querySelector('.synth-oct-btn:last-child');
+            if (oct) oct.click();
+            return;
+          }
+          // Delete / Backspace → clear selected/cursor step
+          if ((e.code === 'Delete' || e.code === 'Backspace') && !e.repeat) {
+            e.preventDefault();
+            nodeInfo.clearSelectedStep?.();
+            return;
+          }
+          // R → rest (advance without assigning a note)
+          if (e.code === 'KeyR' && !e.repeat) {
+            e.preventDefault();
+            nodeInfo.advanceRest?.();
+            return;
+          }
+          // Space → rest on selected/cursor step (without advancing playback)
+          if (e.code === 'Space' && !e.repeat) {
+            e.preventDefault();
+            nodeInfo.advanceRest?.();
+            return;
+          }
+          // Arrow left/right → move step selection
+          if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+            e.preventDefault();
+            nodeInfo.moveSelection?.(e.code === 'ArrowRight' ? 1 : -1);
+            return;
+          }
+          // Arrow up/down → transpose selected step by one semitone (scale-snapped)
+          if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+            e.preventDefault();
+            nodeInfo.transposeSelectedStep?.(e.code === 'ArrowUp' ? 1 : -1);
+            return;
+          }
+          const mapping = RIFF_QWERTY_MAP[e.code];
+          if (mapping && !e.repeat) {
+            e.preventDefault();
+            if (_riffHeldKeys.has(e.code)) return;
+            _riffHeldKeys.add(e.code);
+            // Compute full note name from current keyboard octave
+            const kbdEl = nodeInfo.el.querySelector('.synth-keyboard');
+            const firstKey = kbdEl?.querySelector('.sk-key-white');
+            const baseOct = firstKey ? parseInt(firstKey.dataset.note.replace(/[A-Za-z#b]/g,'')) : 3;
+            const note = mapping[0] + (baseOct + mapping[1]);
+            proxy.noteOn(note, 100);
+            proxy._noteHighlight?.(proxy.snapNote?.(note) ?? note, true);
+            return;
+          }
+        }
+      }
+
       if (e.code === 'Space') {
         e.preventDefault();
         if (audioReady) isPlaying ? pauseAll() : playAll();
       }
       if (e.key === '.') stopAll();
-      if (e.key === 'Escape') { for (const id of [...openCards.keys()]) closeCard(id); }
+      if (e.key === 'Escape') {
+        for (const id of [...openCards.keys()]) closeCard(id);
+        setRiffFocus(null);
+      }
     });
+
+    document.addEventListener('keyup', e => {
+      if (_activeRiffId === null) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const mapping = RIFF_QWERTY_MAP[e.code];
+      if (!mapping) return;
+      _riffHeldKeys.delete(e.code);
+      const riff = riffs.get(_activeRiffId);
+      const proxy = riffKbdProxies.get(_activeRiffId);
+      const nodeInfo = riffNodes.get(_activeRiffId);
+      if (!riff || !proxy || !nodeInfo) return;
+      const kbdEl = nodeInfo.el.querySelector('.synth-keyboard');
+      const firstKey = kbdEl?.querySelector('.sk-key-white');
+      const baseOct = firstKey ? parseInt(firstKey.dataset.note.replace(/[A-Za-z#b]/g,'')) : 3;
+      const note = mapping[0] + (baseOct + mapping[1]);
+      proxy.noteOff(note);
+      proxy._noteHighlight?.(proxy.snapNote?.(note) ?? note, false);
+    });
+
+    // Clicking away from riff nodes clears focus (but not if clicking inside a riff)
+    document.addEventListener('mousedown', e => {
+      if (_activeRiffId !== null && !e.target.closest('.riff-node')) {
+        setRiffFocus(null);
+      }
+    }, true);
 
     // ════════════════════════════════════════════════════
     // INIT
