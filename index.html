@@ -3107,6 +3107,14 @@
       'fm-mdec':  { prop: 'modDecay',    min: 0.001, max: 5, label: 'Mod. Decay',   isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
       'fm-msus':  { prop: 'modSustain',  min: 0,     max: 1, label: 'Mod. Sustain', isSynth: true, updater: 'updateModEnv',   fmtVal: v => Math.round(v * 100) + '%' },
       'fm-mrel':  { prop: 'modRelease',  min: 0.001, max: 8, label: 'Mod. Release', isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
+      // Karplus-Strong synth params
+      'kp-charvar':   { prop: 'characterVariation',    min: 0, max: 1, label: 'Char Var',  isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      'kp-sdamp':     { prop: 'stringDamping',         min: 0, max: 1, label: 'Str Damp',  isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      'kp-sdampvar':  { prop: 'stringDampingVariation',min: 0, max: 1, label: 'StrDmpVar', isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      'kp-pdamp':     { prop: 'pluckDamping',          min: 0, max: 1, label: 'Plk Damp',  isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      'kp-pdampvar':  { prop: 'pluckDampingVariation', min: 0, max: 1, label: 'PlkDmpVar', isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      'kp-tension':   { prop: 'stringTension',         min: 0, max: 1, label: 'Tension',   isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      'kp-spread':    { prop: 'stereoSpread',          min: 0, max: 1, label: 'Spread',    isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
       // Drum machine pitch params
       'dm-pitch-Kick':  { prop: 'pitches', subProp: 'Kick',  min: -12, max: 12, label: 'Kick Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
       'dm-pitch-Snare': { prop: 'pitches', subProp: 'Snare', min: -12, max: 12, label: 'Snare Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
@@ -5050,6 +5058,16 @@
         if (this._wtBridge) { try { this._wtBridge.dispose(); } catch(e) {} this._wtBridge = null; }
         if (this._poly) { try { this._poly.releaseAll(); this._poly.dispose(); } catch(e) {} this._poly = null; }
         if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }
+        // Karplus voices
+        if (this._kpVoices) {
+          const _kctx = Tone.context.rawContext; const _know = _kctx.currentTime;
+          for (const v of this._kpVoices) {
+            try { v.envGain.gain.cancelScheduledValues(_know); v.envGain.gain.setValueAtTime(0, _know); } catch(e) {}
+            try { v.src.stop(_know + 0.001); } catch(e) {}
+          }
+          this._kpVoices = null;
+        }
+        if (this._kpBridge) { try { this._kpBridge.dispose(); } catch(e) {} this._kpBridge = null; }
       }
       changeSynthType(newType) {
         if (this.synthType === newType) return;
@@ -5086,6 +5104,19 @@
             this[m] = WavetableSynth.prototype[m].bind(this);
           });
           this.updateWave();
+        } else if (newType === 'karplus') {
+          this.synthType = 'karplus';
+          this.characterVariation = 0.5; this.stringDamping = 0.5;
+          this.stringDampingVariation = 0.25; this.stringDampingCalc = 'magic';
+          this.stringTension = 0.0; this.pluckDamping = 0.5;
+          this.pluckDampingVariation = 0.25; this.stereoSpread = 0.2;
+          this.bodyResonation = 'simple';
+          this._kpVoices = [];
+          this._kpBridge = new Tone.Gain(0.5).connect(this.pan);
+          ['noteOn','noteOff','allNotesOff','triggerAtTime',
+           '_lp','_smoothingFactor','_pluckCoeff','_generateBuffer','_makeVoice'].forEach(m => {
+            this[m] = KarplusSynth.prototype[m].bind(this);
+          });
         }
         const badge = document.querySelector(`#t${this.id} .tile-synth-badge`);
         if (badge) badge.textContent = newType.toUpperCase();
@@ -5484,6 +5515,195 @@
       dispose() {
         this.allNotesOff();
         if (this._wtBridge) { try { this._wtBridge.dispose(); } catch(e) {} this._wtBridge = null; }
+        super.dispose();
+      }
+    }
+
+    // ── Karplus-Strong physical modeling synth ──
+    // Algorithm ported from mrahtz/javascript-karplus-strong (MIT)
+    class KarplusSynth extends SynthInstrument {
+      constructor(id, name, x, y) {
+        super(id, name, x, y);
+        this.synthType              = 'karplus';
+        // String parameters
+        this.characterVariation     = 0.5;   // noise randomness (0–1)
+        this.stringDamping          = 0.5;   // decay speed (0–1)
+        this.stringDampingVariation = 0.25;  // per-note decay variation (0–1)
+        this.stringDampingCalc      = 'magic'; // 'magic' | 'direct'
+        this.stringTension          = 0.0;   // inharmonicity (0–1)
+        // Pluck parameters
+        this.pluckDamping           = 0.5;   // spectral brightness of pluck (0–1)
+        this.pluckDampingVariation  = 0.25;  // per-note brightness variation (0–1)
+        // Output
+        this.stereoSpread           = 0.2;   // L/R spread (0–1)
+        this.bodyResonation         = 'simple'; // 'none' | 'simple'
+        this._kpVoices              = [];
+        this._kpBridge              = new Tone.Gain(0.5).connect(this.pan);
+      }
+
+      // Low-pass filter: sf * input + (1-sf) * lastOutput
+      _lp(lastOut, input, sf) { return sf * input + (1 - sf) * lastOut; }
+
+      // Compute smoothing factor from stringDamping + per-note variation
+      _smoothingFactor(N) {
+        let sf;
+        if (this.stringDampingCalc === 'direct') {
+          sf = Math.max(0.1, Math.min(0.99, this.stringDamping));
+        } else {
+          // "magic": normalise per period so all pitches feel equally damped
+          // target per-period gain G = stringDamping, convert to per-sample sf
+          const G = Math.max(0.001, Math.min(0.9999, this.stringDamping));
+          sf = Math.pow(G, 1 / N);
+        }
+        // Apply variation (range ± variation * (distance to limits))
+        if (this.stringDampingVariation > 0) {
+          const lo = sf - (sf - 0.1) * this.stringDampingVariation;
+          const hi = sf + (0.9999 - sf) * this.stringDampingVariation;
+          sf = lo + Math.random() * (hi - lo);
+        }
+        return Math.max(0.1, Math.min(0.9999, sf));
+      }
+
+      // Compute pluck damping coefficient with variation
+      _pluckCoeff() {
+        const pd = Math.max(0.1, Math.min(0.9, this.pluckDamping));
+        const v  = this.pluckDampingVariation;
+        const lo = pd - (pd - 0.1) * v;
+        const hi = pd + (0.9 - pd) * v;
+        return lo + Math.random() * (hi - lo);
+      }
+
+      _generateBuffer(freq, vel) {
+        const ctx = Tone.context.rawContext;
+        const sr  = ctx.sampleRate;
+        const N   = Math.max(2, Math.round(sr / freq)); // one period
+
+        // Seed noise (one period of random values)
+        const seed = new Float32Array(N);
+        for (let i = 0; i < N; i++) seed[i] = Math.random() * 2 - 1;
+
+        const sf    = this._smoothingFactor(N);
+        const pc    = this._pluckCoeff();
+        const skip  = Math.floor(this.stringTension * N); // tension: skip samples
+        const cv    = this.characterVariation;
+
+        // Fixed 2-second output buffer
+        const sampleCount = Math.round(sr * 2);
+        const output = new Float32Array(sampleCount);
+        let lastOut = 0, curIn = 0;
+
+        for (let i = 0; i < sampleCount; i++) {
+          if (i < N) {
+            // First period: feed pluck-damped noise as excitation
+            let noise = seed[i];
+            noise = noise * (1 - cv) + cv * (Math.random() * 2 - 1);
+            noise *= vel;
+            curIn = this._lp(curIn, noise, pc);
+          } else if (this.stringTension < 1.0) {
+            // Feedback from ~one period ago with tension offset
+            curIn = output[i - N + skip] || 0;
+          } else {
+            curIn = 0;
+          }
+          const out = this._lp(lastOut, curIn, sf);
+          output[i] = out;
+          lastOut = out;
+        }
+
+        // Body resonation (simple mode — two biquad resonators + DC-remove)
+        if (this.bodyResonation === 'simple') {
+          let r00=0,f00=0,r10=0,f10=0,f0=0,hpOut=0,hpIn=0;
+          const c0 = 2*Math.sin(Math.PI*3.4375/44100);
+          const c1 = 2*Math.sin(Math.PI*6.124928687214833/44100);
+          const r0=0.98, r1=0.98, hpSF=0.999;
+          for (let i = 0; i < sampleCount; i++) {
+            r00 = r00*r0 + (f0-f00)*c0;
+            f00 = f00 + r00 - f00*f00*f00*0.16667;
+            r10 = r10*r1 + (f0-f10)*c1;
+            f10 = f10 + r10 - f10*f10*f10*0.16667;
+            f0 = output[i];
+            const res = f0 + (f00+f10)*2;
+            const hp = hpSF*hpOut + hpSF*(res-hpIn);
+            output[i] = hp; hpOut = hp; hpIn = res;
+          }
+        }
+
+        // Fade last 10% to prevent clicks at buffer end
+        const tailSamples = Math.floor(sampleCount * 0.1);
+        const tailStart   = sampleCount - tailSamples;
+        for (let i = 0; i < tailSamples; i++) {
+          output[tailStart + i] *= 1 - i / tailSamples;
+        }
+
+        const buf = ctx.createBuffer(1, sampleCount, sr);
+        buf.getChannelData(0).set(output);
+        return buf;
+      }
+
+      _makeVoice(freq, time, vel) {
+        const ctx = Tone.context.rawContext;
+        const buf = this._generateBuffer(freq, vel);
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf; src.loop = false;
+
+        // Stereo: L/R split via a stereo panner
+        const spread = (Math.random() * 2 - 1) * this.stereoSpread;
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = spread;
+
+        const envGain = ctx.createGain();
+        envGain.gain.value = 1;
+
+        src.connect(panner);
+        panner.connect(envGain);
+        envGain.connect(this._kpBridge.input);
+        src.start(time);
+        // auto-cleanup after buffer finishes
+        src.onended = () => {
+          try { panner.disconnect(); envGain.disconnect(); } catch(e) {}
+          const idx = this._kpVoices.indexOf(voice);
+          if (idx >= 0) this._kpVoices.splice(idx, 1);
+        };
+        const voice = { freq, src, panner, envGain };
+        return voice;
+      }
+
+      noteOn(note, vel = 100) {
+        this._noteHighlight(note, true);
+        if (this._kpVoices.length >= 16) {
+          const old = this._kpVoices.shift();
+          try { old.envGain.gain.setValueAtTime(0, Tone.context.rawContext.currentTime); } catch(e) {}
+        }
+        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), Tone.context.rawContext.currentTime, vel / 127 * 0.8);
+        v.note = note;
+        this._kpVoices.push(v);
+      }
+
+      noteOff(note) {
+        // Plucked strings ring out naturally — just unhighlight the key
+        this._noteHighlight(note, false);
+      }
+
+      allNotesOff() {
+        const now = Tone.context.rawContext.currentTime;
+        for (const v of this._kpVoices) {
+          try { v.envGain.gain.setTargetAtTime(0, now, 0.05); v.src.stop(now + 0.3); } catch(e) {}
+        }
+        this._kpVoices = [];
+      }
+
+      triggerAtTime(note, dur, time, vel) {
+        this._noteHighlight(note, true);
+        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), time, Math.min(vel, 1.0) * 0.8);
+        v.note = note;
+        this._kpVoices.push(v);
+        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+      }
+
+      dispose() {
+        this.allNotesOff();
+        if (this._kpBridge) { try { this._kpBridge.dispose(); } catch(e) {} this._kpBridge = null; }
         super.dispose();
       }
     }
@@ -6810,6 +7030,70 @@
         qs('.wt-dec').addEventListener('input',    () => { synth.decay        = parseFloat(qs('.wt-dec').value);    });
         qs('.wt-sus').addEventListener('input',    () => { synth.sustain      = parseFloat(qs('.wt-sus').value);    });
         qs('.wt-rel').addEventListener('input',    () => { synth.release      = parseFloat(qs('.wt-rel').value);    });
+
+      } else if (synth.synthType === 'karplus') {
+        const fmtD2 = v => parseFloat(v).toFixed(2);
+        typeBody.innerHTML = `
+          <div class="card-accordion">
+            <div class="card-acc-hdr open">STRING</div>
+            <div class="card-acc-body open"><div class="csec">
+              <div class="crow"><span class="clbl">Str Damp</span>${mkCsl('kp-sdamp','0','1','0.01',synth.stringDamping)}</div>
+              <div class="crow"><span class="clbl">Damp Var</span>${mkCsl('kp-sdampvar','0','1','0.01',synth.stringDampingVariation)}</div>
+              <div class="crow"><span class="clbl">Tension</span>${mkCsl('kp-tension','0','0.99','0.01',synth.stringTension)}</div>
+              <div class="synth-row" style="margin-bottom:6px;margin-top:4px">
+                <div class="synth-lbl">Damp Calc</div>
+                <div class="synth-btn-row" style="flex:1">
+                  <button class="synth-btn ${synth.stringDampingCalc==='magic'?'act':''}"  data-sdcalc="magic">Magic</button>
+                  <button class="synth-btn ${synth.stringDampingCalc==='direct'?'act':''}" data-sdcalc="direct">Direct</button>
+                </div>
+              </div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr open">PLUCK</div>
+            <div class="card-acc-body open"><div class="csec">
+              <div class="crow"><span class="clbl">Plk Damp</span>${mkCsl('kp-pdamp','0','1','0.01',synth.pluckDamping)}</div>
+              <div class="crow"><span class="clbl">Plk Var</span>${mkCsl('kp-pdampvar','0','1','0.01',synth.pluckDampingVariation)}</div>
+              <div class="crow"><span class="clbl">Char Var</span>${mkCsl('kp-charvar','0','1','0.01',synth.characterVariation)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">OUTPUT</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Spread</span>${mkCsl('kp-spread','0','1','0.01',synth.stereoSpread)}</div>
+              <div class="synth-row" style="margin-bottom:6px;margin-top:4px">
+                <div class="synth-lbl">Body Res</div>
+                <div class="synth-btn-row" style="flex:1">
+                  <button class="synth-btn ${synth.bodyResonation==='none'?'act':''}"   data-body="none">None</button>
+                  <button class="synth-btn ${synth.bodyResonation==='simple'?'act':''}" data-body="simple">Simple</button>
+                </div>
+              </div>
+            </div></div>
+          </div>`;
+
+        initCslider(qs('.kp-sdamp').closest('.cslider'),    fmtD2);
+        initCslider(qs('.kp-sdampvar').closest('.cslider'), fmtD2);
+        initCslider(qs('.kp-tension').closest('.cslider'),  fmtD2);
+        initCslider(qs('.kp-pdamp').closest('.cslider'),    fmtD2);
+        initCslider(qs('.kp-pdampvar').closest('.cslider'), fmtD2);
+        initCslider(qs('.kp-charvar').closest('.cslider'),  fmtD2);
+        initCslider(qs('.kp-spread').closest('.cslider'),   fmtD2);
+
+        qas('[data-sdcalc]').forEach(btn => btn.addEventListener('click', () => {
+          synth.stringDampingCalc = btn.dataset.sdcalc;
+          qas('[data-sdcalc]').forEach(b => b.classList.toggle('act', b.dataset.sdcalc === synth.stringDampingCalc));
+        }));
+        qas('[data-body]').forEach(btn => btn.addEventListener('click', () => {
+          synth.bodyResonation = btn.dataset.body;
+          qas('[data-body]').forEach(b => b.classList.toggle('act', b.dataset.body === synth.bodyResonation));
+        }));
+        qs('.kp-sdamp').addEventListener('input',    () => { synth.stringDamping          = parseFloat(qs('.kp-sdamp').value); });
+        qs('.kp-sdampvar').addEventListener('input', () => { synth.stringDampingVariation = parseFloat(qs('.kp-sdampvar').value); });
+        qs('.kp-tension').addEventListener('input',  () => { synth.stringTension          = parseFloat(qs('.kp-tension').value); });
+        qs('.kp-pdamp').addEventListener('input',    () => { synth.pluckDamping           = parseFloat(qs('.kp-pdamp').value); });
+        qs('.kp-pdampvar').addEventListener('input', () => { synth.pluckDampingVariation  = parseFloat(qs('.kp-pdampvar').value); });
+        qs('.kp-charvar').addEventListener('input',  () => { synth.characterVariation     = parseFloat(qs('.kp-charvar').value); });
+        qs('.kp-spread').addEventListener('input',   () => { synth.stereoSpread           = parseFloat(qs('.kp-spread').value); });
       }
     }
 
@@ -6830,6 +7114,7 @@
             <option value="analog"${synth.synthType==='analog'?' selected':''}>Analog</option>
             <option value="fm"${synth.synthType==='fm'?' selected':''}>FM</option>
             <option value="wavetable"${synth.synthType==='wavetable'?' selected':''}>Wavetable</option>
+            <option value="karplus"${synth.synthType==='karplus'?' selected':''}>Karplus</option>
           </select>
           <button class="card-dup" title="Duplicate">&#x29C9;</button>
           <button class="card-remove" title="Remove">&#x1F5D1;</button>
@@ -7082,6 +7367,15 @@
           attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
         });
         dup.updateWave();
+      } else if (synth.synthType === 'karplus') {
+        dup = new KarplusSynth(id, synth.name, synth.x + offset, synth.y + offset);
+        Object.assign(dup, {
+          characterVariation: synth.characterVariation,
+          stringDamping: synth.stringDamping, stringDampingVariation: synth.stringDampingVariation,
+          stringDampingCalc: synth.stringDampingCalc, stringTension: synth.stringTension,
+          pluckDamping: synth.pluckDamping, pluckDampingVariation: synth.pluckDampingVariation,
+          stereoSpread: synth.stereoSpread, bodyResonation: synth.bodyResonation,
+        });
       } else if (synth.synthType === 'drums') {
         dup = new DrumMachine(id, synth.name, synth.x + offset, synth.y + offset);
         dup.kitId    = synth.kitId;
