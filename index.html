@@ -165,8 +165,8 @@
     }
 
     #master-vu {
-      position: absolute;
-      bottom: 12px;
+      position: fixed;
+      bottom: calc(var(--ftr) + 12px);
       right: 12px;
       z-index: 50;
       image-rendering: pixelated;
@@ -174,8 +174,8 @@
     }
 
     #sample-list {
-      position: absolute;
-      bottom: 12px;
+      position: fixed;
+      bottom: calc(var(--ftr) + 12px);
       right: 64px;
       display: flex;
       flex-direction: column;
@@ -207,37 +207,32 @@
       background: var(--bg);
       background-image: radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px);
       background-size: 24px 24px;
-      overflow: hidden;
+      background-attachment: local;
+      overflow: auto;
+    }
+    #cv::-webkit-scrollbar { width: 8px; height: 8px; }
+    #cv::-webkit-scrollbar-track { background: transparent; }
+    #cv::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    #cv::-webkit-scrollbar-corner { background: transparent; }
+    #cv-world {
+      position: absolute;
+      width: 5000px;
+      height: 4000px;
+      pointer-events: none;
+      top: 0; left: 0;
     }
 
     #cv-gv, #cv-gh, .albl {
       display: none;
     }
 
-    #lbl-tl {
-      top: 7px;
-      left: 8px;
-    }
-
-    #lbl-tr {
-      top: 7px;
-      right: 8px;
-    }
-
-    #lbl-bl {
-      bottom: 7px;
-      left: 8px;
-    }
-
-    #lbl-br {
-      bottom: 7px;
-      right: 8px;
-    }
-
     /* ═══ EMPTY STATE ═══ */
     #empty {
-      position: absolute;
-      inset: 0;
+      position: fixed;
+      top: var(--hdr);
+      left: 0;
+      right: 0;
+      bottom: var(--ftr);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1573,7 +1568,7 @@
     .lfo-node.collapsed .lfo-controls,
     .lfo-node.collapsed .lfo-grid-row,
     .lfo-node.collapsed .lfo-wire-port,
-    .lfo-node.collapsed .lfo-dest-wrap {
+    .lfo-node.collapsed .lfo-dest-list {
       display: none;
     }
 
@@ -1753,474 +1748,6 @@
       color: #fff;
     }
 
-    /* ═══ STEP SEQUENCER ═══ */
-    .seq-node {
-      position: absolute;
-      width: 260px;
-      background: #000;
-      border: 1px solid rgba(255,255,255,0.8);
-      z-index: 10;
-      cursor: default;
-      user-select: none;
-    }
-
-    .seq-node.dragging {
-      /* z-index controlled dynamically via cardZTop */
-      z-index: inherit;
-    }
-
-    .seq-titlebar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 5px 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-      background: #000;
-      cursor: grab;
-    }
-
-    .seq-titlebar:active {
-      cursor: grabbing;
-    }
-
-    .seq-color-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .seq-name {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #fff;
-    }
-
-    .seq-dup,
-    .seq-remove,
-    .seq-min {
-      background: none;
-      border: none;
-      color: rgba(255,255,255,0.4);
-      font-size: 13px;
-      cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
-      flex-shrink: 0;
-      font-family: inherit;
-    }
-
-    .seq-dup:hover,
-    .seq-remove:hover,
-    .seq-min:hover {
-      color: #fff;
-    }
-
-    .seq-grid {
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      gap: 3px;
-      padding: 8px 8px 4px;
-    }
-
-    .seq-step {
-      aspect-ratio: 1;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      cursor: pointer;
-      border-radius: 2px;
-      transition: background 0.06s, border-color 0.06s;
-      min-height: 22px;
-      padding: 0;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Per-step visual overlays */
-    .step-vol-bar {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      background: rgba(0,0,0,0.45);
-      pointer-events: none;
-      transition: height 0.06s;
-    }
-    .step-pitch-tag {
-      position: absolute;
-      top: 1px; right: 2px;
-      font-size: 6px;
-      line-height: 1;
-      font-weight: 700;
-      color: rgba(0,0,0,0.65);
-      pointer-events: none;
-      letter-spacing: -0.03em;
-    }
-    .seq-step:not(.act) .step-pitch-tag { color: rgba(255,255,255,0.6); }
-    .step-gate-bar {
-      position: absolute;
-      bottom: 0; left: 0;
-      height: 2px;
-      background: rgba(255,255,255,0.9);
-      pointer-events: none;
-      transition: width 0.06s;
-    }
-    .seq-step.act .step-gate-bar { background: rgba(0,0,0,0.6); }
-
-    /* Step editor popover (hover-triggered) */
-    .seq-step-editor {
-      position: absolute;
-      z-index: 200;
-      background: #0d0d0d;
-      border: 1px solid rgba(255,255,255,0.22);
-      border-radius: 4px;
-      padding: 7px 9px 8px;
-      width: 210px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.75);
-      font-size: 9px;
-    }
-    .sse-header {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.35);
-      margin-bottom: 6px;
-    }
-    .sse-row {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-bottom: 5px;
-    }
-    .sse-lbl {
-      font-size: 8px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: -0.02em;
-      color: rgba(255,255,255,0.4);
-      width: 28px;
-      flex-shrink: 0;
-    }
-    .sse-row input[type=range] {
-      flex: 1;
-      height: 2px;
-      cursor: pointer;
-      accent-color: var(--seq-color, #fff);
-    }
-    .sse-row input[type=range]:disabled { opacity: 0.25; cursor: default; }
-    .sse-val {
-      font-size: 8px;
-      color: rgba(255,255,255,0.65);
-      width: 34px;
-      text-align: right;
-      flex-shrink: 0;
-    }
-    .sse-global-wrap {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 8px;
-      color: rgba(255,255,255,0.4);
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .sse-global-wrap input[type=checkbox] { accent-color: var(--seq-color, #fff); margin: 0; }
-    .sse-reset {
-      display: block;
-      width: 100%;
-      margin-top: 2px;
-      font-size: 7px;
-      padding: 3px 0;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 2px;
-      color: rgba(255,255,255,0.4);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .sse-reset:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
-
-    .seq-step:not(.act):hover:not(.inactive) {
-      background: rgba(255,255,255,0.15);
-      border-color: rgba(255,255,255,0.3);
-    }
-    .seq-step.act:hover:not(.inactive) {
-      filter: brightness(1.15);
-    }
-    .seq-step.editing {
-      box-shadow: 0 0 0 2px #fff;
-      z-index: 1;
-    }
-    .seq-step.act.editing {
-      box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--seq-color, #fff);
-    }
-
-    .seq-step.act {
-      background: var(--seq-color, #fff);
-      border-color: var(--seq-color, #fff);
-    }
-
-    .seq-step.cur {
-      box-shadow: 0 0 0 2px #fff;
-    }
-
-    .seq-step.inactive {
-      display: none;
-    }
-
-    .seq-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-    }
-
-    .seq-steps-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 2px 8px 4px;
-      width: 100%;
-    }
-
-    .seq-steps-lbl {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.45);
-      flex-shrink: 0;
-    }
-
-    .seq-steps-slider {
-      flex: 1;
-    }
-
-    .seq-sample-sel {
-      flex: 1;
-      background: #000;
-      border: 1px solid rgba(255,255,255,0.18);
-      color: rgba(255,255,255,0.7);
-      font-size: 9px;
-      font-family: 'Courier New', monospace;
-      padding: 3px 4px;
-      min-width: 0;
-      cursor: pointer;
-    }
-
-    .seq-grid-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0 8px 6px;
-    }
-
-    .seq-rate-row {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 0 8px 8px;
-    }
-
-    .seq-rate-lbl {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.45);
-      width: 36px;
-      flex-shrink: 0;
-    }
-
-    .seq-subdiv-sel {
-      flex: 1;
-      background: #000;
-      border: 1px solid rgba(255,255,255,0.18);
-      color: rgba(255,255,255,0.7);
-      font-size: 9px;
-      font-family: 'Courier New', monospace;
-      padding: 3px 4px;
-    }
-
-    .seq-min-footer {
-      display: none;
-      height: 16px;
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.45);
-      padding-left: 6px;
-      line-height: 16px;
-    }
-
-    .seq-mini-grid {
-      display: none;
-      grid-template-columns: repeat(16, 1fr);
-      gap: 2px;
-      padding: 6px 8px;
-      min-height: 26px;
-      box-sizing: border-box;
-      border-bottom: 1px solid var(--b2);
-    }
-
-    .seq-mini-step {
-      background: rgba(255,255,255,0.06);
-      border-radius: 1px;
-    }
-
-    .seq-mini-step.act {
-      background: var(--seq-color, #fff);
-    }
-
-    .seq-mini-step.cur {
-      outline: 1px solid rgba(255,255,255,0.8);
-    }
-
-    .seq-mini-step.inactive {
-      display: none;
-    }
-
-    .seq-node.collapsed {
-      width: 136px;
-      padding: 0;
-      background: var(--surface);
-    }
-
-    .seq-mode-row {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      padding: 0 8px 6px;
-    }
-
-    .seq-gate-slider {
-      flex: 1;
-    }
-
-    .seq-wire-port {
-      display: block;
-      margin: 2px auto 6px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #000;
-      border: 2px solid rgba(255,255,255,0.4);
-      cursor: crosshair;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .seq-wire-port:hover {
-      border-color: #fff;
-      background: #1a1a1a;
-    }
-
-    .seq-dest-list {
-      padding: 0 8px 6px;
-      max-height: 80px;
-      overflow-y: auto;
-    }
-
-    .seq-dest-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      font-size: 8px;
-      color: rgba(255,255,255,0.55);
-      font-family: 'Courier New', monospace;
-    }
-
-    .seq-dest-item:last-child { border-bottom: none; }
-
-    .seq-dest-name {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      font-weight: 700;
-    }
-
-    .seq-dest-unlink {
-      background: none;
-      border: none;
-      color: rgba(255,255,255,0.25);
-      cursor: pointer;
-      font-size: 10px;
-      padding: 0 2px;
-      font-family: inherit;
-      line-height: 1;
-    }
-
-    .seq-dest-unlink:hover { color: #fff; }
-
-    .tile.seq-controlled {
-      position: relative;
-    }
-
-    .tile.seq-controlled::after {
-      content: 'SEQ';
-      position: absolute;
-      bottom: 3px;
-      right: 4px;
-      font-size: 7px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      color: var(--seq-ctrl-color, rgba(255,255,255,0.5));
-      pointer-events: none;
-    }
-
-    .seq-wire-line {
-      fill: none;
-      stroke-width: 2;
-      stroke-dasharray: none;
-      opacity: 0.75;
-      pointer-events: none;
-    }
-
-    .seq-wire-temp {
-      fill: none;
-      stroke-width: 2;
-      stroke-dasharray: 6 4;
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .seq-node.collapsed {
-      width: 136px;
-      padding: 0;
-      background: var(--surface);
-    }
-
-    .seq-node.collapsed .seq-titlebar,
-    .seq-node.collapsed .seq-grid,
-    .seq-node.collapsed .seq-controls,
-    .seq-node.collapsed .seq-mode-row,
-    .seq-node.collapsed .seq-grid-row,
-    .seq-node.collapsed .seq-rate-row,
-    .seq-node.collapsed .seq-wire-port,
-    .seq-node.collapsed .seq-dest-list {
-      display: none;
-    }
-
-    .seq-node.collapsed .seq-mini-grid {
-      display: grid;
-    }
-
-    .seq-node.collapsed .seq-min-footer {
-      display: block;
-    }
-
     #lfo-wires {
       position: fixed;
       top: 0;
@@ -2268,9 +1795,8 @@
       margin-left: 2px;
     }
 
-    /* Force color dots to white in B&W theme */
-    .card-color-dot,
-    .lfo-color-dot {
+    /* Force sample card color dots to white in B&W theme */
+    .card-color-dot {
       background: #fff !important;
     }
 
@@ -2580,15 +2106,204 @@
     }
     .fm-sysx-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
 
-    /* ═══ DRUM PLACEHOLDER ═══ */
-    .drum-placeholder {
-      padding: 24px 16px;
-      text-align: center;
-      color: rgba(255,255,255,0.22);
-      font-size: 11px;
+    /* ═══ DRUM MACHINE CARD ═══ */
+    .synth-card.drum-card { width: 500px; }
+    .synth-card.drum-card.open { max-height: 1400px; }
+
+    .dm-controls {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-wrap: wrap;
+    }
+    .dm-kit-sel {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      padding: 3px 6px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 100px;
+    }
+    .dm-play-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      padding: 2px 9px;
+      cursor: pointer;
+      line-height: 1.4;
+      font-family: Helvetica, Arial, sans-serif;
+      transition: background 0.1s;
+      flex-shrink: 0;
+    }
+    .dm-play-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .dm-play-btn.dm-playing { background: rgba(255,255,255,0.1); color: #fff; border-color: #fff; }
+    .dm-clr-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      font-size: 8px;
+      font-weight: 700;
+      font-family: Helvetica, Arial, sans-serif;
+      letter-spacing: 0.05em;
+      padding: 3px 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .dm-clr-btn:hover { background: rgba(255,50,50,0.15); color: rgba(255,100,100,0.9); border-color: rgba(255,80,80,0.4); }
+    .dm-sync-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      font-size: 8px;
+      font-weight: 700;
+      font-family: Helvetica, Arial, sans-serif;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s;
+    }
+    .dm-sync-btn.synced { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.5); }
+    .dm-subdiv-sel {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.8);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 3px 5px;
+      cursor: pointer;
+      width: 52px;
+      flex-shrink: 0;
+    }
+    .dm-rate-slider { width: 90px; flex-shrink: 0; }
+    .dm-steps-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .dm-steps-ctrl button {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.6);
+      font-size: 10px;
+      line-height: 1;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dm-steps-ctrl button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .dm-steps-val {
+      font-size: 8px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      min-width: 18px;
+      text-align: center;
+    }
+    .dm-kit-status {
+      font-size: 8px;
+      color: rgba(255,255,255,0.35);
+      font-style: italic;
+    }
+
+    /* Step sequencer grid — 3-column layout: labels | scrollable steps | pitch */
+    .dm-grid {
+      display: flex;
+      align-items: flex-start;
+      padding: 7px 0 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .dm-lbls-col {
+      flex-shrink: 0;
+      width: 44px;
+      padding-left: 10px;
+    }
+    .dm-lane-lbl {
+      height: 18px;
+      margin-bottom: 5px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 6px;
+    }
+    .dm-lane-lbl:last-child { margin-bottom: 0; }
+    .dm-steps-scroll {
+      overflow-x: auto;
+      flex: 1;
+      padding-bottom: 4px;
+    }
+    .dm-steps-scroll::-webkit-scrollbar { height: 3px; }
+    .dm-steps-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    .dm-steps-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 2px; }
+    .dm-lane-steps {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 5px;
+    }
+    .dm-lane-steps:last-child { margin-bottom: 0; }
+    .dm-step {
+      width: 19px;
+      height: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      border-radius: 1px;
+      flex-shrink: 0;
+      transition: background 0.05s, border-color 0.05s;
+      position: relative;
+    }
+    /* Beat grid grouping: slightly brighter left border every 4 steps */
+    .dm-step:nth-child(4n+1) { border-left-color: rgba(255,255,255,0.28); }
+    .dm-step[data-vel="1"] {
+      background: var(--lane-col);
+      border-color: var(--lane-col);
+      opacity: 0.55;
+    }
+    .dm-step[data-vel="2"] {
+      background: var(--lane-col);
+      border-color: var(--lane-col);
+      opacity: 1;
+    }
+    .dm-step.dm-step-head {
+      outline: 2px solid rgba(255,255,255,0.7);
+      outline-offset: 1px;
+      z-index: 1;
+    }
+    .dm-pitch-col {
+      flex-shrink: 0;
+      width: 81px;
+      padding: 0 10px 0 5px;
+    }
+    .dm-pitch-wrap {
+      height: 18px;
+      margin-bottom: 5px;
+    }
+    .dm-pitch-wrap:last-child { margin-bottom: 0; }
+    .dm-pitch-wrap .cslider {
+      height: 18px;
     }
     .synth-scope-canvas {
       display: block;
@@ -2817,12 +2532,7 @@
 
   <!-- CANVAS -->
   <div id="cv">
-    <div id="cv-gv"></div>
-    <div id="cv-gh"></div>
-    <div class="albl" id="lbl-tl">+6 dB</div>
-    <div class="albl" id="lbl-tr">+6 dB</div>
-    <div class="albl" id="lbl-bl">-inf · L pan</div>
-    <div class="albl" id="lbl-br">R pan · -inf</div>
+    <div id="cv-world"></div>
     <div id="empty" class="gone"></div>
     <canvas id="master-vu" width="40" height="200"></canvas>
     <div id="sample-list"></div>
@@ -2884,7 +2594,7 @@
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-add-sampler" title="Add Sampler"
         style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Sampler</button>
+        Sample</button>
     </div>
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-add-synth" title="Add Synth"
@@ -2894,17 +2604,7 @@
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-add-drums" title="Add Drum Machine"
         style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Drums</button>
-    </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-lfo" title="Add LFO Modulator"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        LFO</button>
-    </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-seq" title="Add Step Sequencer"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Step</button>
+        Drum Machine</button>
     </div>
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-add-riff" title="Add Riff Sequencer"
@@ -2912,9 +2612,14 @@
         Riff</button>
     </div>
     <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-chords" title="Add Chords (coming soon)"
+      <button class="tbtn" id="btn-add-chords" title="Add Chords"
         style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
         Chords</button>
+    </div>
+    <div class="fsec" style="gap:8px">
+      <button class="tbtn" id="btn-add-lfo" title="Add LFO Modulator"
+        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
+        LFO</button>
     </div>
     <div class="finfo">
       <div class="flbl">Samples</div>
@@ -2978,128 +2683,14 @@
     const lfoNodes = new Map(); // lfoId → { el, drawShape, updateDestList, ... }
     let _wiringLfo = null; // set during wire-drag: { lfoId, tempLine }
     let _lfoColorIdx = 0;
-    const LFO_COLORS = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'];
+    const LFO_COLORS = ['#ff6040', '#40b0ff', '#aaee44', '#cc55ff', '#ffaa00', '#00ddcc', '#ff4499', '#88aaff'];
     function nextLfoColor() { return LFO_COLORS[_lfoColorIdx++ % LFO_COLORS.length]; }
-
-    // ════════════════════════════════════════════════════
-    // STEP SEQUENCER SYSTEM
-    // ════════════════════════════════════════════════════
-    const seqs = new Map();
-    let nextSeqId = 1;
-    const MAX_SEQS = 8;
-    const SEQ_W = 260;
-    const seqNodes = new Map(); // seqId → { el, stopAnim }
-    let _seqColorIdx = 0;
-    const SEQ_COLORS = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'];
-    function nextSeqColor() { return SEQ_COLORS[_seqColorIdx++ % SEQ_COLORS.length]; }
-
-    // Returns the natural play duration of a sample (how long it plays when triggered once)
-    function getSeqSampleDuration(s) {
-      const loopRange = Math.max(0.001, s.loopEnd - s.loopStart);
-      if (s.gridSync) {
-        const bpm = Tone.Transport.bpm.value;
-        const subdivSec = (60 / bpm) * (4 / s.subdiv) * s.subdivFactor;
-        return subdivSec * s.gridMulti;
-      }
-      return loopRange * s._activeDur;
-    }
-
-    // Returns step duration in seconds for the given sequencer (for visual tracking)
-    function seqStepDurSec(seq) {
-      if (seq.gridSync) {
-        const barSec = (60 / Tone.Transport.bpm.value) * 4;
-        const map = { '1n': barSec, '2n': barSec / 2, '4n': barSec / 4, '8n': barSec / 8,
-          '16n': barSec / 16, '32n': barSec / 32, '4t': barSec / 6, '8t': barSec / 12, '16t': barSec / 24 };
-        return map[seq.subdiv] || barSec / 16;
-      }
-      return seq.rate;
-    }
 
     function midiToNoteName(midi) {
       const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
       const octave = Math.floor(midi / 12) - 1;
       return notes[midi % 12] + octave;
     }
-
-    class StepSequencer {
-      constructor(id, x, y) {
-        this.id = id;
-        this.name = 'Seq ' + id;
-        this.x = x; this.y = y;
-        this.color = nextSeqColor();
-        this.numSteps = 16;
-        this.steps = Array.from({length: 64}, () => ({on: false, pitch: 0, vol: 1.0, gate: null}));
-        this.destinations = []; // array of sampleIds connected via wire
-        this.gateLength = 1.0;  // fraction of step duration (1.0 = play until next trigger)
-        this.gridSync = true;
-        this.subdiv = '16n';
-        this.rate = 0.125; // seconds per step in free mode
-        this._scheduleId = null;
-        this._seqPhaseTransport = null; // transport seconds when step 0 fired (for visual sync)
-      }
-
-      getStepInterval() {
-        return this.gridSync ? this.subdiv : this.rate;
-      }
-
-      schedule() {
-        this.unschedule();
-        if (!audioReady) return;
-        let stepIdx = 0;
-        this._seqPhaseTransport = null; // reset — will be captured on first fire
-        this._scheduleId = Tone.Transport.scheduleRepeat((time) => {
-          // Capture transport phase of step 0 for accurate visual sync
-          if (stepIdx === 0) {
-            const lookahead = time - Tone.context.rawContext.currentTime;
-            this._seqPhaseTransport = Tone.Transport.seconds + lookahead;
-          }
-          const step = stepIdx % this.numSteps;
-          stepIdx++;
-          const stepData = this.steps[step];
-          if (!stepData.on) return;
-          const stepDur = seqStepDurSec(this);
-          const gateLen = stepData.gate ?? this.gateLength;
-          for (const sampleId of this.destinations) {
-            const s = samples.get(sampleId);
-            if (s instanceof Sample) {
-              if (!s.muted) s.triggerAtTime(time, gateLen, stepData.vol, stepData.pitch);
-            } else {
-              const syn = synths.get(sampleId);
-              if (syn && !syn.muted) {
-                const midiNote = 48 + (stepData.pitch || 0); // C3 = MIDI 48
-                const noteName = midiToNoteName(Math.max(0, Math.min(127, midiNote)));
-                const gateDurSec = gateLen * stepDur;
-                const vel = Math.max(0, Math.min(1, stepData.vol || 1));
-                syn.triggerAtTime(noteName, gateDurSec, time, vel);
-              }
-            }
-          }
-        }, this.getStepInterval());
-      }
-
-      unschedule() {
-        if (this._scheduleId !== null) {
-          Tone.Transport.clear(this._scheduleId);
-          this._scheduleId = null;
-        }
-        this._seqPhaseTransport = null;
-      }
-
-      reschedule() {
-        if (audioReady) this.schedule();
-      }
-
-      addDestination(sampleId) {
-        if (!this.destinations.includes(sampleId)) this.destinations.push(sampleId);
-      }
-
-      removeDestination(sampleId) {
-        this.destinations = this.destinations.filter(id => id !== sampleId);
-      }
-    }
-
-    // sampleId → seqId: tracks which sequencer controls a given sample
-    const sampleSeqMap = new Map();
 
     // ════════════════════════════════════════════════════
     // RIFF SEQUENCER SYSTEM
@@ -3338,7 +2929,7 @@
             const instr = getInstrument(instrId);
             if (!instr || instr.muted) continue;
             if (instr instanceof SynthInstrument) {
-              instr._poly.triggerAttackRelease(val.note, val.duration, time, 1.0);
+              instr.triggerAtTime(val.note, val.duration, time, 1.0);
               instr._noteHighlight?.(val.note, true);
               Tone.Transport.scheduleOnce(() => instr._noteHighlight?.(val.note, false), '+' + val.duration);
             } else if (instr instanceof Sample) {
@@ -3368,7 +2959,7 @@
         for (const instrId of this.destinations) {
           const instr = getInstrument(instrId);
           if (instr instanceof SynthInstrument) {
-            try { instr._poly.releaseAll(); } catch(e) {}
+            try { instr.allNotesOff(); } catch(e) {}
           }
         }
       }
@@ -3449,8 +3040,8 @@
       'card-loopend': { prop: 'loopEnd', min: 0, max: 1, label: 'End', setter: null, fmtVal: v => (+v).toFixed(3) + 's' },
       'card-filepos': { prop: 'filePosition', min: 0, max: 1, label: 'FilePos', setter: 'setFilePosition', fmtVal: v => (+v).toFixed(3) + 's' },
       'card-ps': { prop: '_psSlider', min: 0, max: 100, label: 'PaulStr', setter: null, fmtVal: v => { const r = Math.pow(200, v / 100); return v < 0.25 ? 'Off' : (r < 10 ? r.toFixed(1) : Math.round(r)) + '×'; } },
-      'card-vol': { prop: null, min: 0, max: 1, label: 'Volume', setter: 'setVolPos', fmtVal: v => Math.round(v * 100) + '%' },
-      'card-pan': { prop: null, min: -1, max: 1, label: 'Pan', setter: 'setPanPos', fmtVal: v => v < -0.01 ? 'L' + Math.round(-v * 100) : v > 0.01 ? 'R' + Math.round(v * 100) : 'C' },
+      'card-vol': { prop: '_currentDb', min: -60, max: 6, label: 'Volume', setter: 'setVolPos', fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'card-pan': { prop: '_currentPan', min: -1, max: 1, label: 'Pan', setter: 'setPanPos', fmtVal: v => v < -0.01 ? 'L' + Math.round(-v * 100) : v > 0.01 ? 'R' + Math.round(v * 100) : 'C' },
       // FX & EQ
       'fx-r-decay': { prop: 'decay', min: 0.1, max: 30, label: 'Decay', isFx: true },
       'fx-r-predly': { prop: 'preDelay', min: 0, max: 0.5, label: 'Pre-Dly', isFx: true },
@@ -3516,6 +3107,13 @@
       'fm-mdec':  { prop: 'modDecay',    min: 0.001, max: 5, label: 'Mod. Decay',   isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
       'fm-msus':  { prop: 'modSustain',  min: 0,     max: 1, label: 'Mod. Sustain', isSynth: true, updater: 'updateModEnv',   fmtVal: v => Math.round(v * 100) + '%' },
       'fm-mrel':  { prop: 'modRelease',  min: 0.001, max: 8, label: 'Mod. Release', isSynth: true, updater: 'updateModEnv',   fmtVal: v => fmtFade(v) },
+      // Drum machine pitch params
+      'dm-pitch-Kick':  { prop: 'pitches', subProp: 'Kick',  min: -12, max: 12, label: 'Kick Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-Snare': { prop: 'pitches', subProp: 'Snare', min: -12, max: 12, label: 'Snare Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-HiHat': { prop: 'pitches', subProp: 'HiHat', min: -12, max: 12, label: 'HiHat Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-Tom1':  { prop: 'pitches', subProp: 'Tom1',  min: -12, max: 12, label: 'Tom1 Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-Tom2':  { prop: 'pitches', subProp: 'Tom2',  min: -12, max: 12, label: 'Tom2 Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-Tom3':  { prop: 'pitches', subProp: 'Tom3',  min: -12, max: 12, label: 'Tom3 Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
     };
 
     // LFO preset shape generators (return breakpoint arrays [{x:0..1, y:0..1}])
@@ -3555,7 +3153,6 @@
         this.gridSync = false;
         this.subdiv = 1; // same scale as sample grid (1 = 1 bar)
         this.destinations = []; // { sampleId, param, min, max }
-        this.seqDestinations = []; // { seqId, param, min, max }
         this._phase = 0;
         this._lastTime = performance.now() / 1000;
         this._activePreset = 'sine';
@@ -3608,21 +3205,7 @@
         this.destinations = this.destinations.filter(d => !(d.sampleId === sampleId && d.param === param && d.fxUid === fxUid));
       }
 
-      addSeqDestination(seqId, param, min, max) {
-        if (this.seqDestinations.find(d => d.seqId === seqId && d.param === param)) return;
-        this.seqDestinations.push({ seqId, param, min, max });
-      }
-
-      removeSeqDestination(seqId, param) {
-        this.seqDestinations = this.seqDestinations.filter(d => !(d.seqId === seqId && d.param === param));
-      }
     }
-
-    // Seq parameter definitions for LFO modulation
-    const SEQ_PARAM_MAP = {
-      'seq-steps-input': { param: 'numSteps', min: 1, max: 64, label: 'Steps' },
-      'seq-gate-input':  { param: 'gateLength', min: 0.01, max: 1, label: 'Gate' },
-    };
 
     // Check if a parameter is being modulated by any LFO
     function isParamModulated(sampleId, paramClass, fxUid = null) {
@@ -3875,20 +3458,13 @@
         this._seqTrigVer = 0; // incremented on each seq trigger/stop to guard stale Draw callbacks
         this._lastStepVol = 1.0; // tracks last per-step volume for crossfade at trigger boundary
         this._currentDb = 0;
-
-        // Compute initial vol/pan from position so nodes never start at wrong defaults
-        const _ch = cv.clientHeight || 500;
-        const _cw = cv.clientWidth || 800;
-        const _ratio = Math.max(0, Math.min(1, y / _ch));
-        const _initDb = Math.max(-60, Math.min(6, 6 - Math.pow(_ratio / 0.88, 1.6) * 66));
-        const _initPan = Math.max(-1, Math.min(1, (x / _cw) * 2 - 1));
-        this._currentDb = _initDb;
+        this._currentPan = 0;
 
         // Audio chain: Player → fadeGain → PitchShift → EQ → Panner → Volume → masterSamplesGain → Destination
-        this.vol = new Tone.Volume(_initDb).connect(masterSamplesGain);
+        this.vol = new Tone.Volume(0).connect(masterSamplesGain);
         this.meter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
         this.vol.connect(this.meter);
-        this.pan = new Tone.Panner(_initPan).connect(this.vol);
+        this.pan = new Tone.Panner(0).connect(this.vol);
 
         // 5-band EQ: HP · Low bell · Mid bell · Hi bell · LP (always in chain, flat by default)
         this.eqBands = [
@@ -3973,24 +3549,8 @@
       // Duration of the active buffer (PS buffer when PS is live, else raw source)
       get _activeDur() { return (this.psStretch > 1 && this._psBuffer) ? this._psBuffer.duration : this.duration; }
 
-      // ── Volume / Pan from canvas position ──
-      updateVol() {
-        const ch = cv.clientHeight || 500;
-        // Exponential curve: top = +6dB, bottom = -60dB
-        // Use power curve so the audible range spans most of the canvas height,
-        // only going fully silent in the bottom ~12%
-        const ratio = Math.max(0, Math.min(1, this.y / ch)); // 0=top, 1=bottom
-        // map 0..1 → +6..-60 with a curve that keeps things audible longer
-        // linear in dB but with the "silent floor" pushed to the very bottom:
-        // at ratio=0 → +6dB, ratio=0.88 → -60dB, ratio>0.88 stays at -60
-        const db = 6 - Math.pow(ratio / 0.88, 1.6) * 66;
-        this._currentDb = Math.max(-60, Math.min(6, db));
-        this.vol.volume.value = this._effectiveDb();
-      }
-      updatePan() {
-        const cw = cv.clientWidth || 800;
-        this.pan.pan.value = Math.max(-1, Math.min(1, (this.x / cw) * 2 - 1));
-      }
+      updateVol() { this.vol.volume.value = this._effectiveDb(); }
+      updatePan() { this.pan.pan.value = this._currentPan; }
       _effectiveDb() {
         if (this.muted) return -Infinity;
         if (soloId !== null && soloId !== this.id) return -Infinity;
@@ -4042,18 +3602,14 @@
         this.clipGain.gain.value = Math.pow(10, this.clipGainDb / 20);
       }
 
-      setVolPos(v) {
-        const ch = cv.clientHeight || 500;
-        this.y = (1 - Math.max(0, Math.min(1, v))) * ch;
-        this.updateVol();
-        this._updateTilePos();
+      setVolPos(db) {
+        this._currentDb = Math.max(-60, Math.min(6, db));
+        this.vol.volume.value = this._effectiveDb();
       }
 
       setPanPos(p) {
-        const cw = cv.clientWidth || 800;
-        this.x = (Math.max(-1, Math.min(1, p)) + 1) / 2 * cw;
-        this.updatePan();
-        this._updateTilePos();
+        this._currentPan = Math.max(-1, Math.min(1, p));
+        this.pan.pan.value = this._currentPan;
       }
 
       _updateTilePos() {
@@ -5403,19 +4959,15 @@
         this._currentDb = 0;
         this.synthType = 'base';
 
-        const _ch = cv.clientHeight || 500, _cw = cv.clientWidth || 800;
-        const _ratio = Math.max(0, Math.min(1, y / _ch));
-        const _initDb = Math.max(-60, Math.min(6, 6 - Math.pow(_ratio / 0.88, 1.6) * 66));
-        const _initPan = Math.max(-1, Math.min(1, (x / _cw) * 2 - 1));
-        this._currentDb = _initDb;
-        this._currentPan = _initPan;
+        this._currentDb = 0;
+        this._currentPan = 0;
         this._poly = null; this._filter = null;
         this.currentPreset = 0; this._customPresets = []; this._usingCustom = false;
 
-        this.vol      = new Tone.Volume(_initDb).connect(masterSamplesGain);
+        this.vol      = new Tone.Volume(0).connect(masterSamplesGain);
         this.meter    = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
         this.vol.connect(this.meter);
-        this.pan      = new Tone.Panner(_initPan).connect(this.vol);
+        this.pan      = new Tone.Panner(0).connect(this.vol);
         this._analyser = new Tone.Analyser('waveform', 128);
         this.vol.connect(this._analyser);
 
@@ -5432,17 +4984,8 @@
         this.fxChain = [];
         this._fxUidCounter = 0;
       }
-      updateVol() {
-        const ch = cv.clientHeight || 500;
-        const ratio = Math.max(0, Math.min(1, this.y / ch));
-        this._currentDb = Math.max(-60, Math.min(6, 6 - Math.pow(ratio / 0.88, 1.6) * 66));
-        this.vol.volume.value = this._effectiveDb();
-      }
-      updatePan() {
-        const cw = cv.clientWidth || 800;
-        this._currentPan = Math.max(-1, Math.min(1, (this.x / cw) * 2 - 1));
-        this.pan.pan.value = this._currentPan;
-      }
+      updateVol() { this.vol.volume.value = this._effectiveDb(); }
+      updatePan() { this.pan.pan.value = this._currentPan; }
       _noteHighlight(note, on) {}  // wired up by buildPianoKeyboard
       triggerAtTime(note, dur, time, vel) {
         this._noteHighlight(note, true);
@@ -5536,7 +5079,7 @@
           this.filterAttack = 0.056; this.filterDecay = 0.991;
           this.attack = 0.056; this.decay = 0.5; this.sustain = 0.7; this.release = 0.3;
           this._wt = null; this._voices = [];
-          this._wtBridge = new Tone.Gain(1).connect(this.pan);
+          this._wtBridge = new Tone.Gain(0.25).connect(this.pan);
           // Bind WavetableSynth voice methods onto this instance
           ['noteOn','noteOff','allNotesOff','_releaseVoice','_stopVoice','_makeVoice','_cutoffHz',
            'updateWave','updateFilter','updateDetune','updateEnvelope','triggerAtTime'].forEach(m => {
@@ -5786,7 +5329,8 @@
         this._wt           = null;
 
         // Bridge from native chain into Tone.js pan → vol → master
-        this._wtBridge = new Tone.Gain(1).connect(this.pan);
+        // Gain of 0.25: 4 oscillators sum into envGain, so divide by 4 to prevent clipping
+        this._wtBridge = new Tone.Gain(0.25).connect(this.pan);
         this.updateWave();
       }
 
@@ -5944,14 +5488,139 @@
       }
     }
 
+    // ── Kit definitions (Shiny Drum Machine kits) ──
+    const DRUM_KITS = [
+      {id: 'R8',             name: 'Roland R-8'},
+      {id: 'CR78',           name: 'Roland CR-78'},
+      {id: 'KPR77',          name: 'Korg KPR-77'},
+      {id: 'LINN',           name: 'LinnDrum'},
+      {id: 'Kit3',           name: 'Kit 3'},
+      {id: 'Kit8',           name: 'Kit 8'},
+      {id: 'Techno',         name: 'Techno'},
+      {id: 'Stark',          name: 'Stark'},
+      {id: 'breakbeat8',     name: 'Breakbeat 8'},
+      {id: 'breakbeat9',     name: 'Breakbeat 9'},
+      {id: 'breakbeat13',    name: 'Breakbeat 13'},
+      {id: 'acoustic-kit',   name: 'Acoustic Kit'},
+      {id: '4OP-FM',         name: '4OP-FM'},
+      {id: 'TheCheebacabra1',name: 'Cheebacabra 1'},
+      {id: 'TheCheebacabra2',name: 'Cheebacabra 2'},
+    ];
+    const DRUM_SAMPLE_BASE = 'https://googlechromelabs.github.io/web-audio-samples/sounds/drum-samples/';
+    const DRUM_INSTRUMENTS = ['Kick','Snare','HiHat','Tom1','Tom2','Tom3'];
+
     class DrumMachine extends SynthInstrument {
       constructor(id, name, x, y) {
         super(id, name, x, y);
-        this.synthType = 'drums';
-        this.name = name || 'DRUMS';
+        this.synthType   = 'drums';
+        this.name        = name || 'DRUMS';
+        this.INSTRUMENTS = DRUM_INSTRUMENTS;
+
+        // Kit state
+        this.kitId      = 'R8';
+        this.kitName    = 'Roland R-8';
+        this._kitCache  = {};   // kitId → { Kick: AudioBuffer, ... }
+        this._kitLoading = false;
+
+        // Patterns: 0=off 1=soft 2=accent, up to 64 steps × 6 lanes
+        this.numSteps = 16;
+        this.patterns = {};
+        for (const n of this.INSTRUMENTS) this.patterns[n] = Array(64).fill(0);
+
+        // Per-lane pitch in semitones (-12 to +12)
+        this.pitches = {};
+        for (const n of this.INSTRUMENTS) this.pitches[n] = 0;
+
+        // Playback
+        this.isPlaying   = false;
+        this.currentStep = -1;
+        this.gridSync    = true;
+        this.subdiv      = '16n';
+        this.rate        = 120;   // BPM when unsynced
+        this._seq        = null;
+
+        // Audio entry point: drum hits → _drumBus → pan → vol → fx
+        this._drumBus = new Tone.Gain(1);
+        this._drumBus.connect(this.pan);
+
+        // Load default kit async
+        this.loadKit('R8');
       }
+
+      // ── Kit loading ──
+      async loadKit(kitId) {
+        this._kitLoading = true;
+        this._updateLoadStatus('Loading…');
+        if (!this._kitCache[kitId]) this._kitCache[kitId] = {};
+        const bufs = this._kitCache[kitId];
+        await Promise.all(this.INSTRUMENTS.map(async (name) => {
+          if (bufs[name]) return;
+          try {
+            const url = `${DRUM_SAMPLE_BASE}${kitId}/${name.toLowerCase()}.wav`;
+            const res  = await fetch(url);
+            const ab   = await res.arrayBuffer();
+            bufs[name] = await Tone.context.rawContext.decodeAudioData(ab);
+          } catch(e) { console.warn(`DrumMachine: failed to load ${kitId}/${name}`, e); }
+        }));
+        this.kitId      = kitId;
+        this.kitName    = DRUM_KITS.find(k => k.id === kitId)?.name || kitId;
+        this._kitLoading = false;
+        this._updateLoadStatus('');
+      }
+
+      _updateLoadStatus(msg) {
+        const info = openCards.get(this.id);
+        if (!info) return;
+        const el = info.el.querySelector('.dm-kit-status');
+        if (el) el.textContent = msg;
+      }
+
+      // ── Trigger one hit ──
+      triggerInstrument(name, velocity, time) {
+        const bufs = this._kitCache[this.kitId];
+        if (!bufs || !bufs[name]) return;
+        const ctx = Tone.context.rawContext;
+        const at  = typeof time === 'number' ? time : ctx.currentTime;
+        const src = ctx.createBufferSource();
+        src.buffer           = bufs[name];
+        src.playbackRate.value = Math.pow(2, (this.pitches[name] || 0) / 12);
+        const hg = ctx.createGain();
+        hg.gain.value = velocity === 1 ? 0.45 : 1.0;
+        src.connect(hg);
+        hg.connect(this._drumBus.input);
+        src.start(at);
+        src.onended = () => { src.disconnect(); hg.disconnect(); };
+      }
+
+      // ── Sequencer ──
+      startSequencer() {
+        if (this._seq) { try { this._seq.stop(); this._seq.dispose(); } catch(e){} this._seq = null; }
+        const interval = this.gridSync ? this.subdiv : `${60 / (this.rate * 4)}s`;
+        this._seq = new Tone.Sequence((time, step) => {
+          this.currentStep = step;
+          for (const name of this.INSTRUMENTS) {
+            const vel = this.patterns[name][step];
+            if (vel > 0) this.triggerInstrument(name, vel, time);
+          }
+        }, Array.from({length: this.numSteps}, (_, i) => i), interval);
+        this._seq.start(0);
+        this.isPlaying = true;
+        if (Tone.Transport.state !== 'started') Tone.Transport.start();
+      }
+
+      stopSequencer() {
+        if (this._seq) { try { this._seq.stop(); this._seq.dispose(); } catch(e){} this._seq = null; }
+        this.isPlaying   = false;
+        this.currentStep = -1;
+      }
+
       noteOn() {} noteOff() {} allNotesOff() {}
-      dispose() { super.dispose(); }
+
+      dispose() {
+        this.stopSequencer();
+        if (this._drumBus) { try { this._drumBus.dispose(); } catch(e){} this._drumBus = null; }
+        super.dispose();
+      }
     }
 
     // ════════════════════════════════════════════════════
@@ -6157,6 +5826,46 @@
       ctx.stroke();
     }
 
+    function drawDrumMiniGrid(canvas, drum) {
+      const W = canvas.width, H = canvas.height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(0, 0, W, H);
+
+      const lanes = drum.INSTRUMENTS;
+      const nLanes = lanes.length;
+      const nSteps = drum.numSteps;
+      const padX = 3, padY = 3;
+      const gapX = 1, gapY = 1;
+      const cellW = (W - padX * 2 - gapX * (nSteps - 1)) / nSteps;
+      const cellH = (H - padY * 2 - gapY * (nLanes - 1)) / nLanes;
+
+      for (let li = 0; li < nLanes; li++) {
+        const name = lanes[li];
+        const y = padY + li * (cellH + gapY);
+        for (let si = 0; si < nSteps; si++) {
+          const x = padX + si * (cellW + gapX);
+          const vel = drum.patterns[name][si];
+          if (vel === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+          } else if (vel === 1) {
+            ctx.fillStyle = drum.color + '88';
+          } else {
+            ctx.fillStyle = drum.color;
+          }
+          ctx.fillRect(x, y, Math.max(cellW, 1), Math.max(cellH, 1));
+        }
+      }
+      // Playhead
+      if (drum.isPlaying && drum.currentStep >= 0) {
+        const si = drum.currentStep;
+        const x = padX + si * (cellW + gapX);
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(x, 0, Math.max(cellW, 1), H);
+      }
+    }
+
     function createSynthTile(synth) {
       const t = document.createElement('div');
       t.className = 'tile synth-tile';
@@ -6249,13 +5958,11 @@
           const dx = ev.clientX - ox, dy = ev.clientY - oy;
           if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
           if (!moved) return;
-          const cw = cv.clientWidth, ch = cv.clientHeight;
-          const nl = Math.max(-TW / 2, Math.min(cw - TW / 2, oL + dx));
-          const nt = Math.max(-TH / 2, Math.min(ch - TH / 2, oT + dy));
+          const nl = oL + dx;
+          const nt = oT + dy;
           tile.style.left = nl + 'px';
           tile.style.top = nt + 'px';
           s.x = nl + TW / 2; s.y = nt + TH / 2;
-          s.updateVol(); s.updatePan();
           updateLfoWires();
         };
         const mu = () => {
@@ -6374,13 +6081,24 @@
           if (cardScope) drawSynthScope(cardScope, synth);
         }
       }
-      // Drum tiles: VU
+      // Drum tiles: mini step grid + VU + step highlight
       for (const [did, drum] of drums) {
-        if (!(drum instanceof SynthInstrument)) continue;
+        if (!(drum instanceof DrumMachine)) continue;
         const tile = document.getElementById('t' + did);
-        if (!tile) continue;
-        const vuC = tile.querySelector('.tile-vu-canvas');
-        if (vuC) drawVU(vuC, drum);
+        if (tile) {
+          const wc  = tile.querySelector('.tile-canvas');
+          if (wc) drawDrumMiniGrid(wc, drum);
+          const vuC = tile.querySelector('.tile-vu-canvas');
+          if (vuC) drawVU(vuC, drum);
+        }
+        // Highlight current step in open card
+        const cardInfo = openCards.get(did);
+        if (cardInfo) {
+          const step = drum.currentStep;
+          cardInfo.el.querySelectorAll('.dm-step').forEach(btn => {
+            btn.classList.toggle('dm-step-head', drum.isPlaying && parseInt(btn.dataset.step) === step);
+          });
+        }
       }
 
       // Granular mini tile grain viz
@@ -6463,30 +6181,32 @@
     const AUDIO_EXTS = new Set(['wav', 'mp3', 'ogg', 'flac', 'aiff', 'aif', 'm4a', 'opus', 'webm', 'weba']);
     const isAudio = n => AUDIO_EXTS.has((n.split('.').pop() || '').toLowerCase());
 
-    // Returns a top-left {x, y} within canvas bounds that doesn't overlap existing elements.
-    // w, h = dimensions of the element to place.
+    // Returns a top-left {x, y} in canvas world coordinates that doesn't overlap existing elements,
+    // placed within the currently visible viewport area.
     function findFreePosition(w, h) {
       const margin = 20;
-      const cw = cv.clientWidth || 800;
-      const ch = cv.clientHeight || 500;
-      const maxX = cw - w - margin;
-      const maxY = ch - h - margin;
+      const scrollX = cv.scrollLeft, scrollY = cv.scrollTop;
+      const viewW = cv.clientWidth || 800, viewH = cv.clientHeight || 500;
+      const minX = scrollX + margin;
+      const minY = scrollY + margin;
+      const maxX = scrollX + viewW - w - margin;
+      const maxY = scrollY + viewH - h - margin;
       const cvRect = cv.getBoundingClientRect();
 
-      // Collect occupied rects in canvas coordinates
+      // Collect occupied rects in canvas world coordinates
       const occupied = [];
       document.querySelectorAll('.tile, .lfo-node, .seq-node').forEach(el => {
         const r = el.getBoundingClientRect();
-        occupied.push({ x: r.left - cvRect.left, y: r.top - cvRect.top, w: r.width, h: r.height });
+        occupied.push({ x: r.left - cvRect.left + scrollX, y: r.top - cvRect.top + scrollY, w: r.width, h: r.height });
       });
       document.querySelectorAll('.sample-card.open').forEach(el => {
         const r = el.getBoundingClientRect();
-        occupied.push({ x: r.left - cvRect.left, y: r.top - cvRect.top, w: r.width, h: r.height });
+        occupied.push({ x: r.left - cvRect.left + scrollX, y: r.top - cvRect.top + scrollY, w: r.width, h: r.height });
       });
 
       for (let i = 0; i < 80; i++) {
-        const x = margin + Math.random() * Math.max(0, maxX - margin);
-        const y = margin + Math.random() * Math.max(0, maxY - margin);
+        const x = minX + Math.random() * Math.max(0, maxX - minX);
+        const y = minY + Math.random() * Math.max(0, maxY - minY);
         let ok = true;
         for (const o of occupied) {
           if (x < o.x + o.w + margin && x + w + margin > o.x &&
@@ -6496,11 +6216,11 @@
         }
         if (ok) return { x, y };
       }
-      // Fallback: diagonal cascade
+      // Fallback: diagonal cascade within visible area
       const n = occupied.length;
       return {
-        x: Math.min(margin + (n * 48) % Math.max(1, maxX - margin), maxX),
-        y: Math.min(margin + (n * 32) % Math.max(1, maxY - margin), maxY)
+        x: Math.min(minX + (n * 48) % Math.max(1, maxX - minX), maxX),
+        y: Math.min(minY + (n * 32) % Math.max(1, maxY - minY), maxY)
       };
     }
 
@@ -6509,13 +6229,11 @@
 
       const id = nextId++;
       const name = file.name.replace(/\.[^.]+$/, '');
-      const cw = cv.clientWidth || 800;
-      const ch = cv.clientHeight || 500;
       let x, y;
       if (dropPos) {
         const cvRect = cv.getBoundingClientRect();
-        x = Math.max(TW / 2, Math.min(cw - TW / 2, dropPos.x - cvRect.left));
-        y = Math.max(TH / 2, Math.min(ch - TH / 2, dropPos.y - cvRect.top));
+        x = dropPos.x - cvRect.left + cv.scrollLeft;
+        y = dropPos.y - cvRect.top + cv.scrollTop;
       } else {
         const pos = findFreePosition(TW, TH);
         x = pos.x + TW / 2;
@@ -6596,7 +6314,6 @@
     // ════════════════════════════════════════════════════
     function startSample(s) {
       if (!(s instanceof Sample)) return;
-      if (sampleSeqMap.has(s.id)) return; // controlled by step sequencer
       if (s.triggerMode) return; // waiting for manual/external trigger
       // Respect solo
       if (soloId !== null && soloId !== s.id) return;
@@ -6636,16 +6353,6 @@
 
     function removeSample(id) {
       const s = samples.get(id);
-      // Disconnect from any seq before disposing
-      if (sampleSeqMap.has(id)) {
-        const seqId = sampleSeqMap.get(id);
-        const seq = seqs.get(seqId);
-        if (seq) {
-          seq.removeDestination(id);
-          seqNodes.get(seqId)?.updateDestList();
-        }
-        sampleSeqMap.delete(id);
-      }
       if (s instanceof Sample) s.dispose();
       const t = document.getElementById('t' + id) || document.getElementById('stub' + id);
       if (t) t.remove();
@@ -6724,12 +6431,11 @@
           el.style.top  = ny + 'px';
           // Keep tile in sync (card is 300px wide, tile is 136px; center offset = 150, tile left offset = 82)
           if (tileEl) {
-            tileEl.style.left = (nx - cvRect.left + 82) + 'px';
-            tileEl.style.top  = (ny - cvRect.top) + 'px';
+            tileEl.style.left = (nx - cvRect.left + 82 + cv.scrollLeft) + 'px';
+            tileEl.style.top  = (ny - cvRect.top + cv.scrollTop) + 'px';
           }
-          synth.x = nx - cvRect.left + 150;
-          synth.y = ny - cvRect.top + 28;
-          synth.updateVol(); synth.updatePan();
+          synth.x = nx - cvRect.left + 150 + cv.scrollLeft;
+          synth.y = ny - cvRect.top + 28 + cv.scrollTop;
           updateLfoWires();
         };
         const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
@@ -7376,7 +7082,31 @@
           attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
         });
         dup.updateWave();
+      } else if (synth.synthType === 'drums') {
+        dup = new DrumMachine(id, synth.name, synth.x + offset, synth.y + offset);
+        dup.kitId    = synth.kitId;
+        dup.kitName  = synth.kitName;
+        dup.numSteps = synth.numSteps;
+        for (const n of dup.INSTRUMENTS) {
+          dup.patterns[n] = [...synth.patterns[n]];
+          dup.pitches[n]  = synth.pitches[n];
+        }
+        dup.gridSync = synth.gridSync;
+        dup.subdiv   = synth.subdiv;
+        dup.rate     = synth.rate;
+        // Share already-loaded kit buffers
+        dup._kitCache = synth._kitCache;
+        drums.set(id, dup);
+        dup._currentDb = synth._currentDb;
+        dup._currentPan = synth._currentPan;
+        dup._applyVol(); dup._applyPan();
+        createSynthTile(dup);
+        updateSampleList();
+        return;
       } else { return; }
+      dup._currentDb = synth._currentDb;
+      dup._currentPan = synth._currentPan;
+      dup._applyVol(); dup._applyPan();
       synths.set(id, dup);
       const t = createSynthTile(dup);
       updateSampleList();
@@ -7547,26 +7277,242 @@
       buildFxSection(el, synth);
     }
 
-    function createDrumCard(synth, tile) {
+    function createDrumCard(drum, tile) {
       const el = document.createElement('div');
-      el.className = 'synth-card';
-      el.style.setProperty('--card-color', synth.color);
+      el.className = 'synth-card drum-card';
+      el.style.setProperty('--card-color', drum.color);
+
+      const mkCsl = (cls, min, max, step, val) =>
+        `<div class="cslider"><input type="range" class="${cls}" min="${min}" max="${max}" step="${step}" value="${val}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div>`;
+
+      const fmtPitch = v => (parseFloat(v) >= 0 ? '+' : '') + Math.round(parseFloat(v)) + ' st';
+      const fmtBpm   = v => Math.round(parseFloat(v)) + ' BPM';
+
+      const laneLabel = n => n === 'HiHat' ? 'Hi-Hat' : n === 'Tom1' ? 'Tom 1' : n === 'Tom2' ? 'Tom 2' : n === 'Tom3' ? 'Tom 3' : n;
+
+      const buildGridHtml = () => {
+        const lbls = drum.INSTRUMENTS.map(name =>
+          `<div class="dm-lane-lbl">${laneLabel(name)}</div>`).join('');
+        const stepsRows = drum.INSTRUMENTS.map(name => {
+          const btns = Array.from({length: drum.numSteps}, (_, i) => {
+            const vel = drum.patterns[name][i];
+            return `<button class="dm-step" data-lane="${name}" data-step="${i}" data-vel="${vel}" style="--lane-col:${drum.color}"></button>`;
+          }).join('');
+          return `<div class="dm-lane-steps" data-lane="${name}">${btns}</div>`;
+        }).join('');
+        const pitches = drum.INSTRUMENTS.map(name =>
+          `<div class="dm-pitch-wrap">${mkCsl(`dm-pitch-${name}`, -12, 12, 0.5, (drum.pitches[name] || 0))}</div>`).join('');
+        return `<div class="dm-lbls-col">${lbls}</div><div class="dm-steps-scroll">${stepsRows}</div><div class="dm-pitch-col">${pitches}</div>`;
+      };
+
       el.innerHTML = `
         <div class="card-titlebar">
-          <div class="card-color-dot" style="background:${synth.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
-          <div class="card-name">DRUMS · ${synth.name}</div>
-          <button class="card-close" title="Close">✕</button>
-          <button class="card-remove" title="Remove">🗑</button>
+          <div class="card-color-dot" style="background:${drum.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+          <div class="card-name">DRUMS · ${drum.name}</div>
+          <button class="card-dup" title="Duplicate">&#x29C9;</button>
+          <button class="card-remove" title="Remove">&#x1F5D1;</button>
+          <button class="card-close" title="Close">&#x2715;</button>
         </div>
-        <div class="drum-placeholder">Drum Machine<br><span style="font-size:8px;font-weight:400;text-transform:none;letter-spacing:0;opacity:0.5;margin-top:6px;display:block">Coming soon</span></div>`;
-      el.querySelector('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
-      el.querySelector('.card-remove').addEventListener('click', (e) => { e.stopPropagation(); removeSynth(synth.id); });
-      _positionCard(el, tile, 300, 120);
-      _makeSynthCardDrag(el, synth);
+        <div class="dm-controls">
+          <select class="dm-kit-sel">
+            ${DRUM_KITS.map(k => `<option value="${k.id}"${k.id===drum.kitId?' selected':''}>${k.name}</option>`).join('')}
+          </select>
+          <button class="dm-play-btn${drum.isPlaying?' dm-playing':''}">${drum.isPlaying?'&#x25A0;':'&#x25B6;'}</button>
+          <button class="dm-clr-btn" title="Clear all steps">CLR</button>
+          <button class="dm-sync-btn${drum.gridSync?' synced':''}">GRID</button>
+          <select class="dm-subdiv-sel" style="display:${drum.gridSync?'block':'none'}">
+            ${['32n','16n','8n','4n'].map(s=>`<option value="${s}"${s===drum.subdiv?' selected':''}>${s}</option>`).join('')}
+          </select>
+          <div class="cslider dm-rate-slider" style="display:${!drum.gridSync?'flex':'none'}">
+            <input type="range" class="dm-rate-input" min="20" max="400" step="1" value="${drum.rate}">
+            <div class="cslider-thumb"><span class="cslider-lbl">${fmtBpm(drum.rate)}</span><input class="cslider-edit" type="text"></div>
+          </div>
+          <div class="dm-steps-ctrl">
+            <button class="dm-steps-dec">−</button>
+            <span class="dm-steps-val">${drum.numSteps}</span>
+            <button class="dm-steps-inc">+</button>
+          </div>
+          <span class="dm-kit-status">${drum._kitLoading?'Loading…':''}</span>
+        </div>
+        <div class="dm-grid">${buildGridHtml()}</div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">MIXER</div>
+          <div class="card-acc-body">
+            <div class="csec">
+              <div class="crow"><span class="clbl">Volume</span>${mkCsl('synth-vol','-60','6','0.1',(drum._currentDb||0).toFixed(1))}</div>
+              <div class="crow"><span class="clbl">Pan</span>${mkCsl('synth-pan','-1','1','0.01',(drum._currentPan||0).toFixed(2))}</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr">EFFECTS</div>
+          <div class="card-acc-body">
+            <div class="fx-section" id="fx-section-${drum.id}"></div>
+          </div>
+        </div>`;
+
+      const q = sel => el.querySelector(sel);
+
+      // Accordion toggle
+      el.addEventListener('click', e => {
+        const hdr = e.target.closest('.card-acc-hdr');
+        if (!hdr || !el.contains(hdr)) return;
+        hdr.classList.toggle('open');
+        hdr.nextElementSibling?.classList.toggle('open');
+        requestAnimationFrame(updateLfoWires);
+      });
+
+      // Attach step button listeners (called after initial render and after grid rebuild)
+      function attachStepListeners() {
+        el.querySelectorAll('.dm-step').forEach(btn => {
+          btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const lane = btn.dataset.lane, step = parseInt(btn.dataset.step);
+            const next = (parseInt(btn.dataset.vel) + 1) % 3;
+            drum.patterns[lane][step] = next;
+            btn.dataset.vel = next;
+          });
+          btn.addEventListener('contextmenu', e => {
+            e.preventDefault(); e.stopPropagation();
+            const lane = btn.dataset.lane, step = parseInt(btn.dataset.step);
+            const next = (parseInt(btn.dataset.vel) + 2) % 3;
+            drum.patterns[lane][step] = next;
+            btn.dataset.vel = next;
+          });
+        });
+      }
+      attachStepListeners();
+
+      // Rebuild grid when numSteps changes
+      function rebuildGrid() {
+        q('.dm-grid').innerHTML = buildGridHtml();
+        // Re-init pitch csliders (they're inside the grid per lane)
+        drum.INSTRUMENTS.forEach(name => {
+          const cls = `dm-pitch-${name}`;
+          const wrap = el.querySelector(`.${cls}`)?.closest('.cslider');
+          if (!wrap) return;
+          initCslider(wrap, fmtPitch);
+          el.querySelector(`.${cls}`).addEventListener('input', e => {
+            drum.pitches[name] = parseFloat(e.target.value);
+          });
+        });
+        attachStepListeners();
+      }
+
+      // Kit selector
+      q('.dm-kit-sel').addEventListener('change', e => {
+        const kitId = e.target.value;
+        drum.kitId = kitId;
+        drum.kitName = DRUM_KITS.find(k => k.id === kitId)?.name || kitId;
+        drum.loadKit(kitId);
+      });
+
+      // Play/stop
+      q('.dm-play-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const btn = q('.dm-play-btn');
+        if (drum.isPlaying) {
+          drum.stopSequencer();
+          btn.innerHTML = '&#x25B6;';
+          btn.classList.remove('dm-playing');
+        } else {
+          drum.startSequencer();
+          btn.innerHTML = '&#x25A0;';
+          btn.classList.add('dm-playing');
+        }
+      });
+
+      // Clear all steps
+      q('.dm-clr-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        for (const name of drum.INSTRUMENTS) drum.patterns[name].fill(0);
+        rebuildGrid();
+      });
+
+      // GRID toggle (on = synced to transport, off = free rate)
+      q('.dm-sync-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        drum.gridSync = !drum.gridSync;
+        q('.dm-sync-btn').classList.toggle('synced', drum.gridSync);
+        q('.dm-subdiv-sel').style.display  = drum.gridSync ? 'block' : 'none';
+        q('.dm-rate-slider').style.display = drum.gridSync ? 'none'  : 'flex';
+        if (drum.isPlaying) drum.startSequencer();
+      });
+
+      // Subdivision
+      q('.dm-subdiv-sel').addEventListener('change', e => {
+        drum.subdiv = e.target.value;
+        if (drum.isPlaying) drum.startSequencer();
+      });
+
+      // Free rate cslider
+      const rateSlider = q('.dm-rate-slider');
+      initCslider(rateSlider, fmtBpm);
+      q('.dm-rate-input').addEventListener('input', e => {
+        drum.rate = parseFloat(e.target.value);
+        if (drum.isPlaying) drum.startSequencer();
+      });
+
+      // Steps +/−
+      q('.dm-steps-dec').addEventListener('click', e => {
+        e.stopPropagation();
+        if (drum.numSteps > 1) {
+          drum.numSteps--;
+          q('.dm-steps-val').textContent = drum.numSteps;
+          rebuildGrid();
+          if (drum.isPlaying) drum.startSequencer();
+        }
+      });
+      q('.dm-steps-inc').addEventListener('click', e => {
+        e.stopPropagation();
+        if (drum.numSteps < 64) {
+          drum.numSteps++;
+          q('.dm-steps-val').textContent = drum.numSteps;
+          rebuildGrid();
+          if (drum.isPlaying) drum.startSequencer();
+        }
+      });
+
+      // Pitch csliders (one per lane, LFO-targetable)
+      drum.INSTRUMENTS.forEach(name => {
+        const cls = `dm-pitch-${name}`;
+        const wrap = el.querySelector(`.${cls}`)?.closest('.cslider');
+        if (!wrap) return;
+        initCslider(wrap, fmtPitch);
+        el.querySelector(`.${cls}`).addEventListener('input', e => {
+          drum.pitches[name] = parseFloat(e.target.value);
+        });
+      });
+
+      // Mixer sliders
+      const fmtDb  = v => parseFloat(v).toFixed(1) + ' dB';
+      const fmtPan = v => { const n = parseFloat(v); if (Math.abs(n) < 0.01) return 'C'; return (n > 0 ? 'R' : 'L') + Math.abs(Math.round(n * 100)); };
+      initCslider(q('.synth-vol').closest('.cslider'), fmtDb);
+      initCslider(q('.synth-pan').closest('.cslider'), fmtPan);
+      q('.synth-vol').addEventListener('input', () => { drum._currentDb  = parseFloat(q('.synth-vol').value); drum._applyVol(); });
+      q('.synth-pan').addEventListener('input', () => { drum._currentPan = parseFloat(q('.synth-pan').value); drum._applyPan(); });
+
+      // Titlebar drag/close
+      let _tbDragged = false;
+      q('.card-titlebar').addEventListener('mousedown', () => { _tbDragged = false; });
+      q('.card-titlebar').addEventListener('mousemove', e => { if (e.buttons) _tbDragged = true; });
+      q('.card-titlebar').addEventListener('click', e => {
+        if (e.target.closest('button, select') || _tbDragged) return;
+        closeSynthCard(drum.id);
+      });
+
+      q('.card-close').addEventListener('click',  () => closeSynthCard(drum.id));
+      q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSynth(drum.id); });
+      q('.card-dup').addEventListener('click',    e => { e.stopPropagation(); duplicateSynth(drum); });
+
+      _positionCard(el, tile, 500, 560);
+      _makeSynthCardDrag(el, drum);
       document.body.appendChild(el);
       requestAnimationFrame(() => el.classList.add('open'));
-      openCards.set(synth.id, { el });
+      openCards.set(drum.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
+      buildFxSection(el, drum);
+      applyCardOverrides(drum.id);
     }
 
     function duplicateSample(src) {
@@ -7629,6 +7575,8 @@
         }
       });
 
+      s._currentDb = src._currentDb;
+      s._currentPan = src._currentPan;
       s.updateVol();
       s.updatePan();
       samples.set(id, s);
@@ -7873,12 +7821,12 @@
               <div class="csec tight" style="border:none">
                 <div class="crow">
                   <span class="clbl">Volume</span>
-                  <input type="text" class="rng-field" value="0%">
+                  <input type="text" class="rng-field" value="-60">
                   <div class="cslider">
-                    <input type="range" class="card-vol" min="0" max="1" step="0.01" value="0.8">
-                    <div class="cslider-thumb"><span class="cslider-lbl">80%</span><input class="cslider-edit" type="text"></div>
+                    <input type="range" class="card-vol" min="-60" max="6" step="0.1" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0.0 dB</span><input class="cslider-edit" type="text"></div>
                   </div>
-                  <input type="text" class="rng-field" value="100%">
+                  <input type="text" class="rng-field" value="+6">
                 </div>
                 <div class="crow">
                   <span class="clbl">Pan</span>
@@ -8000,10 +7948,8 @@
       q('.card-release').value = s.releaseTime;
       q('.card-xfade').value = s.crossfadeTime;
 
-      const ch = cv.clientHeight || 500;
-      const cw = cv.clientWidth || 800;
-      q('.card-vol').value = 1 - Math.max(0, Math.min(1, s.y / ch));
-      q('.card-pan').value = Math.max(-1, Math.min(1, (s.x / cw) * 2 - 1));
+      q('.card-vol').value = s._currentDb;
+      q('.card-pan').value = s._currentPan;
 
       // init sync pos for visual
       cardEl.querySelectorAll('.cslider').forEach(w => w._syncPos && w._syncPos());
@@ -8361,12 +8307,11 @@
           cardEl.style.left = nx + 'px';
           cardEl.style.top = ny + 'px';
           if (tileEl) {
-            tileEl.style.left = (nx - cvRect.left + 72) + 'px';
-            tileEl.style.top = (ny - cvRect.top) + 'px';
+            tileEl.style.left = (nx - cvRect.left + 72 + cv.scrollLeft) + 'px';
+            tileEl.style.top = (ny - cvRect.top + cv.scrollTop) + 'px';
           }
-          s.x = nx - cvRect.left + 140;
-          s.y = ny - cvRect.top + 28;
-          s.updateVol(); s.updatePan();
+          s.x = nx - cvRect.left + 140 + cv.scrollLeft;
+          s.y = ny - cvRect.top + 28 + cv.scrollTop;
         };
         const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
@@ -8586,7 +8531,6 @@
           s.triggerMode = true;
           s.stop();
         } else {
-          if (sampleSeqMap.has(s.id)) disconnectSeqFromSample(s.id);
           s.triggerMode = false;
           if (mode === 'loop') {
             if (s.granular) s.setGranularMode(false);
@@ -8747,7 +8691,7 @@
       initCslider(q('.card-release').closest('.cslider'));
       initCslider(q('.card-xfade').closest('.cslider'));
 
-      const fmtVol = v => Math.round(v * 100) + '%';
+      const fmtVol = v => parseFloat(v).toFixed(1) + ' dB';
       const fmtPan = v => v < -0.01 ? 'L' + Math.round(-v * 100) : v > 0.01 ? 'R' + Math.round(v * 100) : 'C';
       initCslider(q('.card-vol').closest('.cslider'), fmtVol);
       initCslider(q('.card-pan').closest('.cslider'), fmtPan);
@@ -9517,8 +9461,18 @@
       document.getElementById('btn-play').classList.add('playing');
       Tone.Transport.start();
       for (const [, s] of samples) if (s instanceof Sample && !s.playing) startSample(s);
-      for (const [, seq] of seqs) seq.reschedule();
       for (const [, riff] of riffs) riff.reschedule();
+      for (const [, drum] of drums) {
+        if (drum instanceof DrumMachine && !drum.isPlaying) {
+          drum.startSequencer();
+          const cardInfo = openCards.get(drum.id);
+          if (cardInfo) {
+            cardInfo.el.querySelector('.dm-play-btn')?.classList.add('dm-playing');
+            const btn = cardInfo.el.querySelector('.dm-play-btn');
+            if (btn) btn.innerHTML = '&#x25A0;';
+          }
+        }
+      }
       if (metroOn) buildMetro();
       beatTick();
     }
@@ -9528,6 +9482,17 @@
       document.getElementById('btn-play').classList.remove('playing');
       Tone.Transport.pause();
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
+      for (const [, drum] of drums) {
+        if (drum instanceof DrumMachine && drum.isPlaying) {
+          drum.stopSequencer();
+          const cardInfo = openCards.get(drum.id);
+          if (cardInfo) {
+            cardInfo.el.querySelector('.dm-play-btn')?.classList.remove('dm-playing');
+            const btn = cardInfo.el.querySelector('.dm-play-btn');
+            if (btn) btn.innerHTML = '&#x25B6;';
+          }
+        }
+      }
     }
 
     function stopAll() {
@@ -9536,8 +9501,18 @@
       Tone.Transport.stop();
       Tone.Transport.position = 0;
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
-      for (const [, seq] of seqs) seq.unschedule();
       for (const [, riff] of riffs) riff.unschedule();
+      for (const [, drum] of drums) {
+        if (drum instanceof DrumMachine && drum.isPlaying) {
+          drum.stopSequencer();
+          const cardInfo = openCards.get(drum.id);
+          if (cardInfo) {
+            cardInfo.el.querySelector('.dm-play-btn')?.classList.remove('dm-playing');
+            const btn = cardInfo.el.querySelector('.dm-play-btn');
+            if (btn) btn.innerHTML = '&#x25B6;';
+          }
+        }
+      }
       // beat-pos removed
       cancelAnimationFrame(beatRaf);
     }
@@ -9854,7 +9829,7 @@
     }
 
     function saveProject() {
-      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [], seqs: [], riffs: [] };
+      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [], riffs: [], drums: [] };
       for (const [, s] of samples) {
         if (!(s instanceof Sample)) continue;
         const fxChainData = s.fxChain.map(inst => {
@@ -9864,6 +9839,7 @@
         projectData.samples.push({
           id: s.id,
           name: s.name, x: s.x, y: s.y, color: s.color,
+          volDb: s._currentDb, panPos: s._currentPan,
           pitchST: s.pitchST, stretchST: s.stretchST, psStretch: s.psStretch, reversed: s.reversed,
           loopStart: s.loopStart, loopEnd: s.loopEnd, filePosition: s.filePosition,
           muted: s.muted, gridSync: s.gridSync, subdiv: s.subdiv,
@@ -9880,6 +9856,28 @@
           audioB64: audioBufferToWavBase64(s.raw)
         });
       }
+      // Save drum machines
+      for (const [, drum] of drums) {
+        if (!(drum instanceof DrumMachine)) continue;
+        const fxChainData = drum.fxChain.map(inst => {
+          if (inst.type === 'eq') return { type: 'eq', bands: inst.eqData.bands.map(b => ({ ...b })) };
+          return { type: inst.type, params: { ...inst.params }, postFader: !!inst.postFader };
+        });
+        const patternsData = {};
+        const pitchesData  = {};
+        for (const n of drum.INSTRUMENTS) {
+          patternsData[n] = [...drum.patterns[n]];
+          pitchesData[n]  = drum.pitches[n];
+        }
+        projectData.drums.push({
+          id: drum.id, name: drum.name, x: drum.x, y: drum.y, color: drum.color,
+          kitId: drum.kitId, kitName: drum.kitName,
+          patterns: patternsData, pitches: pitchesData,
+          gridSync: drum.gridSync, subdiv: drum.subdiv, rate: drum.rate, numSteps: drum.numSteps,
+          volDb: drum._currentDb, panPos: drum._currentPan,
+          fxChain: fxChainData,
+        });
+      }
       // Save LFOs
       for (const [, lfo] of lfos) {
         projectData.lfos.push({
@@ -9890,22 +9888,11 @@
           destinations: lfo.destinations.map(d => {
             let fxIdx = null;
             if (d.fxUid != null) {
-              const samp = samples.get(d.sampleId);
-              if (samp) fxIdx = samp.fxChain.findIndex(i => i.uid === d.fxUid);
+              const inst = samples.get(d.sampleId) || synths.get(d.sampleId) || drums.get(d.sampleId);
+              if (inst) fxIdx = inst.fxChain.findIndex(i => i.uid === d.fxUid);
             }
             return { sampleId: d.sampleId, param: d.param, min: d.min, max: d.max, fxIdx };
-          }),
-          seqDestinations: lfo.seqDestinations.map(d => ({ seqId: d.seqId, param: d.param, min: d.min, max: d.max }))
-        });
-      }
-      // Save step sequencers
-      for (const [, seq] of seqs) {
-        projectData.seqs.push({
-          id: seq.id, name: seq.name, x: seq.x, y: seq.y, color: seq.color,
-          numSteps: seq.numSteps, steps: seq.steps.map(s => ({...s})),
-          destinations: [...seq.destinations],
-          gateLength: seq.gateLength,
-          gridSync: seq.gridSync, subdiv: seq.subdiv, rate: seq.rate
+          })
         });
       }
       // Save riffs
@@ -10033,6 +10020,20 @@
             }
           }
 
+          // Restore vol/pan (new fields; backward-compat: derive from old position if missing)
+          if (sd.volDb != null) {
+            s._currentDb = sd.volDb;
+          } else if (sd.y != null) {
+            const _ratio = Math.max(0, Math.min(1, sd.y / 500));
+            s._currentDb = Math.max(-60, Math.min(6, 6 - Math.pow(_ratio / 0.88, 1.6) * 66));
+          }
+          if (sd.panPos != null) {
+            s._currentPan = sd.panPos;
+          } else if (sd.x != null) {
+            s._currentPan = Math.max(-1, Math.min(1, (sd.x / 800) * 2 - 1));
+          }
+          s.updateVol(); s.updatePan();
+
           // Restore mute (must come after vol init)
           if (sd.muted) { s.muted = true; s.updateVol(); }
 
@@ -10044,44 +10045,52 @@
         }
       }
 
-      // seqIdMap: old saved seq id → new runtime id (must be built before LFO restoration)
-      const seqIdMap = {};
-
-      // Restore step sequencers (before LFOs so LFO→seq destinations can resolve)
-      for (const sid of [...seqs.keys()]) removeSeq(sid);
-      if (Array.isArray(data.seqs)) {
-        for (const sd of data.seqs) {
-          const sqid = nextSeqId++;
-          if (sd.id != null) seqIdMap[sd.id] = sqid;
-          const seq = new StepSequencer(sqid, sd.x || 400, sd.y || 300);
-          seq.name = sd.name || ('Seq ' + sqid);
-          if (sd.color) seq.color = sd.color;
-          seq.numSteps = sd.numSteps || 16;
-          if (Array.isArray(sd.steps)) {
-            const loaded = sd.steps.slice(0, 64).map(s =>
-              typeof s === 'boolean' ? {on: s, pitch: 0, vol: 1.0, gate: null} :
-              {on: !!s.on, pitch: s.pitch || 0, vol: s.vol ?? 1.0, gate: s.gate ?? null}
-            );
-            // Pad to 64 if needed
-            while (loaded.length < 64) loaded.push({on: false, pitch: 0, vol: 1.0, gate: null});
-            seq.steps = loaded;
-          }
-          seq.gateLength = sd.gateLength ?? 1.0;
-          seq.gridSync = sd.gridSync !== false;
-          seq.subdiv = sd.subdiv || '16n';
-          seq.rate = sd.rate || 0.125;
-          seqs.set(sqid, seq);
-          createSeqNode(seq);
-          // Reconnect seq→sample destinations using idMap
-          if (Array.isArray(sd.destinations)) {
-            for (const oldSampleId of sd.destinations) {
-              const targetId = idMap[oldSampleId] ?? (samples.has(oldSampleId) ? oldSampleId : null);
-              if (targetId != null) connectSeqToSample(seq, targetId);
+      // Restore drum machines
+      for (const did of [...drums.keys()]) removeSynth(did);
+      if (Array.isArray(data.drums)) {
+        for (const dd of data.drums) {
+          try {
+            const id = nextId++;
+            if (dd.id != null) idMap[dd.id] = id;
+            const drum = new DrumMachine(id, dd.name || ('DRUMS ' + id), dd.x || 300, dd.y || 300);
+            if (dd.color) drum.color = dd.color;
+            if (dd.kitId) { drum.kitId = dd.kitId; drum.kitName = dd.kitName || dd.kitId; }
+            drum.numSteps = dd.numSteps || 16;
+            for (const n of drum.INSTRUMENTS) {
+              if (dd.patterns?.[n]) {
+                const loaded = dd.patterns[n].slice(0, 64);
+                // Pad to 64 if needed
+                while (loaded.length < 64) loaded.push(0);
+                drum.patterns[n] = loaded;
+              }
+              if (dd.pitches?.[n] !== undefined) drum.pitches[n] = dd.pitches[n];
             }
-          }
+            drum.gridSync = dd.gridSync !== undefined ? dd.gridSync : true;
+            drum.subdiv   = dd.subdiv || '16n';
+            drum.rate     = dd.rate   || 120;
+            drum._currentDb  = dd.volDb  ?? 0;
+            drum._currentPan = dd.panPos ?? 0;
+            drum._applyVol(); drum._applyPan();
+            // Restore fx chain
+            if (Array.isArray(dd.fxChain)) {
+              for (const fi of dd.fxChain) {
+                const inst = drum.addFxInstance(fi.type);
+                if (!inst) continue;
+                if (fi.type === 'eq' && fi.bands) {
+                  fi.bands.forEach((b, i) => { inst.eqData.bands[i] = { ...b }; inst.eqData.applyBand(i); });
+                } else if (fi.params) {
+                  Object.assign(inst.params, fi.params);
+                  applyFxNodeParams(inst);
+                }
+                if (fi.postFader) { inst.postFader = true; drum.rebuildFxChain(); }
+              }
+            }
+            drums.set(id, drum);
+            createSynthTile(drum);
+            drum.loadKit(drum.kitId);
+          } catch(e) { console.error('Failed to restore drum machine:', e); }
         }
       }
-
       // Restore riffs
       for (const rid of [...riffs.keys()]) removeRiff(rid);
       if (Array.isArray(data.riffs)) {
@@ -10138,21 +10147,15 @@
           // Restore LFO→sample destinations, remapping old IDs and fxUid via chain index
           if (Array.isArray(ld.destinations)) {
             for (const dd of ld.destinations) {
-              const targetId = idMap[dd.sampleId] ?? (samples.has(dd.sampleId) ? dd.sampleId : null);
+              const targetId = idMap[dd.sampleId] ??
+                (samples.has(dd.sampleId) || synths.has(dd.sampleId) || drums.has(dd.sampleId) ? dd.sampleId : null);
               if (targetId == null) continue;
               let fxUid = null;
               if (dd.fxIdx != null && dd.fxIdx >= 0) {
-                const samp = samples.get(targetId);
-                if (samp && samp.fxChain[dd.fxIdx]) fxUid = samp.fxChain[dd.fxIdx].uid;
+                const inst = samples.get(targetId) || synths.get(targetId) || drums.get(targetId);
+                if (inst && inst.fxChain[dd.fxIdx]) fxUid = inst.fxChain[dd.fxIdx].uid;
               }
               lfo.addDestination(targetId, dd.param, dd.min, dd.max, fxUid);
-            }
-          }
-          // Restore LFO→seq destinations using seqIdMap
-          if (Array.isArray(ld.seqDestinations)) {
-            for (const dd of ld.seqDestinations) {
-              const targetSeqId = seqIdMap[dd.seqId] ?? (seqs.has(dd.seqId) ? dd.seqId : null);
-              if (targetSeqId != null) lfo.addSeqDestination(targetSeqId, dd.param, dd.min, dd.max);
             }
           }
           lfos.set(lid, lfo);
@@ -10478,7 +10481,7 @@
         // Draw shape
         const pts = lfo.shape;
         if (pts.length >= 2) {
-          ctx.strokeStyle = '#fff';
+          ctx.strokeStyle = lfo.color;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(pts[0].x * W, (1 - pts[0].y) * H);
@@ -10488,7 +10491,7 @@
           ctx.stroke();
 
           // Fill under curve
-          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.fillStyle = lfo.color + '18';
           ctx.beginPath();
           ctx.moveTo(pts[0].x * W, H);
           for (const p of pts) ctx.lineTo(p.x * W, (1 - p.y) * H);
@@ -10764,36 +10767,6 @@
           });
           list.appendChild(item);
         }
-        // Seq destinations
-        for (const d of lfo.seqDestinations) {
-          const seq = seqs.get(d.seqId);
-          if (!seq) continue;
-          const pLabel = d.param === 'numSteps' ? 'Steps' : 'Gate';
-          const item = document.createElement('div');
-          item.className = 'lfo-dest-item';
-          item.innerHTML = `
-            <span class="lfo-dest-name" title="${seq.name} · ${pLabel}">${seq.name.substring(0, 8)}: ${pLabel}</span>
-            <input class="lfo-dest-field lfo-dest-min" type="text" value="${d.min}" title="Min">
-            <input class="lfo-dest-field lfo-dest-max" type="text" value="${d.max}" title="Max">
-            <button class="lfo-dest-unlink" title="Unlink">✕</button>
-          `;
-          const minF = item.querySelector('.lfo-dest-min');
-          const maxF = item.querySelector('.lfo-dest-max');
-          minF.addEventListener('change', () => { const v = parseFloat(minF.value); if (!isNaN(v)) d.min = v; else minF.value = d.min; });
-          maxF.addEventListener('change', () => { const v = parseFloat(maxF.value); if (!isNaN(v)) d.max = v; else maxF.value = d.max; });
-          [minF, maxF].forEach(f => {
-            f.addEventListener('mousedown', e => e.stopPropagation());
-            f.addEventListener('click', e => e.stopPropagation());
-            f.addEventListener('keydown', e => { if (e.key === 'Enter') f.blur(); e.stopPropagation(); });
-          });
-          item.querySelector('.lfo-dest-unlink').addEventListener('click', e => {
-            e.stopPropagation();
-            lfo.removeSeqDestination(d.seqId, d.param);
-            updateDestList();
-            updateLfoWires();
-          });
-          list.appendChild(item);
-        }
       }
 
       el.style.zIndex = ++cardZTop;
@@ -10803,552 +10776,6 @@
       updateLfoWires();
       return nodeInfo;
     }
-
-    // ════════════════════════════════════════════════════
-    // STEP SEQUENCER NODE CREATION
-    // ════════════════════════════════════════════════════
-
-    function createSeqNode(seq) {
-      const el = document.createElement('div');
-      el.className = 'seq-node';
-      el.id = 'seq-' + seq.id;
-      el.style.left = (seq.x - SEQ_W / 2) + 'px';
-      el.style.top = (seq.y - 100) + 'px';
-      el.style.borderColor = seq.color;
-      el.style.setProperty('--seq-color', seq.color);
-
-      el.innerHTML = `
-        <div class="seq-titlebar" title="Click to collapse/expand">
-          <div class="seq-color-dot"></div>
-          <div class="seq-name">${seq.name}</div>
-          <button class="seq-dup" title="Duplicate">⧉</button>
-          <button class="seq-remove" title="Remove">🗑</button>
-          <button class="seq-min" title="Minimize">✕</button>
-        </div>
-        <div class="seq-mini-grid"></div>
-        <div class="seq-min-footer">${seq.name}</div>
-        <div class="seq-grid"></div>
-        <div class="seq-controls">
-          <div class="seq-steps-row">
-            <span class="seq-steps-lbl">Steps</span>
-            <div class="cslider seq-steps-slider">
-              <input type="range" class="seq-steps-input" min="1" max="64" step="1" value="${seq.numSteps}">
-              <div class="cslider-thumb"><span class="cslider-lbl">${seq.numSteps}</span><input class="cslider-edit" type="text"></div>
-            </div>
-          </div>
-        </div>
-        <div class="seq-mode-row">
-          <span class="seq-rate-lbl">Gate</span>
-          <div class="cslider seq-gate-slider">
-            <input type="range" class="seq-gate-input" min="0" max="1" step="0.001" value="${Math.sqrt(seq.gateLength).toFixed(3)}">
-            <div class="cslider-thumb"><span class="cslider-lbl">${Math.round(seq.gateLength * 100)}%</span><input class="cslider-edit" type="text"></div>
-          </div>
-        </div>
-        <div class="seq-grid-row">
-          <button class="cbtn seq-grid-btn" style="flex:0 0 auto;padding:4px 8px;font-size:9px">Grid</button>
-          <select class="seq-subdiv-sel">
-            <option value="1n">1 bar</option>
-            <option value="2n">1/2</option>
-            <option value="4n">1/4</option>
-            <option value="8n">1/8</option>
-            <option value="16n" selected>1/16</option>
-            <option value="32n">1/32</option>
-            <option value="4t">1/4T</option>
-            <option value="8t">1/8T</option>
-            <option value="16t">1/16T</option>
-          </select>
-        </div>
-        <div class="seq-rate-row">
-          <span class="seq-rate-lbl">Rate</span>
-          <div class="cslider seq-rate-slider">
-            <input type="range" class="seq-rate-input" min="0.04" max="2" step="0.01" value="${seq.rate}">
-            <div class="cslider-thumb"><span class="cslider-lbl">${seq.rate.toFixed(2)}s</span><input class="cslider-edit" type="text"></div>
-          </div>
-        </div>
-        <div class="seq-wire-port" title="Drag to connect to a sampler"></div>
-        <div class="seq-dest-list"></div>
-      `;
-
-      const q = sel => el.querySelector(sel);
-      q('.seq-color-dot').style.background = seq.color;
-
-      // ── Step visuals ──
-      function updateStepVisuals(btn, stepData) {
-        btn.classList.toggle('act', stepData.on);
-        const volBar = btn.querySelector('.step-vol-bar');
-        const pitchTag = btn.querySelector('.step-pitch-tag');
-        const gateBar = btn.querySelector('.step-gate-bar');
-        if (volBar) volBar.style.height = stepData.on ? ((1 - stepData.vol) * 100) + '%' : '0%';
-        if (pitchTag) {
-          pitchTag.textContent = stepData.pitch !== 0 ? (stepData.pitch > 0 ? '+' + stepData.pitch : stepData.pitch) : '';
-          pitchTag.style.display = (stepData.pitch !== 0 && stepData.on) ? '' : 'none';
-        }
-        if (gateBar) {
-          const hasCustomGate = stepData.gate !== null && stepData.on;
-          gateBar.style.width = hasCustomGate ? (stepData.gate * 100) + '%' : (stepData.on ? '100%' : '0%');
-          gateBar.style.opacity = hasCustomGate ? '1' : '0';
-        }
-        const dot = q(`.seq-mini-grid .seq-mini-step[data-step="${btn.dataset.step}"]`);
-        if (dot) dot.classList.toggle('act', stepData.on);
-      }
-
-      // ── Hover-triggered step editor ──
-      const stepEditor = document.createElement('div');
-      stepEditor.className = 'seq-step-editor';
-      stepEditor.style.display = 'none';
-      stepEditor.innerHTML = `
-        <div class="sse-header">Step <span class="sse-num"></span></div>
-        <div class="sse-row">
-          <span class="sse-lbl">Pitch</span>
-          <input type="range" class="sse-pitch" min="-24" max="24" step="1" value="0">
-          <span class="sse-val sse-pitch-val">0 st</span>
-        </div>
-        <div class="sse-row">
-          <span class="sse-lbl">Vol</span>
-          <input type="range" class="sse-vol" min="0" max="100" step="1" value="100">
-          <span class="sse-val sse-vol-val">100%</span>
-        </div>
-        <div class="sse-row">
-          <span class="sse-lbl">Gate</span>
-          <label class="sse-global-wrap"><input type="checkbox" class="sse-gate-global" checked><span>Global</span></label>
-          <input type="range" class="sse-gate" min="1" max="100" step="1" value="100" disabled>
-          <span class="sse-val sse-gate-val">—</span>
-        </div>
-        <button class="sse-reset">Reset</button>
-      `;
-      el.appendChild(stepEditor);
-
-      let _hoverTimer = null, _closeTimer = null, _editorStepIdx = -1;
-
-      function populateEditor(stepIdx) {
-        const sd = seq.steps[stepIdx];
-        stepEditor.querySelector('.sse-num').textContent = stepIdx + 1;
-        const pitchIn = stepEditor.querySelector('.sse-pitch');
-        const volIn   = stepEditor.querySelector('.sse-vol');
-        const gateIn  = stepEditor.querySelector('.sse-gate');
-        const globalCb = stepEditor.querySelector('.sse-gate-global');
-        pitchIn.value = sd.pitch;
-        volIn.value   = Math.round(sd.vol * 100);
-        const hasGate = sd.gate !== null;
-        globalCb.checked = !hasGate;
-        gateIn.disabled  = !hasGate;
-        gateIn.value     = hasGate ? Math.round(sd.gate * 100) : Math.round(seq.gateLength * 100);
-        stepEditor.querySelector('.sse-pitch-val').textContent = sd.pitch > 0 ? '+' + sd.pitch + ' st' : sd.pitch + ' st';
-        stepEditor.querySelector('.sse-vol-val').textContent   = Math.round(sd.vol * 100) + '%';
-        stepEditor.querySelector('.sse-gate-val').textContent  = hasGate ? Math.round(sd.gate * 100) + '%' : '—';
-      }
-
-      function showEditor(btn, stepIdx) {
-        // Remove highlight from any previously focused step
-        el.querySelectorAll('.seq-step.editing').forEach(b => b.classList.remove('editing'));
-        btn.classList.add('editing');
-        _editorStepIdx = stepIdx;
-        populateEditor(stepIdx);
-        stepEditor.style.display = 'block';
-        // Position below the button, clamped within the seq-node
-        const btnRect = btn.getBoundingClientRect();
-        const elRect  = el.getBoundingClientRect();
-        const edW = stepEditor.offsetWidth || 200;
-        let left = btnRect.left - elRect.left;
-        if (left + edW > el.offsetWidth - 4) left = el.offsetWidth - edW - 4;
-        if (left < 4) left = 4;
-        stepEditor.style.left = left + 'px';
-        stepEditor.style.top  = (btnRect.bottom - elRect.top + 4) + 'px';
-      }
-
-      function hideEditor() {
-        stepEditor.style.display = 'none';
-        _editorStepIdx = -1;
-        el.querySelectorAll('.seq-step.editing').forEach(b => b.classList.remove('editing'));
-      }
-
-      // Step editor live update handlers
-      stepEditor.querySelector('.sse-pitch').addEventListener('input', e => {
-        if (_editorStepIdx < 0) return;
-        const sd = seq.steps[_editorStepIdx];
-        sd.pitch = parseInt(e.target.value);
-        stepEditor.querySelector('.sse-pitch-val').textContent = sd.pitch > 0 ? '+' + sd.pitch + ' st' : sd.pitch + ' st';
-        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
-        if (btn) updateStepVisuals(btn, sd);
-      });
-      stepEditor.querySelector('.sse-vol').addEventListener('input', e => {
-        if (_editorStepIdx < 0) return;
-        const sd = seq.steps[_editorStepIdx];
-        sd.vol = parseInt(e.target.value) / 100;
-        stepEditor.querySelector('.sse-vol-val').textContent = e.target.value + '%';
-        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
-        if (btn) updateStepVisuals(btn, sd);
-      });
-      stepEditor.querySelector('.sse-gate-global').addEventListener('change', e => {
-        if (_editorStepIdx < 0) return;
-        const sd = seq.steps[_editorStepIdx];
-        const gateIn = stepEditor.querySelector('.sse-gate');
-        if (e.target.checked) {
-          sd.gate = null;
-          gateIn.disabled = true;
-          stepEditor.querySelector('.sse-gate-val').textContent = '—';
-        } else {
-          sd.gate = parseInt(gateIn.value) / 100;
-          gateIn.disabled = false;
-          stepEditor.querySelector('.sse-gate-val').textContent = gateIn.value + '%';
-        }
-        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
-        if (btn) updateStepVisuals(btn, sd);
-      });
-      stepEditor.querySelector('.sse-gate').addEventListener('input', e => {
-        if (_editorStepIdx < 0) return;
-        const sd = seq.steps[_editorStepIdx];
-        sd.gate = parseInt(e.target.value) / 100;
-        stepEditor.querySelector('.sse-gate-val').textContent = e.target.value + '%';
-        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
-        if (btn) updateStepVisuals(btn, sd);
-      });
-      stepEditor.querySelector('.sse-reset').addEventListener('click', e => {
-        e.stopPropagation();
-        if (_editorStepIdx < 0) return;
-        const sd = seq.steps[_editorStepIdx];
-        sd.pitch = 0; sd.vol = 1.0; sd.gate = null;
-        populateEditor(_editorStepIdx);
-        const btn = el.querySelector(`.seq-step[data-step="${_editorStepIdx}"]`);
-        if (btn) updateStepVisuals(btn, sd);
-      });
-      // Keep editor open while hovering it
-      stepEditor.addEventListener('mouseenter', () => clearTimeout(_closeTimer));
-      stepEditor.addEventListener('mouseleave', () => { _closeTimer = setTimeout(hideEditor, 120); });
-      stepEditor.addEventListener('click', e => e.stopPropagation());
-      stepEditor.addEventListener('mousedown', e => e.stopPropagation());
-
-      // ── Build step grid ──
-      function buildGrid() {
-        const grid = q('.seq-grid');
-        const mini = q('.seq-mini-grid');
-        grid.innerHTML = '';
-        mini.innerHTML = '';
-        for (let i = 0; i < 64; i++) {
-          const stepData = seq.steps[i];
-          const btn = document.createElement('button');
-          btn.className = 'seq-step' +
-            (stepData.on ? ' act' : '') +
-            (i >= seq.numSteps ? ' inactive' : '');
-          btn.dataset.step = i;
-
-          // Inner overlays for vol/pitch/gate visuals
-          const volBar = document.createElement('div');
-          volBar.className = 'step-vol-bar';
-          volBar.style.height = (stepData.on ? (1 - stepData.vol) * 100 : 0) + '%';
-          btn.appendChild(volBar);
-
-          const pitchTag = document.createElement('div');
-          pitchTag.className = 'step-pitch-tag';
-          pitchTag.textContent = stepData.pitch !== 0 ? (stepData.pitch > 0 ? '+' + stepData.pitch : stepData.pitch) : '';
-          pitchTag.style.display = (stepData.pitch !== 0 && stepData.on) ? '' : 'none';
-          btn.appendChild(pitchTag);
-
-          const gateBar = document.createElement('div');
-          gateBar.className = 'step-gate-bar';
-          gateBar.style.width = stepData.on && stepData.gate !== null ? (stepData.gate * 100) + '%' : (stepData.on ? '100%' : '0%');
-          gateBar.style.opacity = (stepData.on && stepData.gate !== null) ? '1' : '0';
-          btn.appendChild(gateBar);
-
-          btn.addEventListener('click', e => {
-            e.stopPropagation();
-            stepData.on = !stepData.on;
-            updateStepVisuals(btn, stepData);
-            // Refresh editor if open on this step
-            if (_editorStepIdx === i) populateEditor(i);
-          });
-          btn.addEventListener('mouseenter', () => {
-            clearTimeout(_closeTimer);
-            clearTimeout(_hoverTimer);
-            _hoverTimer = setTimeout(() => showEditor(btn, i), 750);
-          });
-          btn.addEventListener('mouseleave', () => {
-            clearTimeout(_hoverTimer);
-            _closeTimer = setTimeout(hideEditor, 120);
-          });
-          btn.addEventListener('contextmenu', e => e.preventDefault());
-          grid.appendChild(btn);
-
-          const dot = document.createElement('div');
-          dot.className = 'seq-mini-step' +
-            (stepData.on ? ' act' : '') +
-            (i >= seq.numSteps ? ' inactive' : '');
-          dot.dataset.step = i;
-          mini.appendChild(dot);
-        }
-      }
-      buildGrid();
-
-      // ── Step highlight (visual playhead via rAF) ──
-      let _displayStep = -1;
-      let _animRunning = true;
-
-      function highlightStep(step) {
-        const prevBtn = el.querySelector('.seq-grid .seq-step.cur');
-        if (prevBtn) prevBtn.classList.remove('cur');
-        const curBtn = el.querySelector(`.seq-grid .seq-step[data-step="${step}"]`);
-        if (curBtn && !curBtn.classList.contains('inactive')) curBtn.classList.add('cur');
-
-        const prevDot = el.querySelector('.seq-mini-grid .seq-mini-step.cur');
-        if (prevDot) prevDot.classList.remove('cur');
-        const curDot = el.querySelector(`.seq-mini-grid .seq-mini-step[data-step="${step}"]`);
-        if (curDot && !curDot.classList.contains('inactive')) curDot.classList.add('cur');
-      }
-
-      (function animLoop() {
-        if (!_animRunning) return;
-        if (audioReady && seq._scheduleId !== null && isPlaying && seq._seqPhaseTransport !== null) {
-          const stepDur = seqStepDurSec(seq);
-          if (stepDur > 0) {
-            const elapsed = Tone.Transport.seconds - seq._seqPhaseTransport;
-            if (elapsed >= 0) {
-              const curStep = Math.floor(elapsed / stepDur) % seq.numSteps;
-              if (curStep !== _displayStep) {
-                _displayStep = curStep;
-                highlightStep(curStep);
-              }
-            }
-          }
-        } else if ((!isPlaying || seq._seqPhaseTransport === null) && _displayStep !== -1) {
-          _displayStep = -1;
-          el.querySelectorAll('.seq-step.cur, .seq-mini-step.cur').forEach(e => e.classList.remove('cur'));
-        }
-        requestAnimationFrame(animLoop);
-      })();
-
-      // ── Steps slider ──
-      const stepsSlider = q('.seq-steps-slider');
-      const stepsInput = q('.seq-steps-input');
-
-      function updateInactiveSteps() {
-        el.querySelectorAll('.seq-step').forEach((btn, i) => btn.classList.toggle('inactive', i >= seq.numSteps));
-        el.querySelectorAll('.seq-mini-step').forEach((dot, i) => dot.classList.toggle('inactive', i >= seq.numSteps));
-      }
-
-      initCslider(stepsSlider, v => Math.round(parseFloat(v)) + '');
-      stepsInput.addEventListener('input', e => {
-        e.stopPropagation();
-        seq.numSteps = Math.max(1, Math.min(64, Math.round(parseFloat(e.target.value))));
-        updateInactiveSteps();
-      });
-
-      // Gate length slider
-      const gateSlider = q('.seq-gate-slider');
-      const gateInput = q('.seq-gate-input');
-      // Slider position t (0–1) maps to gate length t² for better low-end resolution
-      initCslider(gateSlider, v => { const t = parseFloat(v); return Math.round(t * t * 100) + '%'; });
-      gateInput.addEventListener('input', e => { const t = parseFloat(e.target.value); seq.gateLength = t * t; });
-
-      // ── Grid sync ──
-      const gridBtn = q('.seq-grid-btn');
-      const subdivSel = q('.seq-subdiv-sel');
-      const rateRow = q('.seq-rate-row');
-      subdivSel.value = seq.subdiv;
-      gridBtn.classList.toggle('act', seq.gridSync);
-
-      function updateGridUI() {
-        const on = seq.gridSync;
-        subdivSel.style.opacity = on ? '1' : '0.4';
-        subdivSel.style.pointerEvents = on ? 'all' : 'none';
-        rateRow.style.opacity = on ? '0.3' : '1';
-        rateRow.style.pointerEvents = on ? 'none' : 'all';
-      }
-      updateGridUI();
-
-      gridBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        seq.gridSync = !seq.gridSync;
-        gridBtn.classList.toggle('act', seq.gridSync);
-        updateGridUI();
-        seq.reschedule();
-      });
-      subdivSel.addEventListener('change', e => {
-        e.stopPropagation();
-        seq.subdiv = subdivSel.value;
-        if (seq.gridSync) seq.reschedule();
-      });
-
-      // ── Rate slider (free mode) ──
-      const rateSlider = q('.seq-rate-slider');
-      const rateInput = q('.seq-rate-input');
-      initCslider(rateSlider, v => parseFloat(v).toFixed(2) + 's');
-      rateInput.addEventListener('input', e => {
-        seq.rate = parseFloat(e.target.value);
-        if (!seq.gridSync) seq.reschedule();
-      });
-
-      // ── Wire port ──
-      q('.seq-wire-port').addEventListener('mousedown', e => {
-        e.stopPropagation();
-        e.preventDefault();
-        startSeqWireDrag(seq, e);
-      });
-
-      // ── Destination list ──
-      function updateDestList() {
-        const list = q('.seq-dest-list');
-        list.innerHTML = '';
-        for (const sampleId of seq.destinations) {
-          const s = samples.get(sampleId);
-          if (!s) continue;
-          const item = document.createElement('div');
-          item.className = 'seq-dest-item';
-          item.innerHTML = `
-            <span class="seq-dest-name" title="${s.name}">${s.name.substring(0, 14)}</span>
-            <button class="seq-dest-unlink" title="Disconnect">✕</button>
-          `;
-          item.querySelector('.seq-dest-unlink').addEventListener('click', e => {
-            e.stopPropagation();
-            disconnectSeqFromSample(sampleId);
-          });
-          list.appendChild(item);
-        }
-      }
-      updateDestList();
-
-      // ── Header buttons ──
-      q('.seq-remove').addEventListener('click', e => { e.stopPropagation(); removeSeq(seq.id); });
-      q('.seq-dup').addEventListener('click', e => { e.stopPropagation(); duplicateSeq(seq); });
-      q('.seq-min').addEventListener('click', e => { e.stopPropagation(); el.classList.toggle('collapsed'); });
-
-      // ── Titlebar drag & collapse ──
-      let titleMoved = false;
-      q('.seq-titlebar').addEventListener('mousedown', e => {
-        if (e.target.closest('button')) return;
-        e.preventDefault(); e.stopPropagation();
-        el.style.zIndex = ++cardZTop;
-        titleMoved = false;
-        const ox = e.clientX, oy = e.clientY;
-        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
-        el.classList.add('dragging');
-        const mm = ev => {
-          const dx = ev.clientX - ox, dy = ev.clientY - oy;
-          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) titleMoved = true;
-          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
-          seq.x = oL + dx + SEQ_W / 2; seq.y = oT + dy;
-          updateLfoWires();
-        };
-        const mu = () => {
-          el.classList.remove('dragging');
-          document.removeEventListener('mousemove', mm);
-          document.removeEventListener('mouseup', mu);
-        };
-        document.addEventListener('mousemove', mm);
-        document.addEventListener('mouseup', mu);
-      });
-      q('.seq-titlebar').addEventListener('click', e => {
-        if (e.target.closest('button')) return;
-        if (!titleMoved) { e.stopPropagation(); el.classList.toggle('collapsed'); }
-      });
-
-      // ── Collapsed state: drag & click to expand ──
-      let minMoved = false;
-      el.addEventListener('mousedown', e => {
-        if (!el.classList.contains('collapsed')) return;
-        e.preventDefault(); e.stopPropagation();
-        el.style.zIndex = ++cardZTop;
-        minMoved = false;
-        const ox = e.clientX, oy = e.clientY;
-        const oL = parseInt(el.style.left), oT = parseInt(el.style.top);
-        el.classList.add('dragging');
-        const mm = ev => {
-          const dx = ev.clientX - ox, dy = ev.clientY - oy;
-          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) minMoved = true;
-          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
-          seq.x = oL + dx + 136 / 2; seq.y = oT + dy;
-          updateLfoWires();
-        };
-        const mu = () => {
-          el.classList.remove('dragging');
-          document.removeEventListener('mousemove', mm);
-          document.removeEventListener('mouseup', mu);
-        };
-        document.addEventListener('mousemove', mm);
-        document.addEventListener('mouseup', mu);
-      });
-      el.addEventListener('click', e => {
-        if (!el.classList.contains('collapsed')) return;
-        if (!minMoved) el.classList.remove('collapsed');
-      });
-
-      el.style.zIndex = ++cardZTop;
-      cv.appendChild(el);
-      const nodeInfo = { el, stopAnim: () => {
-        _animRunning = false;
-        clearTimeout(_hoverTimer);
-        clearTimeout(_closeTimer);
-      }, updateDestList };
-      seqNodes.set(seq.id, nodeInfo);
-      seq.schedule();
-      return nodeInfo;
-    }
-
-    // ── Seq connect / disconnect ──
-    function connectSeqToSample(seq, sampleId) {
-      // If already controlled by another seq, remove that link first
-      if (sampleSeqMap.has(sampleId)) {
-        const oldSeqId = sampleSeqMap.get(sampleId);
-        const oldSeq = seqs.get(oldSeqId);
-        if (oldSeq) {
-          oldSeq.removeDestination(sampleId);
-          seqNodes.get(oldSeqId)?.updateDestList();
-        }
-        sampleSeqMap.delete(sampleId);
-      }
-      seq.addDestination(sampleId);
-      sampleSeqMap.set(sampleId, seq.id);
-      // Stop sample's internal playback — sequencer takes over
-      const s = samples.get(sampleId) || synths.get(sampleId);
-      if (s instanceof Sample) {
-        s.stop();
-        s.playing = false;
-        s._renderTile();
-      }
-      // Mark tile visually
-      const tile = document.getElementById('t' + sampleId);
-      if (tile) {
-        tile.classList.add('seq-controlled');
-        tile.style.setProperty('--seq-ctrl-color', seq.color);
-      }
-      seqNodes.get(seq.id)?.updateDestList();
-      // Set trigger mode on sample and update open card if any
-      if (s instanceof Sample) s.triggerMode = true;
-      const _cInfo = openCards.get(sampleId);
-      if (_cInfo) {
-        const _ce = _cInfo.el;
-        _ce.querySelector('.card-mode-loop')?.classList.remove('act');
-        _ce.querySelector('.card-mode-rev')?.classList.remove('act');
-        _ce.querySelector('.card-mode-gran')?.classList.remove('act');
-        _ce.querySelector('.card-mode-trig')?.classList.add('act');
-        _ce.querySelector('.loop-grid-section')?.classList.add('hidden');
-      }
-      updateLfoWires();
-    }
-
-    function disconnectSeqFromSample(sampleId) {
-      const seqId = sampleSeqMap.get(sampleId);
-      if (seqId === undefined) return;
-      const seq = seqs.get(seqId);
-      if (seq) {
-        seq.removeDestination(sampleId);
-        seqNodes.get(seqId)?.updateDestList();
-      }
-      sampleSeqMap.delete(sampleId);
-      // Remove tile indicator
-      const tile = document.getElementById('t' + sampleId);
-      if (tile) {
-        tile.classList.remove('seq-controlled');
-        tile.style.removeProperty('--seq-ctrl-color');
-      }
-      const s = samples.get(sampleId) || synths.get(sampleId);
-      if (s instanceof Sample) {
-        s.stop(); // stop any ongoing playback — sample waits in trigger mode
-      } else if (s instanceof SynthInstrument) {
-        s.allNotesOff();
-      }
-      updateLfoWires();
-    }
-
     // ════════════════════════════════════════════════════
     // ── Riff note transform helpers ──
     function riffShiftOctave(riff, delta) {
@@ -12020,7 +11447,7 @@
     function startRiffWireDrag(riff, startEvent) {
       const wiresSvg = document.getElementById('lfo-wires');
       const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      tempLine.classList.add('seq-wire-temp');
+      tempLine.classList.add('riff-wire-temp');
       tempLine.style.stroke = riff.color;
       wiresSvg.appendChild(tempLine);
 
@@ -12135,11 +11562,8 @@
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;
 
-      // Highlight potential targets: sample card sliders, synth card sliders + seq param sliders
+      // Highlight potential targets: sample card sliders, synth card sliders
       document.querySelectorAll('.sample-card .cslider, .synth-card .cslider').forEach(sl => {
-        sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
-      });
-      document.querySelectorAll('.seq-node .seq-steps-slider, .seq-node .seq-gate-slider').forEach(sl => {
         sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
       });
 
@@ -12157,7 +11581,6 @@
         tempLine.remove();
         // Remove highlights
         document.querySelectorAll('.sample-card .cslider, .synth-card .cslider').forEach(sl => { sl.style.outline = ''; });
-        document.querySelectorAll('.seq-node .seq-steps-slider, .seq-node .seq-gate-slider').forEach(sl => { sl.style.outline = ''; });
 
         // Check if dropped on a target
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
@@ -12165,31 +11588,6 @@
         const sliderWrap = target.closest('.cslider');
         const eqCanvas = target.classList.contains('card-eq-canvas') ? target : target.closest('.card-eq-canvas');
         if (!sliderWrap && !eqCanvas) return;
-
-        // ── Seq param target ──
-        const seqNodeEl = sliderWrap?.closest('.seq-node');
-        if (seqNodeEl) {
-          const native = sliderWrap.querySelector('input[type=range]');
-          if (!native) return;
-          let seqParamInfo = null;
-          for (const cls of native.classList) {
-            if (SEQ_PARAM_MAP[cls]) { seqParamInfo = SEQ_PARAM_MAP[cls]; break; }
-          }
-          if (!seqParamInfo) return;
-          const seqId = parseInt(seqNodeEl.id.replace('seq-', ''));
-          if (isNaN(seqId) || !seqs.has(seqId)) return;
-          // Remove from any existing LFO targeting this seq param
-          for (const [, existLfo] of lfos) {
-            if (existLfo.seqDestinations.find(d => d.seqId === seqId && d.param === seqParamInfo.param)) {
-              existLfo.removeSeqDestination(seqId, seqParamInfo.param);
-              lfoNodes.get(existLfo.id)?.updateDestList();
-            }
-          }
-          lfo.addSeqDestination(seqId, seqParamInfo.param, seqParamInfo.min, seqParamInfo.max);
-          lfoNodes.get(lfo.id)?.updateDestList();
-          updateLfoWires();
-          return;
-        }
 
         const cardEl = (sliderWrap || eqCanvas).closest('.sample-card, .synth-card');
         if (!cardEl) return;
@@ -12237,59 +11635,6 @@
         applyParamOverride(sampleId, paramClass, lfo, fxUid);
         lfoNodes.get(lfo.id)?.updateDestList();
         updateLfoWires();
-      };
-
-      document.addEventListener('mousemove', mm);
-      document.addEventListener('mouseup', mu);
-    }
-
-    function startSeqWireDrag(seq, startEvent) {
-      const wiresSvg = document.getElementById('lfo-wires');
-      const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      tempLine.classList.add('seq-wire-temp');
-      tempLine.style.stroke = seq.color;
-      wiresSvg.appendChild(tempLine);
-
-      const port = seqNodes.get(seq.id)?.el.querySelector('.seq-wire-port');
-      const portRect = port.getBoundingClientRect();
-      const sx = portRect.left + portRect.width / 2;
-      const sy = portRect.top + portRect.height / 2;
-
-      // Highlight potential targets: tiles and open cards
-      document.querySelectorAll('.tile').forEach(t => {
-        t.style.outline = '2px dashed rgba(255,255,255,0.3)';
-      });
-      document.querySelectorAll('.sample-card, .synth-card').forEach(c => {
-        c.style.outline = '2px dashed rgba(255,255,255,0.3)';
-      });
-
-      const mm = ev => {
-        const ex = ev.clientX, ey = ev.clientY;
-        tempLine.setAttribute('d', `M${sx},${sy} L${ex},${ey}`);
-      };
-
-      const mu = ev => {
-        document.removeEventListener('mousemove', mm);
-        document.removeEventListener('mouseup', mu);
-        tempLine.remove();
-        document.querySelectorAll('.tile').forEach(t => { t.style.outline = ''; });
-        document.querySelectorAll('.sample-card, .synth-card').forEach(c => { c.style.outline = ''; });
-
-        const target = document.elementFromPoint(ev.clientX, ev.clientY);
-        if (!target) return;
-
-        // Check open card first, then tile
-        const card = target.closest('.sample-card, .synth-card');
-        if (card) {
-          const instrId = findSampleIdFromCard(card);
-          if (instrId !== null && (samples.has(instrId) || synths.has(instrId))) connectSeqToSample(seq, instrId);
-          return;
-        }
-        const tile = target.closest('.tile');
-        if (!tile) return;
-        const sampleId = parseInt(tile.id.slice(1));
-        if (isNaN(sampleId) || (!samples.has(sampleId) && !synths.has(sampleId))) return;
-        connectSeqToSample(seq, sampleId);
       };
 
       document.addEventListener('mousemove', mm);
@@ -12364,31 +11709,6 @@
         }
       }
 
-      // ── Seq → sample/synth wires ──
-      svg.querySelectorAll('.seq-wire-line').forEach(w => w.remove());
-      for (const [, seq] of seqs) {
-        const nodeInfo = seqNodes.get(seq.id);
-        if (!nodeInfo || !seq.destinations.length) continue;
-        const port = nodeInfo.el.querySelector('.seq-wire-port');
-        let sx, sy;
-        if (nodeInfo.el.classList.contains('collapsed') || !port) {
-          const r = nodeInfo.el.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        } else {
-          const r = port.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        }
-        for (const sampleId of seq.destinations) {
-          const cardInfo = openCards.get(sampleId);
-          let targetEl = cardInfo
-            ? (() => { const c = cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas'); return (c && c.offsetParent !== null) ? c : cardInfo.el; })()
-            : document.getElementById('t' + sampleId);
-          if (!targetEl) continue;
-          const tr = targetEl.getBoundingClientRect();
-          _wire(svg, 'seq-wire-line', seq.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
-        }
-      }
-
       // ── Riff → sample/synth wires ──
       svg.querySelectorAll('.riff-wire-line').forEach(w => w.remove());
       for (const [, riff] of riffs) {
@@ -12411,31 +11731,6 @@
           if (!targetEl) continue;
           const tr = targetEl.getBoundingClientRect();
           _wire(svg, 'riff-wire-line', riff.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
-        }
-      }
-
-      // ── LFO → Seq wires ──
-      svg.querySelectorAll('.lfo-seq-wire').forEach(w => w.remove());
-      for (const [, lfo] of lfos) {
-        if (!lfo.seqDestinations.length) continue;
-        const lfoNodeInfo = lfoNodes.get(lfo.id);
-        if (!lfoNodeInfo) continue;
-        const lfoPort = lfoNodeInfo.el.querySelector('.lfo-wire-port');
-        let lsx, lsy;
-        if (lfoNodeInfo.el.classList.contains('collapsed') || !lfoPort) {
-          const r = lfoNodeInfo.el.getBoundingClientRect();
-          lsx = r.left + r.width / 2; lsy = r.top + r.height / 2;
-        } else {
-          const r = lfoPort.getBoundingClientRect();
-          lsx = r.left + r.width / 2; lsy = r.top + r.height / 2;
-        }
-        for (const d of lfo.seqDestinations) {
-          const seqNodeInfo = seqNodes.get(d.seqId);
-          if (!seqNodeInfo) continue;
-          const sliderEl = seqNodeInfo.el.querySelector(d.param === 'numSteps' ? '.seq-steps-slider' : '.seq-gate-slider');
-          if (!sliderEl) continue;
-          const sr = sliderEl.getBoundingClientRect();
-          _wire(svg, 'lfo-seq-wire', lfo.color, lsx, lsy, sr.left + sr.width / 2, sr.top + sr.height / 2);
         }
       }
     }
@@ -12536,12 +11831,23 @@
 
         // Apply modulation to destinations
         for (const d of lfo.destinations) {
-          const s = samples.get(d.sampleId) || synths.get(d.sampleId);
+          const s = samples.get(d.sampleId) || synths.get(d.sampleId) || drums.get(d.sampleId);
           if (!s) continue;
           const pInfo = LFO_PARAM_MAP[d.param];
           if (!pInfo) continue;
 
           const modVal = d.min + val * (d.max - d.min);
+
+          // Drum machine pitch modulation
+          if (pInfo.isDrum && s instanceof DrumMachine) {
+            s.pitches[pInfo.subProp] = modVal;
+            const cardInfo = openCards.get(d.sampleId);
+            if (cardInfo) {
+              const slider = cardInfo.el.querySelector('.' + d.param);
+              if (slider) { slider.value = modVal; slider.closest('.cslider')?._syncPos?.(); }
+            }
+            continue;
+          }
 
           // Synth instrument modulation
           if (pInfo.isSynth && s instanceof SynthInstrument) {
@@ -12608,33 +11914,6 @@
                 slider.value = modVal;
                 const wrap = slider.closest('.cslider');
                 if (wrap?._syncPos) wrap._syncPos();
-              }
-            }
-          }
-        }
-
-        // Apply to seq destinations
-        for (const d of lfo.seqDestinations) {
-          const seq = seqs.get(d.seqId);
-          if (!seq) continue;
-          const modVal = d.min + val * (d.max - d.min);
-          const nodeInfo = seqNodes.get(d.seqId);
-          if (d.param === 'numSteps') {
-            const n = Math.max(1, Math.min(64, Math.round(modVal)));
-            if (n !== seq.numSteps) {
-              seq.numSteps = n;
-              if (nodeInfo) {
-                const inp = nodeInfo.el.querySelector('.seq-steps-input');
-                if (inp) { inp.value = n; inp.dispatchEvent(new Event('input')); }
-              }
-            }
-          } else if (d.param === 'gateLength') {
-            seq.gateLength = Math.max(0, Math.min(1, modVal));
-            if (nodeInfo) {
-              const inp = nodeInfo.el.querySelector('.seq-gate-input');
-              if (inp) {
-                inp.value = Math.sqrt(seq.gateLength).toFixed(3);
-                inp.closest('.cslider')?._syncPos?.();
               }
             }
           }
@@ -12723,64 +12002,6 @@
       const lfo = new LFO(id, pos.x + LFO_W / 2, pos.y + 100);
       lfos.set(id, lfo);
       createLfoNode(lfo);
-    });
-
-    // ── Seq duplicate & remove ──
-    function duplicateSeq(srcSeq) {
-      if (seqs.size >= MAX_SEQS) return null;
-      const id = nextSeqId++;
-      const seq = new StepSequencer(id, srcSeq.x + 20, srcSeq.y + 20);
-      seq.numSteps = srcSeq.numSteps;
-      seq.steps = srcSeq.steps.map(s => ({...s}));
-      // destinations not copied — new seq starts unconnected
-      seq.gateLength = srcSeq.gateLength;
-      seq.gridSync = srcSeq.gridSync;
-      seq.subdiv = srcSeq.subdiv;
-      seq.rate = srcSeq.rate;
-      seqs.set(id, seq);
-      createSeqNode(seq);
-      return seq;
-    }
-
-    function removeSeq(id) {
-      const seq = seqs.get(id);
-      if (!seq) return;
-      seq.unschedule();
-      // Disconnect all controlled samples and restart their internal playback
-      for (const sampleId of [...seq.destinations]) {
-        sampleSeqMap.delete(sampleId);
-        const tile = document.getElementById('t' + sampleId);
-        if (tile) { tile.classList.remove('seq-controlled'); tile.style.removeProperty('--seq-ctrl-color'); }
-        const s = samples.get(sampleId);
-        if (s instanceof Sample) {
-          if (audioReady && isPlaying) startSample(s);
-        }
-      }
-      seq.destinations = [];
-      // Disconnect any LFO→seq connections
-      for (const [, lfo] of lfos) {
-        const before = lfo.seqDestinations.length;
-        lfo.seqDestinations = lfo.seqDestinations.filter(d => d.seqId !== id);
-        if (lfo.seqDestinations.length !== before) lfoNodes.get(lfo.id)?.updateDestList();
-      }
-      const nodeInfo = seqNodes.get(id);
-      if (nodeInfo) {
-        nodeInfo.stopAnim();
-        nodeInfo.el.remove();
-      }
-      seqNodes.delete(id);
-      seqs.delete(id);
-      updateLfoWires();
-    }
-
-    // ── Add Step Sequencer button ──
-    document.getElementById('btn-add-seq').addEventListener('click', () => {
-      if (seqs.size >= MAX_SEQS) return;
-      const id = nextSeqId++;
-      const pos = findFreePosition(SEQ_W, 260);
-      const seq = new StepSequencer(id, pos.x + SEQ_W / 2, pos.y + 100);
-      seqs.set(id, seq);
-      createSeqNode(seq);
     });
 
     // ── Add Riff button ──
