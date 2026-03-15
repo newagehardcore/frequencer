@@ -469,6 +469,9 @@
     .card-acc-body { display: none; }
     .card-acc-body.open { display: block; }
 
+    /* Synth card titlebar click closes card */
+    .synth-card .card-titlebar { cursor: pointer; user-select: none; }
+
     /* Gran overlay canvas */
     .card-gran-canvas {
       position: absolute;
@@ -2284,37 +2287,24 @@
       padding: 3px 4px;
     }
 
-    /* ═══ SYNTH TYPE PICKER ═══ */
-    #synth-type-picker {
-      position: fixed;
-      background: #000;
-      border: 1px solid rgba(255,255,255,0.3);
-      z-index: 2000;
-      min-width: 150px;
-      display: none;
-    }
-    #synth-type-picker.open { display: block; }
-    .stp-item {
-      padding: 8px 14px;
-      font-size: 10px;
+    /* ═══ SYNTH TYPE SELECTOR ═══ */
+    .synth-type-sel {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.8);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
       font-weight: 700;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
       text-transform: uppercase;
+      padding: 3px 5px;
       cursor: pointer;
-      color: rgba(255,255,255,0.65);
-      border-bottom: 1px solid rgba(255,255,255,0.07);
+      outline: none;
+      border-radius: 2px;
+      flex-shrink: 0;
     }
-    .stp-item:last-child { border-bottom: none; }
-    .stp-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-    .stp-item.stp-disabled { color: rgba(255,255,255,0.2); cursor: default; pointer-events: none; }
-    .stp-soon {
-      font-size: 8px;
-      font-weight: 400;
-      letter-spacing: 0;
-      text-transform: none;
-      opacity: 0.5;
-      margin-left: 6px;
-    }
+    .synth-type-sel:hover { background: rgba(255,255,255,0.14); }
+    .synth-type-sel option { background: #111; color: #fff; }
 
     /* ═══ SYNTH TILE ═══ */
     .tile-synth-badge {
@@ -2493,6 +2483,27 @@
       border-color: rgba(255,255,255,0.8);
     }
 
+    /* ═══ WAVETABLE PRESET LIST ═══ */
+    .wt-preset-list {
+      max-height: 160px;
+    }
+    .wt-wave-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.5);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      padding: 4px 2px;
+      cursor: pointer;
+      text-align: center;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    .wt-wave-btn:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
+    .wt-wave-btn.act { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.8); }
+
     /* ═══ PIANO KEYBOARD ═══ */
     .sk-key-white {
       flex: 1;
@@ -2610,6 +2621,19 @@
     .riff-node.collapsed { width: 136px; padding: 0; background: var(--surface, #000); }
     .riff-node.collapsed .riff-body { display: none; }
     .riff-node.collapsed .riff-min-footer { display: block; }
+    .riff-node.collapsed .riff-mini-grid { display: grid; }
+    .riff-mini-grid {
+      display: none;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 2px; padding: 6px 8px;
+      box-sizing: border-box;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .riff-mini-step {
+      height: 4px; background: rgba(255,255,255,0.06); border-radius: 1px;
+    }
+    .riff-mini-step.has-note { background: var(--riff-color, #fff); }
+    .riff-mini-step.cur { outline: 1px solid rgba(255,255,255,0.85); }
     .riff-min-footer {
       display: none; height: 16px; font-size: 9px; font-weight: 700;
       text-transform: uppercase; letter-spacing: -0.03em;
@@ -2820,13 +2844,6 @@
     </div>
   </div>
 
-  <!-- SYNTH TYPE PICKER -->
-  <div id="synth-type-picker">
-    <div class="stp-item" data-type="analog">Analog</div>
-    <div class="stp-item" data-type="fm">FM (DX7)</div>
-    <div class="stp-item stp-disabled">Wavetable<span class="stp-soon">soon</span></div>
-    <div class="stp-item stp-disabled">Rompler<span class="stp-soon">soon</span></div>
-  </div>
   <input type="file" id="syx-input" accept=".syx" style="display:none">
 
   <!-- FOOTER -->
@@ -3465,6 +3482,22 @@
       'card-grain-position': { prop: 'grainPosition', min: 0, max: 1, label: 'GrPos',     setter: 'setGrainPosition', fmtVal: v => Math.round(v * 100) + '%', isGran: true },
       'card-grain-spread':   { prop: 'grainSpread',   min: 0, max: 1, label: 'GrSpread',  setter: 'setGrainSpread',   fmtVal: v => Math.round(v * 100) + '%', isGran: true },
       'card-grain-density':  { prop: 'grainDensity',  min: 0, max: 1, label: 'GrDensity', setter: 'setGrainDensity',  fmtVal: v => Math.round(v * 100) + '%', isGran: true },
+      // Wavetable synth params
+      'wt-d1':     { prop: 'detune1',      min: -50,   max: 50,  label: 'Detune1',   isSynth: true, updater: 'updateDetune', fmtVal: v => parseFloat(v).toFixed(1) + ' ct' },
+      'wt-d2':     { prop: 'detune2',      min: -50,   max: 50,  label: 'Detune2',   isSynth: true, updater: 'updateDetune', fmtVal: v => parseFloat(v).toFixed(1) + ' ct' },
+      'wt-width':  { prop: 'width',        min: 0,     max: 1,   label: 'Width',     isSynth: true, fmtVal: v => Math.round(v*100)+'%' },
+      'wt-cutoff': { prop: 'cutoff',       min: 0,     max: 1,   label: 'Cutoff',    isSynth: true, updater: 'updateFilter', fmtVal: v => { const hz=20*Math.pow(2,v*10); return hz>=1000?(hz/1000).toFixed(1)+' kHz':Math.round(hz)+' Hz'; } },
+      'wt-reso':   { prop: 'resonance',    min: 0.1,   max: 20,  label: 'Reso',      isSynth: true, updater: 'updateFilter', fmtVal: v => parseFloat(v).toFixed(1) },
+      'wt-envamt': { prop: 'envAmount',    min: 0,     max: 1,   label: 'EnvAmt',    isSynth: true, fmtVal: v => Math.round(v*100)+'%' },
+      'wt-fatk':   { prop: 'filterAttack', min: 0.001, max: 5,   label: 'FiltAtk',   isSynth: true, fmtVal: v => fmtFade(v) },
+      'wt-fdec':   { prop: 'filterDecay',  min: 0.001, max: 5,   label: 'FiltDec',   isSynth: true, fmtVal: v => fmtFade(v) },
+      'wt-atk':    { prop: 'attack',       min: 0.001, max: 5,   label: 'Attack',    isSynth: true, fmtVal: v => fmtFade(v) },
+      'wt-dec':    { prop: 'decay',        min: 0.001, max: 5,   label: 'Decay',     isSynth: true, fmtVal: v => fmtFade(v) },
+      'wt-sus':    { prop: 'sustain',      min: 0,     max: 1,   label: 'Sustain',   isSynth: true, fmtVal: v => Math.round(v*100)+'%' },
+      'wt-rel':    { prop: 'release',      min: 0.001, max: 8,   label: 'Release',   isSynth: true, fmtVal: v => fmtFade(v) },
+      // Synth mixer params
+      'synth-vol': { prop: '_currentDb',  min: -60, max: 6,  label: 'Volume', isSynth: true, updater: '_applyVol', fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'synth-pan': { prop: '_currentPan', min: -1,  max: 1,  label: 'Pan',    isSynth: true, updater: '_applyPan', fmtVal: v => parseFloat(v).toFixed(2) },
       // Analog synth params
       'sc-atk':   { prop: 'attack',      min: 0.001, max: 5,     label: 'Attack',    isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
       'sc-dec':   { prop: 'decay',       min: 0.001, max: 5,     label: 'Decay',     isSynth: true, updater: 'updateEnvelope', fmtVal: v => fmtFade(v) },
@@ -5220,6 +5253,145 @@
     }
 
     // ════════════════════════════════════════════════════
+    // WAVETABLE ENGINE — FFT (Corban Brook, MIT License)
+    //                    WaveTable (Google Chrome Labs, BSD License)
+    // ════════════════════════════════════════════════════
+    function _WT_FourierTransform(bufferSize, sampleRate) {
+      this.bufferSize = bufferSize; this.sampleRate = sampleRate;
+      this.real = new Float32Array(bufferSize); this.imag = new Float32Array(bufferSize);
+    }
+    function _WT_FFT(bufferSize, sampleRate) {
+      _WT_FourierTransform.call(this, bufferSize, sampleRate);
+      this.reverseTable = new Uint32Array(bufferSize);
+      var limit = 1, bit = bufferSize >> 1, i;
+      while (limit < bufferSize) {
+        for (i = 0; i < limit; i++) this.reverseTable[i + limit] = this.reverseTable[i] + bit;
+        limit <<= 1; bit >>= 1;
+      }
+      this.sinTable = new Float32Array(bufferSize);
+      this.cosTable = new Float32Array(bufferSize);
+      for (i = 0; i < bufferSize; i++) {
+        this.sinTable[i] = Math.sin(-Math.PI / i);
+        this.cosTable[i] = Math.cos(-Math.PI / i);
+      }
+    }
+    _WT_FFT.prototype.inverse = function(real, imag) {
+      var n = this.bufferSize, i;
+      real = real || this.real; imag = imag || this.imag;
+      var nyquist = imag[0]; imag[0] = 0; real[n>>1] = nyquist; imag[n>>1] = 0;
+      for (i = 1 + (n>>1); i < n; i++) { real[i] = real[n-i]; imag[i] = -imag[n-i]; }
+      for (i = 0; i < n; i++) imag[i] *= -1;
+      var revReal = new Float32Array(n), revImag = new Float32Array(n);
+      for (i = 0; i < n; i++) { revReal[i] = real[this.reverseTable[i]]; revImag[i] = imag[this.reverseTable[i]]; }
+      real = revReal; imag = revImag;
+      var halfSize = 1, off, tr, ti, tmpReal, psr, psi, csr, csi;
+      while (halfSize < n) {
+        psr = this.cosTable[halfSize]; psi = this.sinTable[halfSize];
+        csr = 1; csi = 0;
+        for (var fftStep = 0; fftStep < halfSize; fftStep++) {
+          i = fftStep;
+          while (i < n) {
+            off = i + halfSize;
+            tr = csr * real[off] - csi * imag[off];
+            ti = csr * imag[off] + csi * real[off];
+            real[off] = real[i] - tr; imag[off] = imag[i] - ti;
+            real[i] += tr; imag[i] += ti;
+            i += halfSize << 1;
+          }
+          tmpReal = csr;
+          csr = tmpReal * psr - csi * psi;
+          csi = tmpReal * psi + csi * psr;
+        }
+        halfSize <<= 1;
+      }
+      var buf = new Float32Array(n);
+      for (i = 0; i < n; i++) buf[i] = real[i] / n;
+      return buf;
+    };
+
+    function _WT_WaveTable(name, audioCtx) {
+      this.name = name; this.context = audioCtx; this.sampleRate = audioCtx.sampleRate;
+      this.waveTableSize = 4096; this.numberOfResampleRanges = 11; this.buffers = null;
+    }
+    _WT_WaveTable.prototype.getRateScale = function() { return this.waveTableSize / this.sampleRate; };
+    _WT_WaveTable.prototype.getNumberOfPartialsForRange = function(j) {
+      var n = Math.pow(2, 1 + this.numberOfResampleRanges - j);
+      if (this.sampleRate > 48000) n *= 2; return n;
+    };
+    _WT_WaveTable.prototype.getWaveDataForPitch = function(pitchFrequency) {
+      var nyquist = 0.5 * this.sampleRate;
+      var lowestFundamental = nyquist / this.getNumberOfPartialsForRange(0);
+      var ratio = pitchFrequency / lowestFundamental;
+      var range = ratio === 0 ? 0 : Math.floor(Math.log(ratio) / Math.LN2);
+      return this.buffers[Math.max(0, Math.min(this.numberOfResampleRanges - 1, range))];
+    };
+    _WT_WaveTable.prototype.createBuffers = function() {
+      this.buffers = [];
+      var f = this.frequencyData, finalScale = 1, n = this.waveTableSize, halfN = n >> 1, i, j;
+      for (j = 0; j < this.numberOfResampleRanges; j++) {
+        var frame = new _WT_FFT(n, this.sampleRate);
+        for (i = 0; i < halfN; i++) { frame.real[i] = n * f.real[i]; frame.imag[i] = n * f.imag[i]; }
+        var npartials = this.getNumberOfPartialsForRange(j);
+        for (i = npartials + 1; i < halfN; i++) { frame.real[i] = 0; frame.imag[i] = 0; }
+        if (npartials < halfN) frame.imag[0] = 0;
+        frame.real[0] = 0;
+        if (j === 0) {
+          var power = 0;
+          for (i = 1; i < halfN; i++) { var x = frame.real[i], y = frame.imag[i]; power += x*x + y*y; }
+          power = Math.sqrt(power) / n;
+          finalScale = power > 0 ? 0.5 / power : 1;
+        }
+        var data = frame.inverse();
+        var abuf = this.context.createBuffer(1, data.length, this.sampleRate);
+        var ch = abuf.getChannelData(0);
+        for (i = 0; i < data.length; i++) ch[i] = finalScale * data[i];
+        this.buffers[j] = abuf;
+      }
+    };
+
+    // Cache: name → _WT_WaveTable; pending: name → [callbacks]
+    const _wtPending = {};
+    function _wtLoadWave(name, callback) {
+      if (_wtCache[name]) { callback(_wtCache[name]); return; }
+      if (_wtPending[name]) { _wtPending[name].push(callback); return; }
+      _wtPending[name] = [callback];
+      fetch(WT_BASE_URL + encodeURIComponent(name))
+        .then(r => r.text())
+        .then(txt => {
+          const f = eval('(' + txt + ')');
+          const ctx = Tone.context.rawContext;
+          const wt = new _WT_WaveTable(name, ctx);
+          const len = f.real.length;
+          wt.frequencyData = { real: new Float32Array(len), imag: new Float32Array(len) };
+          for (let i = 0; i < len; i++) { wt.frequencyData.real[i] = f.real[i]; wt.frequencyData.imag[i] = f.imag[i]; }
+          wt.createBuffers();
+          _wtCache[name] = wt;
+          (_wtPending[name] || []).forEach(cb => cb(wt));
+          delete _wtPending[name];
+        })
+        .catch(e => { console.warn('WT load failed:', name, e); delete _wtPending[name]; });
+    }
+
+    // ════════════════════════════════════════════════════
+    // WAVETABLE PRESETS (Google Chrome Labs wave-tables)
+    // ════════════════════════════════════════════════════
+    const WT_BASE_URL = 'https://googlechromelabs.github.io/web-audio-samples/demos/wavetable-synth/wave-tables/';
+    // Exact filenames as they appear on the Google Chrome Labs server
+    const WT_NAMES = [
+      '01_Saw','02_Triangle','03_Square','04_Noise','05_Pulse',
+      '06_Warm_Saw','07_Warm_Triangle','08_Warm_Square','09_Dropped_Saw','10_Dropped_Square',
+      '11_TB303_Square','Bass','Bass_Amp360','Bass_Fuzz','Bass_Fuzz_ 2','Bass_Sub_Dub','Bass_Sub_Dub_2',
+      'Brass','Brit_Blues','Brit_Blues_Driven','Buzzy_1','Buzzy_2','Celeste','Chorus_Strings',
+      'Dissonant Piano','Dissonant_1','Dissonant_2','Dyna_EP_Bright','Dyna_EP_Med','Ethnic_33',
+      'Full_1','Full_2','Guitar_Fuzz','Harsh','Mkl_Hard','Organ_2','Organ_3',
+      'Phoneme_ah','Phoneme_bah','Phoneme_ee','Phoneme_o','Phoneme_ooh','Phoneme_pop_ahhhs',
+      'Piano','Putney_Wavering','Throaty','Trombone','Twelve String Guitar 1','Twelve_OpTines',
+      'Wurlitzer','Wurlitzer_2',
+    ];
+    // Cache for loaded _WT_WaveTable objects keyed by wave name
+    const _wtCache = {};
+
+    // ════════════════════════════════════════════════════
     // SYNTH INSTRUMENTS
     // ════════════════════════════════════════════════════
 
@@ -5236,6 +5408,9 @@
         const _initDb = Math.max(-60, Math.min(6, 6 - Math.pow(_ratio / 0.88, 1.6) * 66));
         const _initPan = Math.max(-1, Math.min(1, (x / _cw) * 2 - 1));
         this._currentDb = _initDb;
+        this._currentPan = _initPan;
+        this._poly = null; this._filter = null;
+        this.currentPreset = 0; this._customPresets = []; this._usingCustom = false;
 
         this.vol      = new Tone.Volume(_initDb).connect(masterSamplesGain);
         this.meter    = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
@@ -5265,12 +5440,13 @@
       }
       updatePan() {
         const cw = cv.clientWidth || 800;
-        this.pan.pan.value = Math.max(-1, Math.min(1, (this.x / cw) * 2 - 1));
+        this._currentPan = Math.max(-1, Math.min(1, (this.x / cw) * 2 - 1));
+        this.pan.pan.value = this._currentPan;
       }
       _noteHighlight(note, on) {}  // wired up by buildPianoKeyboard
       triggerAtTime(note, dur, time, vel) {
         this._noteHighlight(note, true);
-        try { this._poly.triggerAttackRelease(note, dur, time, vel); } catch(e) {}
+        try { if (this._poly) this._poly.triggerAttackRelease(note, dur, time, vel); } catch(e) {}
         setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
       }
       _effectiveDb() {
@@ -5286,9 +5462,91 @@
         const mbtn = tile.querySelector('.tile-mbtn');
         if (mbtn) mbtn.classList.toggle('mute-on', this.muted);
       }
-      noteOn(note, vel = 100) {}
-      noteOff(note) {}
-      allNotesOff() {}
+      noteOn(note, vel = 100) {
+        if (this._poly) this._poly.triggerAttack(note, Tone.now(), vel / 127);
+      }
+      noteOff(note) {
+        if (this._poly) this._poly.triggerRelease(note, Tone.now());
+      }
+      allNotesOff() {
+        if (this._poly) try { this._poly.releaseAll(); } catch(e) {}
+      }
+      updateOscType()  { if (this._poly && this.synthType === 'analog') try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {} }
+      updateEnvelope() { if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
+      updateFilter()   { if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
+      updateFMParams() { if (this._poly && this.synthType === 'fm') this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); }
+      updateModEnv()   { if (this._poly && this.synthType === 'fm') this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); }
+      updateDetune()   { if (this._poly) try { this._poly.set({ detune: this.detune || 0 }); } catch(e) {} }
+      _applyVol() { this.vol.volume.value = this._effectiveDb(); }
+      _applyPan() { this.pan.pan.value = this._currentPan; }
+      loadAnalogPreset(p) {
+        Object.assign(this, { oscType: p.oscType, filterType: p.filterType, filterFreq: p.filterFreq, filterQ: p.filterQ, attack: p.attack, decay: p.decay, sustain: p.sustain, release: p.release });
+        this.updateOscType(); this.updateFilter(); this.updateEnvelope();
+      }
+      loadFMPreset(preset) {
+        Object.assign(this, { harmonicity: preset.harmonicity, modulationIndex: preset.modulationIndex, attack: preset.attack, decay: preset.decay, sustain: preset.sustain, release: preset.release, modAttack: preset.modAttack, modDecay: preset.modDecay, modSustain: preset.modSustain, modRelease: preset.modRelease });
+        if (this._poly) this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release }, modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } });
+      }
+      loadSysEx(data) {
+        const presets = parseDX7SysEx(data);
+        if (!presets || !presets.length) return false;
+        this._customPresets = presets; this._usingCustom = true; this.currentPreset = 0;
+        this.loadFMPreset(presets[0]); return true;
+      }
+      _disposeTypeNodes() {
+        // Stop wavetable native voices (supports both old 2-src and new 4-src structure)
+        if (this._voices) {
+          const ctx = Tone.context.rawContext; const now = ctx.currentTime;
+          for (const v of this._voices) {
+            try { v.envGain.gain.cancelScheduledValues(now); v.envGain.gain.setValueAtTime(0, now); } catch(e) {}
+            ['srcA','srcAoct','srcB','srcBoct'].forEach(k => { try { v[k].stop(now + 0.001); } catch(e) {} });
+          }
+          this._voices = null;
+        }
+        if (this._wtFilter) { try { this._wtFilter.disconnect(); } catch(e) {} this._wtFilter = null; }
+        if (this._wtBridge) { try { this._wtBridge.dispose(); } catch(e) {} this._wtBridge = null; }
+        if (this._poly) { try { this._poly.releaseAll(); this._poly.dispose(); } catch(e) {} this._poly = null; }
+        if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }
+      }
+      changeSynthType(newType) {
+        if (this.synthType === newType) return;
+        this._disposeTypeNodes();
+        if (newType === 'analog') {
+          this.oscType = 'sawtooth'; this.filterType = 'lowpass'; this.filterFreq = 2500;
+          this.filterQ = 1.0; this.portamento = 0; this.currentPreset = 0;
+          this.attack = 0.01; this.decay = 0.15; this.sustain = 0.6; this.release = 0.4;
+          this.synthType = 'analog';
+          this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
+          this._poly = new Tone.PolySynth(Tone.Synth, { oscillator: { type: this.oscType }, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }).connect(this._filter);
+          this._poly.maxPolyphony = 16;
+        } else if (newType === 'fm') {
+          this.harmonicity = 3.0; this.modulationIndex = 8.0;
+          this.attack = 0.001; this.decay = 1.2; this.sustain = 0.15; this.release = 0.8;
+          this.modAttack = 0.001; this.modDecay = 0.8; this.modSustain = 0.2; this.modRelease = 0.5;
+          this.currentPreset = 0; this._customPresets = []; this._usingCustom = false;
+          this.synthType = 'fm';
+          this._poly = new Tone.PolySynth(Tone.FMSynth, { harmonicity: this.harmonicity, modulationIndex: this.modulationIndex, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release }, modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }).connect(this.pan);
+          this._poly.maxPolyphony = 16;
+          if (typeof DX7_PRESETS !== 'undefined') this.loadFMPreset(DX7_PRESETS[0]);
+        } else if (newType === 'wavetable') {
+          this.synthType = 'wavetable';
+          this.currentWave = 0; this.detune1 = 4.5; this.detune2 = -2.5;
+          this.osc2octave = 0; this.width = 0.6;
+          this.cutoff = 0.2; this.resonance = 4.0; this.envAmount = 0.4;
+          this.filterAttack = 0.056; this.filterDecay = 0.991;
+          this.attack = 0.056; this.decay = 0.5; this.sustain = 0.7; this.release = 0.3;
+          this._wt = null; this._voices = [];
+          this._wtBridge = new Tone.Gain(1).connect(this.pan);
+          // Bind WavetableSynth voice methods onto this instance
+          ['noteOn','noteOff','allNotesOff','_releaseVoice','_stopVoice','_makeVoice','_cutoffHz',
+           'updateWave','updateFilter','updateDetune','updateEnvelope','triggerAtTime'].forEach(m => {
+            this[m] = WavetableSynth.prototype[m].bind(this);
+          });
+          this.updateWave();
+        }
+        const badge = document.querySelector(`#t${this.id} .tile-synth-badge`);
+        if (badge) badge.textContent = newType.toUpperCase();
+      }
       rebuildFxChain() {
         try { this.vol.disconnect(); } catch(e) {}
         for (const inst of this.fxChain) {
@@ -5386,6 +5644,7 @@
       }
 
       dispose() {
+        if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }
         for (const inst of this.fxChain) {
           if (inst.eqData) { for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch(e) {} } }
           else { try { inst.node.disconnect(); inst.node.dispose(); } catch(e) {} }
@@ -5425,12 +5684,12 @@
         Object.assign(this, { oscType: p.oscType, filterType: p.filterType, filterFreq: p.filterFreq, filterQ: p.filterQ, attack: p.attack, decay: p.decay, sustain: p.sustain, release: p.release });
         this.updateOscType(); this.updateFilter(); this.updateEnvelope();
       }
-      noteOn(note, vel = 100) { this._poly.triggerAttack(note, Tone.now(), vel / 127); }
-      noteOff(note) { this._poly.triggerRelease(note, Tone.now()); }
-      allNotesOff() { this._poly.releaseAll(); }
-      updateOscType()   { try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {} }
-      updateEnvelope()  { this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
-      updateFilter()    { this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
+      noteOn(note, vel = 100) { if (this._poly) this._poly.triggerAttack(note, Tone.now(), vel / 127); }
+      noteOff(note) { if (this._poly) this._poly.triggerRelease(note, Tone.now()); }
+      allNotesOff() { if (this._poly) try { this._poly.releaseAll(); } catch(e) {} }
+      updateOscType()   { if (this._poly && this._filter) try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {} }
+      updateEnvelope()  { if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
+      updateFilter()    { if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
       dispose() {
         this.allNotesOff();
         try { this._poly.dispose(); } catch(e) {}
@@ -5466,12 +5725,12 @@
         this._poly.maxPolyphony = 16;
         this.loadPreset(DX7_PRESETS[0]);
       }
-      noteOn(note, vel = 100) { this._poly.triggerAttack(note, Tone.now(), vel / 127); }
-      noteOff(note) { this._poly.triggerRelease(note, Tone.now()); }
-      allNotesOff() { this._poly.releaseAll(); }
-      updateFMParams() { this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); }
-      updateEnvelope() { this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
-      updateModEnv()   { this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); }
+      noteOn(note, vel = 100) { if (this._poly) this._poly.triggerAttack(note, Tone.now(), vel / 127); }
+      noteOff(note) { if (this._poly) this._poly.triggerRelease(note, Tone.now()); }
+      allNotesOff() { if (this._poly) try { this._poly.releaseAll(); } catch(e) {} }
+      updateFMParams() { if (this._poly) this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); }
+      updateEnvelope() { if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
+      updateModEnv()   { if (this._poly) this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); }
       get presetList() { return this._usingCustom ? this._customPresets : DX7_PRESETS; }
       loadPreset(preset) {
         Object.assign(this, {
@@ -5497,6 +5756,190 @@
       dispose() {
         this.allNotesOff();
         try { this._poly.dispose(); } catch(e) {}
+        super.dispose();
+      }
+    }
+
+    class WavetableSynth extends SynthInstrument {
+      constructor(id, name, x, y) {
+        super(id, name, x, y);
+        this.synthType     = 'wavetable';
+        this.currentWave   = 0;
+        // Oscillator
+        this.detune1       = 4.5;    // cents — osc pair 1 spread
+        this.detune2       = -2.5;   // cents — osc pair 2 spread
+        this.osc2octave    = 0;      // semitones for 2nd osc pair (0 = unison)
+        this.width         = 0.6;    // stereo spread 0–1
+        // Filter + envelope
+        this.cutoff        = 0.2;    // normalized 0–1 (log-mapped to Hz)
+        this.resonance     = 4.0;    // filter Q
+        this.envAmount     = 0.4;    // filter env depth (0–1)
+        this.filterAttack  = 0.056;
+        this.filterDecay   = 0.991;
+        // Amplitude envelope
+        this.attack        = 0.056;
+        this.decay         = 0.5;
+        this.sustain       = 0.7;
+        this.release       = 0.3;
+
+        this._voices       = [];
+        this._wt           = null;
+
+        // Bridge from native chain into Tone.js pan → vol → master
+        this._wtBridge = new Tone.Gain(1).connect(this.pan);
+        this.updateWave();
+      }
+
+      _cutoffHz() { return 20 * Math.pow(2, this.cutoff * 10); }
+
+      _makeVoice(freq, time) {
+        const ctx = Tone.context.rawContext;
+        const wt  = this._wt;
+        const pitchRate = freq * wt.getRateScale();
+        const d1 = Math.pow(2,  this.detune1 / 1200);
+        const d2 = Math.pow(2,  this.detune2 / 1200);
+        const oc = Math.pow(2,  this.osc2octave / 12);
+
+        const mkSrc = (rate) => {
+          const s = ctx.createBufferSource();
+          s.loop = true;
+          s.buffer = wt.getWaveDataForPitch(rate);
+          s.playbackRate.value = rate;
+          return s;
+        };
+        // 4 oscillators: two detuned pairs spread stereo
+        // Mirrors Google ChromeLabs formula: osc1=-d1, osc1Oct=+d2(inv), osc2=+d1, osc2Oct=-d2
+        const srcA    = mkSrc(pitchRate / d1);        // flat by detune1
+        const srcAoct = mkSrc(pitchRate / d2 * oc);  // sharp by |detune2|
+        const srcB    = mkSrc(pitchRate * d1);        // sharp by detune1
+        const srcBoct = mkSrc(pitchRate * d2 * oc);  // flat by |detune2|
+
+        const pan1 = ctx.createStereoPanner(); pan1.pan.value = -this.width;
+        const pan2 = ctx.createStereoPanner(); pan2.pan.value = +this.width;
+        srcA.connect(pan1); srcAoct.connect(pan1);
+        srcB.connect(pan2); srcBoct.connect(pan2);
+
+        const envGain = ctx.createGain(); envGain.gain.value = 0;
+        pan1.connect(envGain); pan2.connect(envGain);
+
+        // Per-voice filter with envelope sweep
+        const vf = ctx.createBiquadFilter();
+        vf.type = 'lowpass';
+        vf.Q.value = this.resonance;
+        const baseCutoff = this._cutoffHz();
+        const peakCutoff = baseCutoff * Math.pow(2, this.envAmount * 7);
+        vf.frequency.setValueAtTime(baseCutoff, time);
+        vf.frequency.setTargetAtTime(peakCutoff, time, Math.max(this.filterAttack * 0.33, 0.003));
+        vf.frequency.setTargetAtTime(baseCutoff, time + this.filterAttack * 1.5, Math.max(this.filterDecay * 0.33, 0.01));
+        envGain.connect(vf);
+
+        const bridgeIn = this._wtBridge.input;
+        try { vf.connect(bridgeIn); } catch(e) { console.warn('WT voice filter connect failed', e); }
+
+        srcA.start(time); srcAoct.start(time); srcB.start(time); srcBoct.start(time);
+        return { freq, envGain, vf, srcA, srcAoct, srcB, srcBoct };
+      }
+
+      noteOn(note, vel = 100) {
+        if (!this._wt) return;
+        this._noteHighlight(note, true);
+        const ctx = Tone.context.rawContext;
+        const now = ctx.currentTime;
+        if (this._voices.length >= 16) this._stopVoice(this._voices.shift(), now);
+
+        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), now);
+        v.note = note;
+
+        const amp = (vel / 127) * 0.45;
+        v.envGain.gain.setTargetAtTime(amp, now, Math.max(this.attack * 0.33, 0.003));
+        v.envGain.gain.setTargetAtTime(amp * this.sustain, now + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
+
+        this._voices.push(v);
+      }
+
+      noteOff(note) {
+        this._noteHighlight(note, false);
+        const idx = this._voices.findIndex(v => v.note === note);
+        if (idx < 0) return;
+        this._releaseVoice(this._voices.splice(idx, 1)[0]);
+      }
+
+      allNotesOff() { this._voices.splice(0).forEach(v => this._releaseVoice(v)); }
+
+      _releaseVoice(v) {
+        const ctx = Tone.context.rawContext;
+        const now = ctx.currentTime;
+        const rel = Math.max(this.release, 0.01);
+        v.envGain.gain.cancelScheduledValues(now);
+        v.envGain.gain.setValueAtTime(v.envGain.gain.value, now);
+        v.envGain.gain.setTargetAtTime(0, now, rel * 0.33);
+        const stopAt = now + rel * 4;
+        ['srcA','srcAoct','srcB','srcBoct'].forEach(k => { try { v[k].stop(stopAt); } catch(e) {} });
+      }
+
+      _stopVoice(v, now) {
+        v.envGain.gain.cancelScheduledValues(now);
+        v.envGain.gain.setValueAtTime(0, now);
+        ['srcA','srcAoct','srcB','srcBoct'].forEach(k => { try { v[k].stop(now + 0.001); } catch(e) {} });
+      }
+
+      triggerAtTime(note, dur, time, vel) {
+        if (!this._wt) return;
+        this._noteHighlight(note, true);
+        const ctx = Tone.context.rawContext;
+        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), time);
+        // vel from riff/seq is 0–1 normalized (unlike noteOn which receives 0–127)
+        const amp = Math.min(vel, 1.0) * 0.45;
+        v.envGain.gain.setValueAtTime(0, time);
+        v.envGain.gain.setTargetAtTime(amp, time, Math.max(this.attack * 0.33, 0.003));
+        v.envGain.gain.setTargetAtTime(amp * this.sustain, time + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
+        const rel = Math.max(this.release, 0.01);
+        v.envGain.gain.setTargetAtTime(0, time + dur, rel * 0.33);
+        const stopAt = time + dur + rel * 4;
+        ['srcA','srcAoct','srcB','srcBoct'].forEach(k => { try { v[k].stop(stopAt); } catch(e) {} });
+        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+      }
+
+      updateWave() {
+        const name = WT_NAMES[this.currentWave]; if (!name) return;
+        _wtLoadWave(name, wt => {
+          this._wt = wt;
+          const d1 = Math.pow(2, this.detune1 / 1200);
+          const d2 = Math.pow(2, this.detune2 / 1200);
+          const oc = Math.pow(2, this.osc2octave / 12);
+          for (const v of this._voices) {
+            const pr = v.freq * wt.getRateScale();
+            v.srcA.playbackRate.value    = pr / d1;
+            v.srcAoct.playbackRate.value = pr / d2 * oc;
+            v.srcB.playbackRate.value    = pr * d1;
+            v.srcBoct.playbackRate.value = pr * d2 * oc;
+          }
+        });
+      }
+
+      updateFilter() {
+        for (const v of this._voices) if (v.vf) v.vf.Q.value = this.resonance;
+      }
+
+      updateDetune() {
+        if (!this._wt) return;
+        const d1 = Math.pow(2, this.detune1 / 1200);
+        const d2 = Math.pow(2, this.detune2 / 1200);
+        const oc = Math.pow(2, this.osc2octave / 12);
+        for (const v of this._voices) {
+          const pr = v.freq * this._wt.getRateScale();
+          v.srcA.playbackRate.value    = pr / d1;
+          v.srcAoct.playbackRate.value = pr / d2 * oc;
+          v.srcB.playbackRate.value    = pr * d1;
+          v.srcBoct.playbackRate.value = pr * d2 * oc;
+        }
+      }
+
+      updateEnvelope() { /* applied on next noteOn */ }
+
+      dispose() {
+        this.allNotesOff();
+        if (this._wtBridge) { try { this._wtBridge.dispose(); } catch(e) {} this._wtBridge = null; }
         super.dispose();
       }
     }
@@ -6268,7 +6711,7 @@
     function _makeSynthCardDrag(el, synth) {
       el.addEventListener('mousedown', () => el.style.zIndex = ++cardZTop);
       el.querySelector('.card-titlebar').addEventListener('mousedown', e => {
-        if (e.button !== 0 || e.target.closest('button')) return;
+        if (e.button !== 0 || e.target.closest('button') || e.target.closest('select')) return;
         e.preventDefault();
         const ox = e.clientX, oy = e.clientY;
         const oL = parseFloat(el.style.left) || 0, oT = parseFloat(el.style.top) || 0;
@@ -6398,10 +6841,367 @@
       container.appendChild(kbdCtrl);
     }
 
+    function _populateSynthTypeBody(synth, cardEl) {
+      const typeBody = cardEl.querySelector('.synth-type-body');
+      if (!typeBody) return;
+      typeBody.innerHTML = '';
+      const qs  = sel => typeBody.querySelector(sel);
+      const qas = sel => typeBody.querySelectorAll(sel);
+      const mkCsl = (cls, min, max, step, val) =>
+        `<div class="cslider"><input type="range" class="${cls}" min="${min}" max="${max}" step="${step}" value="${val}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div>`;
+
+      if (synth.synthType === 'analog') {
+        typeBody.innerHTML = `
+          <div class="card-accordion">
+            <div class="card-acc-hdr">PRESETS</div>
+            <div class="card-acc-body"><div class="csec"><div class="sc-preset-list"></div></div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">OSCILLATOR + FILTER</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="synth-btn-row" style="margin-bottom:8px">
+                <button class="synth-btn ${synth.oscType==='sine'?'act':''}"     data-osc="sine">Sine</button>
+                <button class="synth-btn ${synth.oscType==='sawtooth'?'act':''}" data-osc="sawtooth">Saw</button>
+                <button class="synth-btn ${synth.oscType==='square'?'act':''}"   data-osc="square">Square</button>
+                <button class="synth-btn ${synth.oscType==='triangle'?'act':''}" data-osc="triangle">Tri</button>
+              </div>
+              <div class="synth-row" style="margin-bottom:6px">
+                <div class="synth-lbl">Type</div>
+                <div class="synth-btn-row" style="flex:1">
+                  <button class="synth-btn ${synth.filterType==='lowpass'?'act':''}"  data-flt="lowpass">LP</button>
+                  <button class="synth-btn ${synth.filterType==='highpass'?'act':''}" data-flt="highpass">HP</button>
+                  <button class="synth-btn ${synth.filterType==='bandpass'?'act':''}" data-flt="bandpass">BP</button>
+                </div>
+              </div>
+              <div class="crow"><span class="clbl">Cutoff</span>${mkCsl('sc-ffreq','20','20000','1',synth.filterFreq)}</div>
+              <div class="crow"><span class="clbl">Reso</span>${mkCsl('sc-fq','0.01','20','0.01',synth.filterQ)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">ENVELOPE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Attack</span>${mkCsl('sc-atk','0.001','5','0.001',synth.attack)}</div>
+              <div class="crow"><span class="clbl">Decay</span>${mkCsl('sc-dec','0.001','5','0.001',synth.decay)}</div>
+              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('sc-sus','0','1','0.01',synth.sustain)}</div>
+              <div class="crow"><span class="clbl">Release</span>${mkCsl('sc-rel','0.001','8','0.001',synth.release)}</div>
+            </div></div>
+          </div>`;
+
+        const renderAnalogPresets = () => {
+          const list = qs('.sc-preset-list'); if (!list) return;
+          list.innerHTML = '';
+          ANALOG_PRESETS.forEach((p, i) => {
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+            item.textContent = p.name;
+            item.addEventListener('click', () => {
+              synth.currentPreset = i; synth.loadAnalogPreset(p); renderAnalogPresets();
+              qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+              qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+              const propMap = { 'sc-ffreq':'filterFreq','sc-fq':'filterQ','sc-atk':'attack','sc-dec':'decay','sc-sus':'sustain','sc-rel':'release' };
+              Object.keys(propMap).forEach(cls => { const sl=qs('.'+cls); if(sl){sl.value=synth[propMap[cls]]; sl.closest('.cslider')?._syncPos?.();} });
+            });
+            list.appendChild(item);
+          });
+        };
+        renderAnalogPresets();
+
+        const fmtFreq = v => v >= 1000 ? (v/1000).toFixed(1)+' kHz' : Math.round(v)+' Hz';
+        const fmtPct  = v => Math.round(v*100)+'%';
+        initCslider(qs('.sc-ffreq').closest('.cslider'), fmtFreq);
+        initCslider(qs('.sc-fq').closest('.cslider'),    v => v.toFixed(2));
+        initCslider(qs('.sc-atk').closest('.cslider'),   fmtFade);
+        initCslider(qs('.sc-dec').closest('.cslider'),   fmtFade);
+        initCslider(qs('.sc-sus').closest('.cslider'),   fmtPct);
+        initCslider(qs('.sc-rel').closest('.cslider'),   fmtFade);
+
+        qas('[data-osc]').forEach(btn => btn.addEventListener('click', () => {
+          synth.oscType = btn.dataset.osc;
+          qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+          synth.updateOscType();
+        }));
+        qas('[data-flt]').forEach(btn => btn.addEventListener('click', () => {
+          synth.filterType = btn.dataset.flt;
+          qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+          synth.updateFilter();
+        }));
+        qs('.sc-ffreq').addEventListener('input', () => { synth.filterFreq = parseFloat(qs('.sc-ffreq').value); synth.updateFilter(); });
+        qs('.sc-fq').addEventListener('input',    () => { synth.filterQ    = parseFloat(qs('.sc-fq').value);    synth.updateFilter(); });
+        qs('.sc-atk').addEventListener('input',   () => { synth.attack     = parseFloat(qs('.sc-atk').value);   synth.updateEnvelope(); });
+        qs('.sc-dec').addEventListener('input',   () => { synth.decay      = parseFloat(qs('.sc-dec').value);   synth.updateEnvelope(); });
+        qs('.sc-sus').addEventListener('input',   () => { synth.sustain    = parseFloat(qs('.sc-sus').value);   synth.updateEnvelope(); });
+        qs('.sc-rel').addEventListener('input',   () => { synth.release    = parseFloat(qs('.sc-rel').value);   synth.updateEnvelope(); });
+
+      } else if (synth.synthType === 'fm') {
+        typeBody.innerHTML = `
+          <div class="card-accordion">
+            <div class="card-acc-hdr">PRESETS <span style="opacity:0.4;font-weight:400;text-transform:none;letter-spacing:0;font-size:8px;margin-left:4px">${synth._usingCustom?'Custom SysEx':'Built-in'}</span></div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="fm-preset-list"></div>
+              <button class="fm-sysx-btn">Load DX7 SysEx (.syx) ▸</button>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">FM PARAMETERS</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Harm.</span>${mkCsl('fm-harm','0.1','20','0.01',synth.harmonicity)}</div>
+              <div class="crow"><span class="clbl">Mod Idx</span>${mkCsl('fm-modi','0','20','0.1',synth.modulationIndex)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">CARRIER ENVELOPE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Attack</span>${mkCsl('fm-atk','0.001','5','0.001',synth.attack)}</div>
+              <div class="crow"><span class="clbl">Decay</span>${mkCsl('fm-dec','0.001','5','0.001',synth.decay)}</div>
+              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('fm-sus','0','1','0.01',synth.sustain)}</div>
+              <div class="crow"><span class="clbl">Release</span>${mkCsl('fm-rel','0.001','8','0.001',synth.release)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">MODULATOR ENVELOPE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Attack</span>${mkCsl('fm-matk','0.001','5','0.001',synth.modAttack)}</div>
+              <div class="crow"><span class="clbl">Decay</span>${mkCsl('fm-mdec','0.001','5','0.001',synth.modDecay)}</div>
+              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('fm-msus','0','1','0.01',synth.modSustain)}</div>
+              <div class="crow"><span class="clbl">Release</span>${mkCsl('fm-mrel','0.001','8','0.001',synth.modRelease)}</div>
+            </div></div>
+          </div>`;
+
+        const fmtHarm = v => v.toFixed(2), fmtModI = v => v.toFixed(1), fmtPct = v => Math.round(v*100)+'%';
+        initCslider(qs('.fm-harm').closest('.cslider'),  fmtHarm);
+        initCslider(qs('.fm-modi').closest('.cslider'),  fmtModI);
+        initCslider(qs('.fm-atk').closest('.cslider'),   fmtFade);
+        initCslider(qs('.fm-dec').closest('.cslider'),   fmtFade);
+        initCslider(qs('.fm-sus').closest('.cslider'),   fmtPct);
+        initCslider(qs('.fm-rel').closest('.cslider'),   fmtFade);
+        initCslider(qs('.fm-matk').closest('.cslider'),  fmtFade);
+        initCslider(qs('.fm-mdec').closest('.cslider'),  fmtFade);
+        initCslider(qs('.fm-msus').closest('.cslider'),  fmtPct);
+        initCslider(qs('.fm-mrel').closest('.cslider'),  fmtFade);
+
+        const syncFMSliders = () => {
+          [['fm-harm','harmonicity'],['fm-modi','modulationIndex'],['fm-atk','attack'],['fm-dec','decay'],
+           ['fm-sus','sustain'],['fm-rel','release'],['fm-matk','modAttack'],['fm-mdec','modDecay'],
+           ['fm-msus','modSustain'],['fm-mrel','modRelease']].forEach(([cls,prop]) => {
+            const sl=qs('.'+cls); if(sl){sl.value=synth[prop]; sl.closest('.cslider')?._syncPos?.();}
+          });
+        };
+
+        const renderFMPresets = () => {
+          const list = qs('.fm-preset-list'); if (!list) return;
+          list.innerHTML = '';
+          const plist = synth._usingCustom ? synth._customPresets : DX7_PRESETS;
+          plist.forEach((p, i) => {
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+            item.textContent = p.name;
+            item.addEventListener('click', () => { synth.currentPreset=i; synth.loadFMPreset(p); renderFMPresets(); syncFMSliders(); });
+            list.appendChild(item);
+          });
+        };
+        renderFMPresets();
+
+        qs('.fm-harm').addEventListener('input',  () => { synth.harmonicity     = parseFloat(qs('.fm-harm').value);  synth.updateFMParams(); });
+        qs('.fm-modi').addEventListener('input',  () => { synth.modulationIndex = parseFloat(qs('.fm-modi').value);  synth.updateFMParams(); });
+        qs('.fm-atk').addEventListener('input',   () => { synth.attack          = parseFloat(qs('.fm-atk').value);   synth.updateEnvelope(); });
+        qs('.fm-dec').addEventListener('input',   () => { synth.decay           = parseFloat(qs('.fm-dec').value);   synth.updateEnvelope(); });
+        qs('.fm-sus').addEventListener('input',   () => { synth.sustain         = parseFloat(qs('.fm-sus').value);   synth.updateEnvelope(); });
+        qs('.fm-rel').addEventListener('input',   () => { synth.release         = parseFloat(qs('.fm-rel').value);   synth.updateEnvelope(); });
+        qs('.fm-matk').addEventListener('input',  () => { synth.modAttack       = parseFloat(qs('.fm-matk').value);  synth.updateModEnv(); });
+        qs('.fm-mdec').addEventListener('input',  () => { synth.modDecay        = parseFloat(qs('.fm-mdec').value);  synth.updateModEnv(); });
+        qs('.fm-msus').addEventListener('input',  () => { synth.modSustain      = parseFloat(qs('.fm-msus').value);  synth.updateModEnv(); });
+        qs('.fm-mrel').addEventListener('input',  () => { synth.modRelease      = parseFloat(qs('.fm-mrel').value);  synth.updateModEnv(); });
+
+        qs('.fm-sysx-btn').addEventListener('click', () => {
+          const inp = document.getElementById('syx-input');
+          inp._targetSynthId = synth.id; inp.click();
+        });
+
+      } else if (synth.synthType === 'wavetable') {
+        typeBody.innerHTML = `
+          <div class="card-accordion">
+            <div class="card-acc-hdr open">WAVETABLE</div>
+            <div class="card-acc-body open"><div class="csec">
+              <div class="fm-preset-list wt-preset-list"></div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">OSCILLATOR</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Detune 1</span>${mkCsl('wt-d1','-50','50','0.1',synth.detune1||0)}</div>
+              <div class="crow"><span class="clbl">Detune 2</span>${mkCsl('wt-d2','-50','50','0.1',synth.detune2||0)}</div>
+              <div class="crow"><span class="clbl">Osc2 Oct</span>${mkCsl('wt-oct','-24','24','12',synth.osc2octave||0)}</div>
+              <div class="crow"><span class="clbl">Width</span>${mkCsl('wt-width','0','1','0.01',synth.width||0)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">FILTER</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Cutoff</span>${mkCsl('wt-cutoff','0','1','0.001',synth.cutoff)}</div>
+              <div class="crow"><span class="clbl">Reso</span>${mkCsl('wt-reso','0.1','20','0.1',synth.resonance)}</div>
+              <div class="crow"><span class="clbl">Env Amt</span>${mkCsl('wt-envamt','0','1','0.001',synth.envAmount)}</div>
+              <div class="crow"><span class="clbl">F. Attack</span>${mkCsl('wt-fatk','0.001','5','0.001',synth.filterAttack)}</div>
+              <div class="crow"><span class="clbl">F. Decay</span>${mkCsl('wt-fdec','0.001','5','0.001',synth.filterDecay)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">AMPLITUDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Attack</span>${mkCsl('wt-atk','0.001','5','0.001',synth.attack)}</div>
+              <div class="crow"><span class="clbl">Decay</span>${mkCsl('wt-dec','0.001','5','0.001',synth.decay)}</div>
+              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('wt-sus','0','1','0.01',synth.sustain)}</div>
+              <div class="crow"><span class="clbl">Release</span>${mkCsl('wt-rel','0.001','8','0.001',synth.release)}</div>
+            </div></div>
+          </div>`;
+
+        // Wave preset list
+        const wtList = qs('.wt-preset-list');
+        const renderWTPresets = () => {
+          wtList.innerHTML = '';
+          WT_NAMES.forEach((name, i) => {
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item' + (i === synth.currentWave ? ' fm-preset-active' : '');
+            item.textContent = name.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+            item.addEventListener('click', () => {
+              synth.currentWave = i; synth.updateWave();
+              wtList.querySelectorAll('.fm-preset-item').forEach((el, j) => el.classList.toggle('fm-preset-active', j === i));
+            });
+            wtList.appendChild(item);
+          });
+          const active = wtList.querySelector('.fm-preset-active');
+          if (active) active.scrollIntoView({ block: 'nearest' });
+        };
+        renderWTPresets();
+
+        const fmtPct  = v => Math.round(v*100)+'%';
+        initCslider(qs('.wt-d1').closest('.cslider'),     v => parseFloat(v).toFixed(1)+' ct');
+        initCslider(qs('.wt-d2').closest('.cslider'),     v => parseFloat(v).toFixed(1)+' ct');
+        initCslider(qs('.wt-oct').closest('.cslider'),    v => (parseFloat(v)>0?'+':'')+parseInt(v)+' st');
+        initCslider(qs('.wt-width').closest('.cslider'),  fmtPct);
+        initCslider(qs('.wt-cutoff').closest('.cslider'), v => {
+          const hz = 20 * Math.pow(2, parseFloat(v) * 10);
+          return hz >= 1000 ? (hz/1000).toFixed(1)+' kHz' : Math.round(hz)+' Hz';
+        });
+        initCslider(qs('.wt-reso').closest('.cslider'),   v => parseFloat(v).toFixed(1));
+        initCslider(qs('.wt-envamt').closest('.cslider'), fmtPct);
+        initCslider(qs('.wt-fatk').closest('.cslider'),   fmtFade);
+        initCslider(qs('.wt-fdec').closest('.cslider'),   fmtFade);
+        initCslider(qs('.wt-atk').closest('.cslider'),    fmtFade);
+        initCslider(qs('.wt-dec').closest('.cslider'),    fmtFade);
+        initCslider(qs('.wt-sus').closest('.cslider'),    fmtPct);
+        initCslider(qs('.wt-rel').closest('.cslider'),    fmtFade);
+
+        qs('.wt-d1').addEventListener('input',     () => { synth.detune1      = parseFloat(qs('.wt-d1').value);     synth.updateDetune(); });
+        qs('.wt-d2').addEventListener('input',     () => { synth.detune2      = parseFloat(qs('.wt-d2').value);     synth.updateDetune(); });
+        qs('.wt-oct').addEventListener('input',    () => { synth.osc2octave   = parseFloat(qs('.wt-oct').value);    synth.updateDetune(); });
+        qs('.wt-width').addEventListener('input',  () => { synth.width        = parseFloat(qs('.wt-width').value);  });
+        qs('.wt-cutoff').addEventListener('input', () => { synth.cutoff       = parseFloat(qs('.wt-cutoff').value); synth.updateFilter(); });
+        qs('.wt-reso').addEventListener('input',   () => { synth.resonance    = parseFloat(qs('.wt-reso').value);   synth.updateFilter(); });
+        qs('.wt-envamt').addEventListener('input', () => { synth.envAmount    = parseFloat(qs('.wt-envamt').value); });
+        qs('.wt-fatk').addEventListener('input',   () => { synth.filterAttack = parseFloat(qs('.wt-fatk').value);   });
+        qs('.wt-fdec').addEventListener('input',   () => { synth.filterDecay  = parseFloat(qs('.wt-fdec').value);   });
+        qs('.wt-atk').addEventListener('input',    () => { synth.attack       = parseFloat(qs('.wt-atk').value);    });
+        qs('.wt-dec').addEventListener('input',    () => { synth.decay        = parseFloat(qs('.wt-dec').value);    });
+        qs('.wt-sus').addEventListener('input',    () => { synth.sustain      = parseFloat(qs('.wt-sus').value);    });
+        qs('.wt-rel').addEventListener('input',    () => { synth.release      = parseFloat(qs('.wt-rel').value);    });
+      }
+    }
+
     function createSynthCard(synth, tile) {
-      if (synth.synthType === 'analog') createAnalogSynthCard(synth, tile);
-      else if (synth.synthType === 'fm') createFMSynthCard(synth, tile);
-      else createDrumCard(synth, tile);
+      if (synth.synthType === 'drums') { createDrumCard(synth, tile); return; }
+      const el = document.createElement('div');
+      el.className = 'synth-card';
+      el.style.setProperty('--card-color', synth.color);
+
+      const mkCsl = (cls, min, max, step, val) =>
+        `<div class="cslider"><input type="range" class="${cls}" min="${min}" max="${max}" step="${step}" value="${val}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div>`;
+
+      el.innerHTML = `
+        <div class="card-titlebar">
+          <div class="card-color-dot" style="background:${synth.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+          <div class="card-name">${synth.name}</div>
+          <select class="synth-type-sel">
+            <option value="analog"${synth.synthType==='analog'?' selected':''}>Analog</option>
+            <option value="fm"${synth.synthType==='fm'?' selected':''}>FM</option>
+            <option value="wavetable"${synth.synthType==='wavetable'?' selected':''}>Wavetable</option>
+          </select>
+          <button class="card-dup" title="Duplicate">&#x29C9;</button>
+          <button class="card-remove" title="Remove">&#x1F5D1;</button>
+          <button class="card-close" title="Close">&#x2715;</button>
+        </div>
+        <div class="card-accordion">
+          <div class="card-acc-hdr open">SCOPE</div>
+          <div class="card-acc-body open" style="padding:4px 10px 6px">
+            <canvas class="synth-scope-canvas" width="260" height="72"></canvas>
+          </div>
+        </div>
+        <div class="synth-card-body">
+          <div class="card-accordion">
+            <div class="card-acc-hdr">MIXER</div>
+            <div class="card-acc-body">
+              <div class="csec">
+                <div class="crow"><span class="clbl">Volume</span>${mkCsl('synth-vol','-60','6','0.1',(synth._currentDb||0).toFixed(1))}</div>
+                <div class="crow"><span class="clbl">Pan</span>${mkCsl('synth-pan','-1','1','0.01',(synth._currentPan||0).toFixed(2))}</div>
+              </div>
+            </div>
+          </div>
+          <div class="synth-type-body"></div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">EFFECTS</div>
+            <div class="card-acc-body">
+              <div class="fx-section" id="fx-section-${synth.id}"></div>
+            </div>
+          </div>
+          <div id="sc-kbd-${synth.id}"></div>
+        </div>`;
+
+      const q = sel => el.querySelector(sel);
+
+      // Accordion toggle (delegated on card)
+      el.addEventListener('click', e => {
+        const hdr = e.target.closest('.card-acc-hdr');
+        if (!hdr || !el.contains(hdr)) return;
+        hdr.classList.toggle('open');
+        hdr.nextElementSibling?.classList.toggle('open');
+        requestAnimationFrame(updateLfoWires);
+      });
+
+      // Mixer sliders
+      const fmtDb  = v => parseFloat(v).toFixed(1) + ' dB';
+      const fmtPan = v => { const n = parseFloat(v); if (Math.abs(n) < 0.01) return 'C'; return (n > 0 ? 'R' : 'L') + Math.abs(Math.round(n * 100)); };
+      initCslider(q('.synth-vol').closest('.cslider'), fmtDb);
+      initCslider(q('.synth-pan').closest('.cslider'), fmtPan);
+      q('.synth-vol').addEventListener('input', () => { synth._currentDb  = parseFloat(q('.synth-vol').value); synth._applyVol(); });
+      q('.synth-pan').addEventListener('input', () => { synth._currentPan = parseFloat(q('.synth-pan').value); synth._applyPan(); });
+
+      // Type selector
+      q('.synth-type-sel').addEventListener('change', e => {
+        synth.changeSynthType(e.target.value);
+        _populateSynthTypeBody(synth, el);
+        requestAnimationFrame(updateLfoWires);
+      });
+
+      q('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
+      q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSynth(synth.id); });
+      q('.card-dup').addEventListener('click',    e => { e.stopPropagation(); duplicateSynth(synth); });
+
+      let _titlebarDragged = false;
+      q('.card-titlebar').addEventListener('mousedown', e => { _titlebarDragged = false; });
+      q('.card-titlebar').addEventListener('mousemove', e => { if (e.buttons) _titlebarDragged = true; });
+      q('.card-titlebar').addEventListener('click', e => {
+        if (e.target.closest('button, select') || _titlebarDragged) return;
+        closeSynthCard(synth.id);
+      });
+
+      _populateSynthTypeBody(synth, el);
+      _positionCard(el, tile, 300, 520);
+      _makeSynthCardDrag(el, synth);
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('open'));
+      openCards.set(synth.id, { el });
+      if (tile) tile.classList.add('active', 'expanded');
+      requestAnimationFrame(() => buildPianoKeyboard(q(`#sc-kbd-${synth.id}`), synth));
+      buildFxSection(el, synth);
     }
 
     function createAnalogSynthCard(synth, tile) {
@@ -6566,6 +7366,16 @@
       } else if (synth.synthType === 'fm') {
         dup = new FMSynthInstrument(id, synth.name, synth.x + offset, synth.y + offset);
         dup.loadPreset({ name: synth.name, harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex, attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release, modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease });
+      } else if (synth.synthType === 'wavetable') {
+        dup = new WavetableSynth(id, synth.name, synth.x + offset, synth.y + offset);
+        Object.assign(dup, {
+          currentWave: synth.currentWave, detune1: synth.detune1, detune2: synth.detune2,
+          osc2octave: synth.osc2octave, width: synth.width,
+          cutoff: synth.cutoff, resonance: synth.resonance, envAmount: synth.envAmount,
+          filterAttack: synth.filterAttack, filterDecay: synth.filterDecay,
+          attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
+        });
+        dup.updateWave();
       } else { return; }
       synths.set(id, dup);
       const t = createSynthTile(dup);
@@ -8315,6 +9125,61 @@
 
       const panelsEl = document.createElement('div');
 
+      // Build a panel DOM element for an existing or newly-created fx instance
+      function buildFxPanel(inst) {
+        const fxType = inst.type;
+        const defName = s.fxCatalog.find(d => d.id === fxType)?.name || fxType;
+        const panelEl = document.createElement('div');
+        panelEl.className = 'fx-panel';
+        panelEl.dataset.fxUid = inst.uid;
+        panelEl.style.setProperty('--fx-color', s.color);
+        const hdr = document.createElement('div');
+        hdr.className = 'fx-panel-hdr';
+        hdr.innerHTML = `<span class="fx-panel-lbl">${defName}</span>`;
+        const hdrRight = document.createElement('div');
+        hdrRight.style.cssText = 'display:flex;align-items:center;gap:2px';
+        const faderBtn = document.createElement('button');
+        faderBtn.className = 'fx-fader-btn' + (inst.postFader ? ' active' : '');
+        faderBtn.textContent = inst.postFader ? 'POST' : 'PRE';
+        faderBtn.title = 'Toggle pre/post volume fader';
+        faderBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          inst.postFader = !inst.postFader;
+          faderBtn.textContent = inst.postFader ? 'POST' : 'PRE';
+          faderBtn.classList.toggle('active', inst.postFader);
+          s.rebuildFxChain();
+        });
+        hdrRight.appendChild(faderBtn);
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'fx-panel-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          s.removeFxInstance(inst.uid);
+          panelEl.remove();
+        });
+        hdrRight.appendChild(removeBtn);
+        hdr.appendChild(hdrRight);
+        const body = document.createElement('div');
+        body.className = 'fx-body-inner';
+        panelEl.appendChild(hdr);
+        panelEl.appendChild(body);
+        if (fxType === 'eq') {
+          body.innerHTML = `
+            <div class="crow" style="margin-bottom:5px;justify-content:flex-end">
+              <button class="cbtn card-eq-clear" style="padding:3px 8px;font-size:9px">Clear</button>
+            </div>
+            <canvas class="card-eq-canvas" height="80" style="width:100%;display:block"></canvas>
+            <div class="eq-hint">drag bands · scroll = Q</div>`;
+          panelsEl.appendChild(panelEl);
+          const canvas = body.querySelector('.card-eq-canvas');
+          requestAnimationFrame(() => initEqCanvas(canvas, inst.eqData.bands, i => inst.eqData.applyBand(i), s.color));
+        } else {
+          FX_PANELS[fxType].build(body, inst.params, inst.node);
+          panelsEl.appendChild(panelEl);
+        }
+      }
+
       for (const def of s.fxCatalog) {
         const btn = document.createElement('button');
         btn.className = 'fx-btn';
@@ -8326,57 +9191,12 @@
           e.stopPropagation();
           const inst = s.addFxInstance(def.id);
           if (!inst) return;
-          const panelEl = document.createElement('div');
-          panelEl.className = 'fx-panel';
-          panelEl.dataset.fxUid = inst.uid;
-          panelEl.style.setProperty('--fx-color', s.color);
-          const hdr = document.createElement('div');
-          hdr.className = 'fx-panel-hdr';
-          hdr.innerHTML = `<span class="fx-panel-lbl">${def.name}</span>`;
-          const hdrRight = document.createElement('div');
-          hdrRight.style.cssText = 'display:flex;align-items:center;gap:2px';
-          const faderBtn = document.createElement('button');
-          faderBtn.className = 'fx-fader-btn active';
-          faderBtn.textContent = 'POST';
-          faderBtn.title = 'Toggle pre/post volume fader';
-          faderBtn.addEventListener('click', ev => {
-            ev.stopPropagation();
-            inst.postFader = !inst.postFader;
-            faderBtn.textContent = inst.postFader ? 'POST' : 'PRE';
-            faderBtn.classList.toggle('active', inst.postFader);
-            s.rebuildFxChain();
-          });
-          hdrRight.appendChild(faderBtn);
-          const removeBtn = document.createElement('button');
-          removeBtn.className = 'fx-panel-remove';
-          removeBtn.textContent = '✕';
-          removeBtn.addEventListener('click', ev => {
-            ev.stopPropagation();
-            s.removeFxInstance(inst.uid);
-            panelEl.remove();
-          });
-          hdrRight.appendChild(removeBtn);
-          hdr.appendChild(hdrRight);
-          const body = document.createElement('div');
-          body.className = 'fx-body-inner';
-          panelEl.appendChild(hdr);
-          panelEl.appendChild(body);
-          if (def.id === 'eq') {
-            body.innerHTML = `
-              <div class="crow" style="margin-bottom:5px;justify-content:flex-end">
-                <button class="cbtn card-eq-clear" style="padding:3px 8px;font-size:9px">Clear</button>
-              </div>
-              <canvas class="card-eq-canvas" height="80" style="width:100%;display:block"></canvas>
-              <div class="eq-hint">drag bands · scroll = Q</div>`;
-            panelsEl.appendChild(panelEl);
-            const canvas = body.querySelector('.card-eq-canvas');
-            requestAnimationFrame(() => initEqCanvas(canvas, inst.eqData.bands, i => inst.eqData.applyBand(i), s.color));
-          } else {
-            FX_PANELS[def.id].build(body, inst.params, inst.node);
-            panelsEl.appendChild(panelEl);
-          }
+          buildFxPanel(inst);
         });
       }
+
+      // Restore panels for effects already on this instrument
+      for (const inst of s.fxChain) buildFxPanel(inst);
 
       fxSection.appendChild(btnRow);
       fxSection.appendChild(panelsEl);
@@ -10595,6 +11415,7 @@
           <button class="riff-hdr-btn riff-remove-btn" title="Remove">🗑</button>
           <button class="riff-hdr-btn riff-min-btn" title="Minimize">✕</button>
         </div>
+        <div class="riff-mini-grid"></div>
         <div class="riff-min-footer">${riff.name}</div>
         <div class="riff-body">
           <!-- STEP GRID -->
@@ -10745,6 +11566,19 @@
           grid.appendChild(cell);
         }
         q('.riff-steps-val').textContent = riff.numSteps;
+
+        // Rebuild mini grid dots
+        const mini = q('.riff-mini-grid');
+        mini.innerHTML = '';
+        for (let i = 0; i < 64; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'riff-mini-step' +
+            (i < riff.numSteps && riff.steps[i].note ? ' has-note' : '') +
+            (i >= riff.numSteps ? ' inactive' : '');
+          dot.style.display = i >= riff.numSteps ? 'none' : '';
+          dot.dataset.idx = i;
+          mini.appendChild(dot);
+        }
       }
 
       function updateVelBar(idx) {
@@ -10781,6 +11615,7 @@
           const bar = cell.querySelector('.riff-step-vel');
           if (bar) bar.style.height = '100%';
         }
+        q(`.riff-mini-step[data-idx="${idx}"]`)?.classList.remove('has-note');
       }
 
       function assignNoteToStep(idx, note) {
@@ -10790,6 +11625,7 @@
         riff.steps[idx].note = note;
         const cell = q(`.riff-step[data-idx="${idx}"]`);
         if (cell) { cell.classList.add('has-note'); cell.querySelector('.riff-step-note').textContent = note; }
+        q(`.riff-mini-step[data-idx="${idx}"]`)?.classList.add('has-note');
       }
 
       function advanceEntry() {
@@ -11090,6 +11926,9 @@
         setPlayStep: (step) => {
           el.querySelectorAll('.riff-step.playing').forEach(c => c.classList.remove('playing'));
           q(`.riff-step[data-idx="${step}"]`)?.classList.add('playing');
+          const prevDot = q('.riff-mini-step.cur');
+          if (prevDot) prevDot.classList.remove('cur');
+          q(`.riff-mini-step[data-idx="${step}"]`)?.classList.add('cur');
         },
         moveSelection: (delta) => {
           const base = stepEntryActive ? entryCursor : selectedStep;
@@ -11542,7 +12381,7 @@
         for (const sampleId of seq.destinations) {
           const cardInfo = openCards.get(sampleId);
           let targetEl = cardInfo
-            ? (cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas') || cardInfo.el)
+            ? (() => { const c = cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas'); return (c && c.offsetParent !== null) ? c : cardInfo.el; })()
             : document.getElementById('t' + sampleId);
           if (!targetEl) continue;
           const tr = targetEl.getBoundingClientRect();
@@ -11567,7 +12406,7 @@
         for (const instrId of riff.destinations) {
           const cardInfo = openCards.get(instrId);
           let targetEl = cardInfo
-            ? (cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas') || cardInfo.el)
+            ? (() => { const c = cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas'); return (c && c.offsetParent !== null) ? c : cardInfo.el; })()
             : document.getElementById('t' + instrId);
           if (!targetEl) continue;
           const tr = targetEl.getBoundingClientRect();
@@ -11841,41 +12680,16 @@
       document.getElementById('file-input').click();
     });
 
-    (function() {
-      const picker = document.getElementById('synth-type-picker');
-      const btn    = document.getElementById('btn-add-synth');
-      const addSynth = (type) => {
-        if (!audioReady) { alert('Please initialize audio first.'); return; }
-        const id = nextId++;
-        const pos = findFreePosition(TW, TH);
-        const x = pos.x + TW / 2, y = pos.y + TH / 2;
-        let synth;
-        if (type === 'analog') synth = new AnalogSynth(id, 'ANALOG ' + id, x, y);
-        else                   synth = new FMSynthInstrument(id, 'FM ' + id, x, y);
-        synths.set(id, synth);
-        const t = createSynthTile(synth);
-        openSynthCard(id, t);
-      };
-      btn.addEventListener('click', (e) => {
-        if (!audioReady) { alert('Please initialize audio first.'); return; }
-        const rect = btn.getBoundingClientRect();
-        picker.style.left = rect.left + 'px';
-        picker.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-        picker.style.top = 'auto';
-        picker.classList.toggle('open');
-        e.stopPropagation();
-      });
-      picker.querySelectorAll('.stp-item:not(.stp-disabled)').forEach(item => {
-        item.addEventListener('click', () => {
-          picker.classList.remove('open');
-          addSynth(item.dataset.type);
-        });
-      });
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('#synth-type-picker') && !e.target.closest('#btn-add-synth'))
-          picker.classList.remove('open');
-      });
-    })();
+    document.getElementById('btn-add-synth').addEventListener('click', () => {
+      if (!audioReady) { alert('Please initialize audio first.'); return; }
+      const id = nextId++;
+      const pos = findFreePosition(TW, TH);
+      const x = pos.x + TW / 2, y = pos.y + TH / 2;
+      const synth = new AnalogSynth(id, 'SYNTH ' + id, x, y);
+      synths.set(id, synth);
+      const t = createSynthTile(synth);
+      openSynthCard(id, t);
+    });
 
     document.getElementById('btn-add-drums').addEventListener('click', () => {
       if (!audioReady) { alert('Please initialize audio first.'); return; }
@@ -11896,14 +12710,11 @@
       const buf = await file.arrayBuffer();
       const targetId = document.getElementById('syx-input')._targetSynthId;
       const synth = synths.get(targetId);
-      if (!(synth instanceof FMSynthInstrument)) return;
+      if (!(synth instanceof SynthInstrument) || synth.synthType !== 'fm') return;
       if (!synth.loadSysEx(buf)) { alert('Could not parse SysEx file. Expected DX7 32-voice bank (.syx, 4104 bytes).'); return; }
-      // Refresh open card
-      if (openCards.has(targetId)) {
-        closeSynthCard(targetId);
-        const t = document.getElementById('t' + targetId);
-        openSynthCard(targetId, t);
-      }
+      // Refresh open card's preset list
+      const cardInfo = openCards.get(targetId);
+      if (cardInfo) _populateSynthTypeBody(synth, cardInfo.el);
     });
 
     document.getElementById('btn-add-lfo').addEventListener('click', () => {
