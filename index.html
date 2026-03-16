@@ -41,43 +41,6 @@
       user-select: none;
     }
 
-    /* ═══ UNLOCK SCREEN ═══ */
-    #unlock {
-      position: fixed;
-      inset: 0;
-      z-index: 3000;
-      background: transparent;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 32px;
-    }
-
-    #unlock.gone {
-      display: none;
-    }
-
-    #unlock-btn {
-      pointer-events: all;
-      background: #fff;
-      border: none;
-      color: #000;
-      font-family: Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
-      padding: 14px 48px;
-      cursor: pointer;
-      transition: background 0.1s, color 0.1s;
-    }
-
-    #unlock-btn:hover {
-      background: var(--hi);
-    }
-
     /* ═══ DROP OVERLAY ═══ */
     #drop-overlay {
       position: fixed;
@@ -2449,6 +2412,20 @@
     }
     .chords-strum-dir-btn.act, .chords-arp-oct-btn.act { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.1); }
     .chords-arp-hold-btn.act { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); color: #fff; }
+    /* Step Arp grid */
+    .chords-sarp-body { display: none; flex-direction: column; gap: 4px; padding: 4px 8px 6px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .chords-sarp-body.open { display: flex; }
+    .chords-sarp-grid { display: flex; flex-direction: row; gap: 2px; }
+    .sarp-col { display: flex; flex-direction: column; flex: 1; gap: 2px; }
+    .sarp-cell {
+      height: 12px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+      transition: background 0.05s, border-color 0.05s;
+    }
+    .sarp-cell:hover { background: rgba(255,255,255,0.15); }
+    .sarp-cell.on { background: var(--chords-color, #fff); border-color: var(--chords-color, #fff); opacity: 0.85; }
+    .sarp-col.playing .sarp-cell { border-color: rgba(255,255,255,0.35); }
+    .sarp-col.playing .sarp-cell.on { opacity: 1; filter: brightness(1.25); }
     .chords-wire-line { stroke-dasharray: 6 4; opacity: 0.55; stroke-width: 2; fill: none; }
 
     /* Transform buttons (oct/transpose) */
@@ -2642,10 +2619,7 @@
   <input type="file" id="file-input" multiple accept="audio/*" style="display:none">
   <input type="file" id="project-input" accept=".json" style="display:none">
 
-  <!-- UNLOCK SCREEN -->
-  <div id="unlock">
-    <button id="unlock-btn">Initialize Audio</button>
-  </div>
+
 
   <!-- DROP OVERLAY -->
   <div id="drop-overlay">
@@ -3192,9 +3166,12 @@
         this.arpRate = '8n';
         this.arpOctaves = 1;
         this.arpHold = false;
+        this.stepArp = false;
+        this.stepArpSteps = 8;
+        this.stepArpPattern = Array.from({length: 8}, () => Array(6).fill(false));
         this._scheduleId = null; this._arpSeqId = null;
         this._currentStep = -1; this._prevNotes = null;
-        this._arpNotes = []; this._arpIdx = 0;
+        this._arpNotes = []; this._arpIdx = 0; this._stepArpIdx = 0;
         this._midiCapture = null;
       }
 
@@ -3249,18 +3226,37 @@
         if (this.playMode === 'arp') {
           this._arpNotes = [];
           this._arpIdx = 0;
-          this._arpSeqId = Tone.Transport.scheduleRepeat((time) => {
-            if (!this._arpNotes.length) return;
-            let noteIdx;
-            if (this.arpMode === 'random') {
-              noteIdx = Math.floor(Math.random() * this._arpNotes.length);
-            } else {
-              noteIdx = this._arpIdx % this._arpNotes.length;
-              this._arpIdx++;
-            }
-            const arpDur = Math.max(0.05, Tone.Time(this.arpRate).toSeconds() * 0.8);
-            playNotes([this._arpNotes[noteIdx]], time, arpDur);
-          }, this.arpRate);
+          this._stepArpIdx = 0;
+          if (this.stepArp) {
+            // Step arp: each column fires at arpRate, active rows = notes played
+            this._arpSeqId = Tone.Transport.scheduleRepeat((time) => {
+              const col = this._stepArpIdx % this.stepArpSteps;
+              this._stepArpIdx++;
+              chordsNodes.get(this.id)?.updateStepArpPlayhead?.(col);
+              if (!this._arpNotes.length) return;
+              const colPat = this.stepArpPattern[col] || [];
+              const notesToPlay = [];
+              for (let row = 0; row < colPat.length; row++) {
+                if (colPat[row] && row < this._arpNotes.length) notesToPlay.push(this._arpNotes[row]);
+              }
+              if (!notesToPlay.length) return;
+              const dur = Math.max(0.05, Tone.Time(this.arpRate).toSeconds() * 0.8);
+              playNotes(notesToPlay, time, dur);
+            }, this.arpRate);
+          } else {
+            this._arpSeqId = Tone.Transport.scheduleRepeat((time) => {
+              if (!this._arpNotes.length) return;
+              let noteIdx;
+              if (this.arpMode === 'random') {
+                noteIdx = Math.floor(Math.random() * this._arpNotes.length);
+              } else {
+                noteIdx = this._arpIdx % this._arpNotes.length;
+                this._arpIdx++;
+              }
+              const arpDur = Math.max(0.05, Tone.Time(this.arpRate).toSeconds() * 0.8);
+              playNotes([this._arpNotes[noteIdx]], time, arpDur);
+            }, this.arpRate);
+          }
         }
 
         let stepIdx = 0;
@@ -3295,7 +3291,9 @@
               playNotes([midi], time + i * this.strumSpeed, Math.max(0.05, noteDur - i * this.strumSpeed));
             });
           } else if (this.playMode === 'arp') {
-            this._arpNotes = buildArpSequence(midiNotes, this.arpMode, this.arpOctaves);
+            this._arpNotes = this.stepArp
+              ? [...midiNotes].sort((a, b) => a - b)
+              : buildArpSequence(midiNotes, this.arpMode, this.arpOctaves);
             this._arpIdx = 0;
           } else {
             playNotes(midiNotes, time, noteDur);
@@ -3845,22 +3843,26 @@
     // ════════════════════════════════════════════════════
     // AUDIO UNLOCK
     // ════════════════════════════════════════════════════
-    document.getElementById('unlock-btn').addEventListener('click', async () => {
-      try {
-        await Tone.start();
-        // Start Transport immediately so grid scheduling works
-        Tone.Transport.start();
-        masterMeter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
-        masterSamplesGain.connect(masterMeter);
-        audioReady = true;
-        isPlaying = true;
-        document.getElementById('unlock').classList.add('gone');
-        document.getElementById('btn-play').classList.add('playing');
-        beatTick();
-      } catch (e) {
-        alert('Audio init failed: ' + e.message);
+    // ensureAudio() initializes the AudioContext on the first call (requires a
+    // user gesture). Subsequent calls resolve immediately. Every action handler
+    // awaits this before doing anything, so the very first click — on any button
+    // or on the canvas — both unlocks audio AND performs the intended action.
+    let _audioInitPromise = null;
+    async function ensureAudio() {
+      if (audioReady) return;
+      if (!_audioInitPromise) {
+        _audioInitPromise = (async () => {
+          await Tone.start();
+          Tone.Transport.start();
+          masterMeter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
+          masterSamplesGain.connect(masterMeter);
+          audioReady = true;
+        })();
       }
-    });
+      return _audioInitPromise;
+    }
+    // Catch-all: bare canvas / background clicks also unlock audio
+    document.addEventListener('click', () => ensureAudio());
 
     // ════════════════════════════════════════════════════
     // SAMPLE CLASS
@@ -7166,9 +7168,10 @@
       else s.play();
     }
 
-    function togglePlay(id) {
+    async function togglePlay(id) {
       const s = samples.get(id);
-      if (!(s instanceof Sample) || !audioReady) return;
+      if (!(s instanceof Sample)) return;
+      await ensureAudio();
       if (s.playing) s.stop();
       else startSample(s);
     }
@@ -9407,10 +9410,10 @@
       });
 
       // ── Controls ──
-      q('.card-play').addEventListener('click', e => {
+      q('.card-play').addEventListener('click', async e => {
         e.stopPropagation();
         if (s.triggerMode) {
-          if (!audioReady) return;
+          await ensureAudio();
           s.triggerAtTime(Tone.context.rawContext.currentTime + 0.005, null);
           return;
         }
@@ -10366,12 +10369,12 @@
 
     Tone.Transport.bpm.value = 120;
 
-    document.getElementById('btn-play').addEventListener('click', () => {
-      if (!audioReady) return;
+    document.getElementById('btn-play').addEventListener('click', async () => {
+      await ensureAudio();
       isPlaying ? pauseAll() : playAll();
     });
-    document.getElementById('btn-stop').addEventListener('click', () => {
-      if (!audioReady) return;
+    document.getElementById('btn-stop').addEventListener('click', async () => {
+      await ensureAudio();
       stopAll();
     });
 
@@ -10576,8 +10579,8 @@
     let recMixState = null;            // { rec, chunks, dest, sources }
     const recStems = new Map();        // sampleId → { rec, chunks, dest, src, name }
 
-    document.getElementById('btn-rec').addEventListener('click', () => {
-      if (!audioReady) return;
+    document.getElementById('btn-rec').addEventListener('click', async () => {
+      await ensureAudio();
       if (isRecording) stopRecording();
       else startRecording();
     });
@@ -10931,6 +10934,7 @@
           voicingMode: ch.voicingMode, transposeOffset: ch.transposeOffset, voiceLeading: ch.voiceLeading,
           playMode: ch.playMode, strumSpeed: ch.strumSpeed, strumDir: ch.strumDir,
           arpMode: ch.arpMode, arpRate: ch.arpRate, arpOctaves: ch.arpOctaves, arpHold: ch.arpHold,
+          stepArp: ch.stepArp, stepArpSteps: ch.stepArpSteps, stepArpPattern: ch.stepArpPattern.map(col => [...col]),
           scaleRoot: ch.scaleRoot, scale: ch.scale,
           genre: ch.genre, decade: ch.decade,
           destinations: [...ch.destinations]
@@ -11145,6 +11149,11 @@
           ch.arpRate = cd.arpRate || '8n';
           ch.arpOctaves = cd.arpOctaves || 1;
           ch.arpHold = !!cd.arpHold;
+          ch.stepArp = !!cd.stepArp;
+          ch.stepArpSteps = cd.stepArpSteps || 8;
+          ch.stepArpPattern = Array.isArray(cd.stepArpPattern)
+            ? cd.stepArpPattern.map(col => Array.isArray(col) ? [...col] : Array(6).fill(false))
+            : Array.from({length: ch.stepArpSteps}, () => Array(6).fill(false));
           ch.voiceLeading = !!cd.voiceLeading;
           ch.scaleRoot = cd.scaleRoot || 'C';
           ch.scale = cd.scale || 'Chromatic';
@@ -12646,19 +12655,33 @@
         <div class="chords-body">
           <!-- Step grid -->
           <div class="chords-step-row"></div>
-          <!-- Inline chord suggestions panel -->
-          <div class="chords-suggestions"></div>
-          <!-- Play + Steps row -->
+          <!-- Controls row: play · grid · subdiv/rate · steps -->
           <div class="chords-row" style="gap:4px;padding-top:4px">
             <button class="riff-step-btn chords-play-btn" style="flex:0 0 auto;padding:4px 10px">&#9654;</button>
-            <span class="chords-lbl" style="margin-left:4px">Steps</span>
+            <button class="cbtn chords-grid-btn" style="flex:0 0 auto;padding:4px 8px;font-size:9px">Grid</button>
+            <select class="chords-sel chords-subdiv-sel" style="flex:1">
+              <option value="1n">1 bar</option>
+              <option value="2n">1/2</option>
+              <option value="4n">1/4</option>
+              <option value="4n.">1/4 .</option>
+              <option value="8n">1/8</option>
+              <option value="8n.">1/8 .</option>
+              <option value="16n">1/16</option>
+            </select>
+            <div class="chords-rate-row" style="flex:1;display:none">
+              <div class="cslider chords-rate-slider">
+                <input type="range" class="chords-rate-input" min="0.1" max="4" step="0.05" value="${chordsInst.rate}">
+                <div class="cslider-thumb"><span class="cslider-lbl">${chordsInst.rate.toFixed(2)}s</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
             <div class="chords-steps-ctrl">
               <button class="chords-steps-dec">−</button>
               <span class="chords-steps-val">${chordsInst.numSteps}</span>
               <button class="chords-steps-inc">+</button>
             </div>
-            <span class="chords-lbl" style="margin-left:auto;font-size:8px;color:rgba(255,255,255,0.25)">R-click to enable/disable</span>
           </div>
+          <!-- Inline chord suggestions panel -->
+          <div class="chords-suggestions"></div>
           <!-- Root / Scale / Transpose row -->
           <div class="chords-row sep" style="gap:3px;flex-wrap:wrap">
             <span class="chords-lbl">Root</span>
@@ -12678,26 +12701,6 @@
             <select class="chords-sel chords-genre-sel" style="flex:1">${genreOptsHtml}</select>
             <span class="chords-lbl">Era</span>
             <select class="chords-sel chords-decade-sel" style="flex:0 0 auto;width:72px">${decadeOptsHtml}</select>
-          </div>
-          <!-- Grid / Subdiv row -->
-          <div class="chords-row">
-            <button class="cbtn chords-grid-btn" style="flex:0 0 auto;padding:4px 8px;font-size:9px">Grid</button>
-            <select class="chords-sel chords-subdiv-sel" style="flex:1">
-              <option value="1n">1 bar</option>
-              <option value="2n">1/2</option>
-              <option value="4n">1/4</option>
-              <option value="4n.">1/4 .</option>
-              <option value="8n">1/8</option>
-              <option value="8n.">1/8 .</option>
-              <option value="16n">1/16</option>
-            </select>
-          </div>
-          <div class="chords-row chords-rate-row">
-            <span class="chords-lbl">Rate</span>
-            <div class="cslider chords-rate-slider">
-              <input type="range" class="chords-rate-input" min="0.1" max="4" step="0.05" value="${chordsInst.rate}">
-              <div class="cslider-thumb"><span class="cslider-lbl">${chordsInst.rate.toFixed(2)}s</span><input class="cslider-edit" type="text"></div>
-            </div>
           </div>
           <!-- Voicing row -->
           <div class="chords-row sep">
@@ -12767,7 +12770,20 @@
                 <option value="thumb-dn"${chordsInst.arpMode==='thumb-dn'?' selected':''}>Thumb Down</option>
               </select>
               <button class="chords-arp-hold-btn cbtn${chordsInst.arpHold?' act':''}">Hold</button>
+              <button class="chords-arp-step-btn cbtn${chordsInst.stepArp?' act':''}">Step</button>
             </div>
+          </div>
+          <!-- Step Arp grid -->
+          <div class="chords-sarp-body${chordsInst.stepArp && chordsInst.playMode==='arp' ? ' open' : ''}">
+            <div style="display:flex;align-items:center;gap:4px;padding-bottom:2px">
+              <span class="chords-lbl" style="flex:1;opacity:0.5">Step Pattern</span>
+              <div class="chords-steps-ctrl">
+                <button class="sarp-steps-dec">−</button>
+                <span class="sarp-steps-val">${chordsInst.stepArpSteps}</span>
+                <button class="sarp-steps-inc">+</button>
+              </div>
+            </div>
+            <div class="chords-sarp-grid"></div>
           </div>
           <!-- Wire row -->
           <div class="chords-wire-row sep">
@@ -12992,7 +13008,7 @@
       function applyGridMode() {
         gridBtn.classList.toggle('act', chordsInst.gridSync);
         q('.chords-subdiv-sel').style.display = chordsInst.gridSync ? '' : 'none';
-        q('.chords-rate-row').style.display = chordsInst.gridSync ? 'none' : '';
+        q('.chords-rate-row').style.display = chordsInst.gridSync ? 'none' : 'flex';
       }
       q('.chords-subdiv-sel').value = chordsInst.subdiv;
       gridBtn.addEventListener('click', e => {
@@ -13046,6 +13062,7 @@
         q('.chords-pm-arp').classList.toggle('act', mode === 'arp');
         q('.chords-strum-body').style.display = mode === 'strum' ? 'flex' : 'none';
         q('.chords-arp-body').style.display   = mode === 'arp'   ? 'flex' : 'none';
+        q('.chords-sarp-body').classList.toggle('open', mode === 'arp' && chordsInst.stepArp);
         chordsInst.reschedule();
       };
       q('.chords-pm-off').addEventListener('click',   e => { e.stopPropagation(); updatePlayMode('off'); });
@@ -13088,6 +13105,61 @@
         e.stopPropagation();
         chordsInst.arpHold = !chordsInst.arpHold;
         q('.chords-arp-hold-btn').classList.toggle('act', chordsInst.arpHold);
+      });
+
+      // Step Arp
+      const SARP_ROWS = 6;
+      function buildSarpGrid() {
+        const grid = q('.chords-sarp-grid');
+        grid.innerHTML = '';
+        for (let col = 0; col < chordsInst.stepArpSteps; col++) {
+          if (!chordsInst.stepArpPattern[col]) chordsInst.stepArpPattern[col] = Array(SARP_ROWS).fill(false);
+          const colEl = document.createElement('div');
+          colEl.className = 'sarp-col';
+          colEl.dataset.col = col;
+          // Render rows top=high note, bottom=low note
+          for (let row = SARP_ROWS - 1; row >= 0; row--) {
+            const cell = document.createElement('div');
+            cell.className = 'sarp-cell' + (chordsInst.stepArpPattern[col][row] ? ' on' : '');
+            cell.dataset.col = col; cell.dataset.row = row;
+            cell.addEventListener('click', e => {
+              e.stopPropagation();
+              const c = parseInt(cell.dataset.col), r = parseInt(cell.dataset.row);
+              chordsInst.stepArpPattern[c][r] = !chordsInst.stepArpPattern[c][r];
+              cell.classList.toggle('on', chordsInst.stepArpPattern[c][r]);
+            });
+            colEl.appendChild(cell);
+          }
+          grid.appendChild(colEl);
+        }
+        q('.sarp-steps-val').textContent = chordsInst.stepArpSteps;
+      }
+      buildSarpGrid();
+
+      q('.chords-arp-step-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        chordsInst.stepArp = !chordsInst.stepArp;
+        q('.chords-arp-step-btn').classList.toggle('act', chordsInst.stepArp);
+        q('.chords-sarp-body').classList.toggle('open', chordsInst.stepArp && chordsInst.playMode === 'arp');
+        chordsInst.reschedule();
+      });
+
+      q('.sarp-steps-dec').addEventListener('click', e => {
+        e.stopPropagation();
+        if (chordsInst.stepArpSteps > 1) {
+          chordsInst.stepArpSteps--;
+          chordsInst.stepArpPattern.length = chordsInst.stepArpSteps;
+          buildSarpGrid(); if (chordsInst.playMode === 'arp' && chordsInst.stepArp) chordsInst.reschedule();
+        }
+      });
+      q('.sarp-steps-inc').addEventListener('click', e => {
+        e.stopPropagation();
+        if (chordsInst.stepArpSteps < 16) {
+          chordsInst.stepArpSteps++;
+          if (!chordsInst.stepArpPattern[chordsInst.stepArpSteps - 1])
+            chordsInst.stepArpPattern[chordsInst.stepArpSteps - 1] = Array(SARP_ROWS).fill(false);
+          buildSarpGrid(); if (chordsInst.playMode === 'arp' && chordsInst.stepArp) chordsInst.reschedule();
+        }
       });
 
       // Rate slider
@@ -13183,7 +13255,10 @@
       updateMiniGrid();
       updateDestList();
 
-      const nodeInfo = { el, setPlayStep, updateDestList, clearSelectedStep };
+      function updateStepArpPlayhead(col) {
+        el.querySelectorAll('.sarp-col').forEach((c, i) => c.classList.toggle('playing', i === col));
+      }
+      const nodeInfo = { el, setPlayStep, updateDestList, clearSelectedStep, updateStepArpPlayhead };
       chordsNodes.set(chordsInst.id, nodeInfo);
       updateLfoWires();
       return nodeInfo;
@@ -13216,6 +13291,9 @@
       ch.arpRate = src.arpRate;
       ch.arpOctaves = src.arpOctaves;
       ch.arpHold = src.arpHold;
+      ch.stepArp = src.stepArp;
+      ch.stepArpSteps = src.stepArpSteps;
+      ch.stepArpPattern = src.stepArpPattern.map(col => [...col]);
       ch.scaleRoot = src.scaleRoot;
       ch.scale = src.scale;
       ch.genre = src.genre;
@@ -13702,13 +13780,13 @@
 
     // ── Add LFO button ──
     // ── + SAMPLER / + SYNTH / + DRUMS buttons ──
-    document.getElementById('btn-add-sampler').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('btn-add-sampler').addEventListener('click', async () => {
+      await ensureAudio();
       document.getElementById('file-input').click();
     });
 
-    document.getElementById('btn-add-synth').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('btn-add-synth').addEventListener('click', async () => {
+      await ensureAudio();
       const id = nextId++;
       const pos = findFreePosition(TW, TH);
       const x = pos.x + TW / 2, y = pos.y + TH / 2;
@@ -13718,8 +13796,8 @@
       openSynthCard(id, t);
     });
 
-    document.getElementById('btn-add-drums').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('btn-add-drums').addEventListener('click', async () => {
+      await ensureAudio();
       const id = nextId++;
       const pos = findFreePosition(TW, TH);
       const x = pos.x + TW / 2, y = pos.y + TH / 2;
@@ -13753,8 +13831,8 @@
     });
 
     // ── Add Riff button ──
-    document.getElementById('btn-add-riff').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('btn-add-riff').addEventListener('click', async () => {
+      await ensureAudio();
       if (riffs.size >= MAX_RIFFS) return;
       const id = nextRiffId++;
       const pos = findFreePosition(RIFF_W, 360);
@@ -13764,8 +13842,8 @@
     });
 
     // ── Add Chords button ──
-    document.getElementById('btn-add-chords').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('btn-add-chords').addEventListener('click', async () => {
+      await ensureAudio();
       const id = nextChordsId++;
       const pos = findFreePosition(CHORDS_NODE_W, 300);
       const ch = new ChordsSequencer(id, pos.x + CHORDS_NODE_W / 2, pos.y + 100);
@@ -13790,7 +13868,7 @@
     document.addEventListener('drop', async e => {
       e.preventDefault(); dn = 0;
       document.getElementById('drop-overlay').classList.remove('active');
-      if (!audioReady) { alert('Please click Initialize Audio first.'); return; }
+      await ensureAudio();
       const files = e.dataTransfer.files;
       if (files.length === 1 && files[0].name.toLowerCase().endsWith('.json')) {
         loadProject(await files[0].text());
@@ -13801,21 +13879,21 @@
       else importList(e.dataTransfer.files, dropPos);
     });
 
-    document.getElementById('import-btn').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('import-btn').addEventListener('click', async () => {
+      await ensureAudio();
       document.getElementById('file-input').click();
     });
     document.getElementById('file-input').addEventListener('change', async e => {
       importList(e.target.files); e.target.value = '';
     });
 
-    document.getElementById('save-btn').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      await ensureAudio();
       if (samples.size === 0) { alert('Nothing to save — load some samples first.'); return; }
       saveProject();
     });
-    document.getElementById('open-btn').addEventListener('click', () => {
-      if (!audioReady) { alert('Please initialize audio first.'); return; }
+    document.getElementById('open-btn').addEventListener('click', async () => {
+      await ensureAudio();
       document.getElementById('project-input').click();
     });
     document.getElementById('project-input').addEventListener('change', async e => {
