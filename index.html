@@ -223,14 +223,14 @@
       width: 136px;
       height: 56px;
       background: var(--surface);
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid #fff;
       cursor: grab;
       overflow: hidden;
       z-index: 10;
     }
 
     .tile:hover {
-      border-color: rgba(255,255,255,0.5);
+      border-color: #fff;
     }
 
     .tile.playing {
@@ -296,7 +296,7 @@
       font-weight: 700;
       letter-spacing: -0.03em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.78);
       background: rgba(0, 0, 0, 0.8);
       white-space: nowrap;
       overflow: hidden;
@@ -455,7 +455,7 @@
       z-index: 400;
       width: 280px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid #fff;
       overflow: hidden;
       max-height: 0;
       opacity: 0;
@@ -1446,7 +1446,7 @@
       position: absolute;
       width: 220px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid #fff;
       z-index: 10;
       cursor: default;
       user-select: none;
@@ -1549,7 +1549,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.78);
       padding-left: 6px;
       line-height: 16px;
     }
@@ -1810,15 +1810,14 @@
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.28);
+      color: rgba(255,255,255,0.65);
       pointer-events: none;
       z-index: 3;
     }
-    .tile.playing .tile-synth-badge { color: rgba(255,255,255,0.8); }
+    .tile.playing .tile-synth-badge { color: #fff; }
 
     /* ═══ SYNTH CARD ═══ */
     .synth-tile {
-      border-color: rgba(255,255,255,0.8);
     }
 
     .synth-card {
@@ -1826,7 +1825,7 @@
       z-index: 400;
       width: 300px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid #fff;
       overflow: hidden;
       max-height: 0;
       opacity: 0;
@@ -2293,7 +2292,7 @@
       position: absolute;
       width: 340px;
       background: #000;
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid #fff;
       user-select: none;
       z-index: 10;
       cursor: default;
@@ -2303,6 +2302,7 @@
     }
     .riff-node.dragging { z-index: inherit; }
     .riff-node.collapsed { width: 136px; padding: 0; background: var(--surface, #000); }
+    .riff-node.collapsed .riff-titlebar { display: none; }
     .riff-node.collapsed .riff-body { display: none; }
     .riff-node.collapsed .riff-min-footer { display: block; }
     .riff-node.collapsed .riff-mini-grid { display: grid; }
@@ -2311,17 +2311,19 @@
       grid-template-columns: repeat(16, 1fr);
       gap: 2px; padding: 6px 8px;
       box-sizing: border-box;
+      height: 40px;
+      align-items: center;
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     .riff-mini-step {
-      height: 4px; background: rgba(255,255,255,0.06); border-radius: 1px;
+      height: 10px; background: rgba(255,255,255,0.06); border-radius: 1px;
     }
     .riff-mini-step.has-note { background: var(--riff-color, #fff); }
     .riff-mini-step.cur { outline: 1px solid rgba(255,255,255,0.85); }
     .riff-min-footer {
       display: none; height: 16px; font-size: 9px; font-weight: 700;
       text-transform: uppercase; letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.45); padding-left: 6px; line-height: 16px;
+      color: rgba(255,255,255,0.78); padding-left: 6px; line-height: 16px;
     }
     .riff-titlebar {
       display: flex; align-items: center; gap: 8px;
@@ -2472,23 +2474,25 @@
     /* ── CHORDS NODE ── */
     .chords-node {
       position: absolute; width: 420px; background: #000;
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid #fff;
       user-select: none; z-index: 10; cursor: default;
       font-family: Helvetica, Arial, sans-serif; color: #fff; font-size: 11px;
     }
     .chords-node.dragging { z-index: inherit; }
-    .chords-node.collapsed { width: 160px; padding: 0; background: #000; }
+    .chords-node.collapsed { width: 136px; padding: 0; background: #000; }
+    .chords-node.collapsed .chords-titlebar { display: none; }
     .chords-node.collapsed .chords-body { display: none; }
     .chords-node.collapsed .chords-min-footer { display: block; }
     .chords-node.collapsed .chords-mini-grid { display: flex; }
     .chords-mini-grid {
       display: none; flex-direction: row; gap: 2px;
       padding: 6px 8px; box-sizing: border-box;
+      height: 40px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       overflow: hidden;
     }
     .chords-mini-step {
-      flex: 1; height: 20px; background: rgba(255,255,255,0.06);
+      flex: 1; height: 100%; background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1); border-radius: 1px;
       display: flex; align-items: center; justify-content: center;
       font-size: 6px; font-weight: 700; overflow: hidden;
@@ -2499,7 +2503,7 @@
     .chords-min-footer {
       display: none; height: 16px; font-size: 9px; font-weight: 700;
       text-transform: uppercase; letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.45); padding-left: 6px; line-height: 16px;
+      color: rgba(255,255,255,0.78); padding-left: 6px; line-height: 16px;
     }
     .chords-titlebar {
       display: flex; align-items: center; gap: 8px; padding: 5px 8px;
@@ -2945,6 +2949,18 @@
     const CHORDS_COLORS = ['#00cccc','#ff6600','#cc00cc','#0099ff','#00cc66','#ff0066','#ffcc00','#6600ff'];
     function nextChordsColor() { return CHORDS_COLORS[_chordsColorIdx++ % CHORDS_COLORS.length]; }
 
+    // Returns { startTime, startStep } for quantized scheduling when transport is running.
+    // If transport was just started (tPos < one step) or is stopped, returns immediate start at step 0.
+    function _seqSyncOffset(interval) {
+      if (Tone.Transport.state !== 'started') return { startTime: undefined, startStep: 0 };
+      const intervalSec = Tone.Time(interval).toSeconds();
+      const tPos = Tone.Transport.seconds;
+      if (intervalSec <= 0 || tPos < intervalSec) return { startTime: undefined, startStep: 0 };
+      // Quantize entry to next interval boundary; calculate which step we'll be on there
+      const startStep = Math.ceil(tPos / intervalSec);
+      return { startTime: '@' + interval, startStep };
+    }
+
     class RiffSequencer {
       constructor(id, x, y) {
         this.id = id;
@@ -2982,15 +2998,16 @@
       }
 
       _scheduleStep() {
-        let stepIdx = 0;
         this._seqPhaseTransport = null;
         const interval = this.gridSync ? this.subdiv : this.rate;
+        const { startTime, startStep } = _seqSyncOffset(interval);
+        let stepIdx = startStep;
         this._scheduleId = Tone.Transport.scheduleRepeat((time) => {
-          if (stepIdx === 0) {
+          const step = stepIdx % this.numSteps;
+          if (step === 0) {
             const lookahead = time - Tone.context.rawContext.currentTime;
             this._seqPhaseTransport = Tone.Transport.seconds + lookahead;
           }
-          const step = stepIdx % this.numSteps;
           stepIdx++;
           riffNodes.get(this.id)?.setPlayStep(step);
           const stepData = this.steps[step];
@@ -3063,7 +3080,8 @@
         this._part.loop = true;
         this._part.loopStart = 0;
         this._part.loopEnd = loopDurSec;
-        this._part.start('+0');
+        const isLive = Tone.Transport.state === 'started';
+        this._part.start(isLive ? '@1n' : '+0');
       }
 
       unschedule() {
@@ -3222,6 +3240,8 @@
         };
 
         const interval = this.gridSync ? this.subdiv : this.rate;
+        const { startTime, startStep } = _seqSyncOffset(interval);
+        const { startTime: arpStartTime } = _seqSyncOffset(this.arpRate);
 
         if (this.playMode === 'arp') {
           this._arpNotes = [];
@@ -3242,7 +3262,7 @@
               if (!notesToPlay.length) return;
               const dur = Math.max(0.05, Tone.Time(this.arpRate).toSeconds() * 0.8);
               playNotes(notesToPlay, time, dur);
-            }, this.arpRate);
+            }, this.arpRate, arpStartTime);
           } else {
             this._arpSeqId = Tone.Transport.scheduleRepeat((time) => {
               if (!this._arpNotes.length) return;
@@ -3255,11 +3275,11 @@
               }
               const arpDur = Math.max(0.05, Tone.Time(this.arpRate).toSeconds() * 0.8);
               playNotes([this._arpNotes[noteIdx]], time, arpDur);
-            }, this.arpRate);
+            }, this.arpRate, arpStartTime);
           }
         }
 
-        let stepIdx = 0;
+        let stepIdx = startStep;
         this._scheduleId = Tone.Transport.scheduleRepeat((time) => {
           const step = stepIdx % this.numSteps;
           stepIdx++;
@@ -3298,7 +3318,7 @@
           } else {
             playNotes(midiNotes, time, noteDur);
           }
-        }, interval);
+        }, interval, startTime);
       }
 
       unschedule() {
@@ -3730,6 +3750,10 @@
       'kp-pdampvar':  { prop: 'pluckDampingVariation', min: 0, max: 1, label: 'PlkDmpVar', isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
       'kp-tension':   { prop: 'stringTension',         min: 0, max: 1, label: 'Tension',   isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
       'kp-spread':    { prop: 'stereoSpread',          min: 0, max: 1, label: 'Spread',    isSynth: true, fmtVal: v => parseFloat(v).toFixed(2) },
+      // Rompler params
+      'rm-ffreq': { prop: 'filterFreq', min: 20, max: 20000, label: 'Cutoff',  isSynth: true, updater: 'updateFilter', fmtVal: v => v >= 1000 ? (v/1000).toFixed(1)+' kHz' : Math.round(v)+' Hz' },
+      'rm-fq':    { prop: 'filterQ',   min: 0.01, max: 20,  label: 'Reso',    isSynth: true, updater: 'updateFilter', fmtVal: v => parseFloat(v).toFixed(2) },
+      'rm-rel':   { prop: 'release',   min: 0.01, max: 10,  label: 'Release', isSynth: true, fmtVal: v => fmtFade(v) },
       // Drum machine pitch params
       'dm-pitch-Kick':  { prop: 'pitches', subProp: 'Kick',  min: -12, max: 12, label: 'Kick Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
       'dm-pitch-Snare': { prop: 'pitches', subProp: 'Snare', min: -12, max: 12, label: 'Snare Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
@@ -5329,8 +5353,7 @@
           if (cardM) cardM.classList.toggle('mute-on', this.muted);
         }
 
-        // Color-aware border: full color when playing, dimmed at rest
-        tile.style.borderColor = this.playing ? this.color : (this.color + '55');
+        tile.style.borderColor = '';
         refreshSoloVis();
       }
     }
@@ -5633,7 +5656,7 @@
         const tile = document.getElementById('t' + this.id);
         if (!tile) return;
         tile.classList.toggle('muted', this.muted);
-        tile.style.borderColor = this.color + '55';
+        tile.style.borderColor = '';
         const mbtn = tile.querySelector('.tile-mbtn');
         if (mbtn) mbtn.classList.toggle('mute-on', this.muted);
       }
@@ -5692,6 +5715,68 @@
           this._kpVoices = null;
         }
         if (this._kpBridge) { try { this._kpBridge.dispose(); } catch(e) {} this._kpBridge = null; }
+        // Rompler
+        if (this._smplr) { try { this._smplr.stop(); } catch(e) {} this._smplr = null; }
+        if (this._romplerBridge) { try { this._romplerBridge.dispose(); } catch(e) {} this._romplerBridge = null; }
+      }
+      // Shared smplr loader — handles both SF1 (Soundfont) and SF2 (Soundfont2Sampler)
+      _romplerLoad() {
+        const updateStatus = txt => {
+          const cardInfo = openCards.get(this.id);
+          if (cardInfo) { cardInfo.el.querySelectorAll('.rompler-status').forEach(b => { b.textContent = txt; }); }
+        };
+        const getSmplr = () => window._smplrLib
+          ? Promise.resolve(window._smplrLib)
+          : import('https://unpkg.com/smplr/dist/index.mjs').then(m => { window._smplrLib = m; return m; });
+        if (this._smplr) { try { this._smplr.stop(); } catch(e) {} this._smplr = null; }
+        this._smplrLoading = true;
+        updateStatus('Loading…');
+
+        if (this.romplerType === 'sf2') {
+          const getSf2 = () => window._sf2Lib
+            ? Promise.resolve(window._sf2Lib)
+            : import('https://esm.sh/soundfont2').then(m => { window._sf2Lib = m; return m; });
+          Promise.all([getSmplr(), getSf2()]).then(([smplrMod, sf2Mod]) => {
+            const { Soundfont2Sampler } = smplrMod;
+            const SoundFont2Cls = sf2Mod.SoundFont2 || sf2Mod.default?.SoundFont2 || sf2Mod.default;
+            try {
+              const sampler = new Soundfont2Sampler(Tone.context.rawContext, {
+                url: this.romplerSf2Url,
+                createSoundfont: (data) => new SoundFont2Cls(data),
+                destination: this._romplerBridge.input,
+              });
+              sampler.load.then(() => {
+                if (this.synthType !== 'rompler') return;
+                this._smplr = sampler;
+                this._sf2InstrumentNames = sampler.instrumentNames || [];
+                this._smplrLoading = false;
+                updateStatus(this._sf2InstrumentNames.length + ' inst');
+                if (!this.romplerSf2Instrument || !this._sf2InstrumentNames.includes(this.romplerSf2Instrument)) {
+                  this.romplerSf2Instrument = this._sf2InstrumentNames[0] || null;
+                }
+                if (this.romplerSf2Instrument) sampler.loadInstrument(this.romplerSf2Instrument).catch(e => {});
+                this._refreshSf2List?.();
+              }).catch(e => { this._smplrLoading = false; updateStatus('Error'); console.error('SF2 load:', e); });
+            } catch(e) { this._smplrLoading = false; updateStatus('Error'); console.error('SF2 init:', e); }
+          }).catch(e => { this._smplrLoading = false; updateStatus('Error'); console.error('SF2 deps:', e); });
+        } else {
+          getSmplr().then(mod => {
+            const { Soundfont } = mod;
+            try {
+              const sf = new Soundfont(Tone.context.rawContext, {
+                instrument: this.romplerInstrument,
+                kit: this.romplerBank,
+                destination: this._romplerBridge.input,
+              });
+              sf.load.then(() => {
+                if (this.synthType !== 'rompler') return;
+                this._smplr = sf;
+                this._smplrLoading = false;
+                updateStatus('Ready');
+              }).catch(e => { this._smplrLoading = false; updateStatus('Error'); console.error('SF1 load:', e); });
+            } catch(e) { this._smplrLoading = false; updateStatus('Error'); console.error('SF1 init:', e); }
+          }).catch(e => { this._smplrLoading = false; updateStatus('Error'); console.error('smplr import:', e); });
+        }
       }
       changeSynthType(newType) {
         if (this.synthType === newType) return;
@@ -5741,6 +5826,23 @@
            '_lp','_smoothingFactor','_pluckCoeff','_generateBuffer','_makeVoice'].forEach(m => {
             this[m] = KarplusSynth.prototype[m].bind(this);
           });
+        } else if (newType === 'rompler') {
+          this.synthType = 'rompler';
+          this.romplerType = this.romplerType || 'sf1';
+          this.romplerBank = this.romplerBank || 'MusyngKite';
+          this.romplerInstrument = this.romplerInstrument || 'acoustic_grand_piano';
+          this.romplerSf2Url = this.romplerSf2Url || ROMPLER_SF2_FILES[0].url;
+          this.romplerSf2Instrument = this.romplerSf2Instrument || null;
+          this._sf2InstrumentNames = this._sf2InstrumentNames || [];
+          this.release = 1.5;
+          this.filterType = 'lowpass'; this.filterFreq = 20000; this.filterQ = 1.0;
+          this._smplr = null; this._smplrLoading = false; this._refreshSf2List = null;
+          this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
+          this._romplerBridge = new Tone.Gain(1).connect(this._filter);
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','updateFilter'].forEach(m => {
+            this[m] = RomplerInstrument.prototype[m].bind(this);
+          });
+          this._romplerLoad();
         }
         const badge = document.querySelector(`#t${this.id} .tile-synth-badge`);
         if (badge) badge.textContent = newType.toUpperCase();
@@ -6335,6 +6437,118 @@
       }
     }
 
+    // ── Rompler (Soundfont) instrument list ──
+    const ROMPLER_INSTRUMENTS = [
+      // Piano
+      'acoustic_grand_piano','bright_acoustic_piano','electric_grand_piano','honkytonk_piano',
+      'electric_piano_1','electric_piano_2','harpsichord','clavinet',
+      // Chromatic Perc
+      'celesta','glockenspiel','music_box','vibraphone','marimba','xylophone','tubular_bells','dulcimer',
+      // Organ
+      'drawbar_organ','percussive_organ','rock_organ','church_organ','reed_organ','accordion','harmonica','tango_accordion',
+      // Guitar
+      'acoustic_guitar_nylon','acoustic_guitar_steel','electric_guitar_jazz','electric_guitar_clean',
+      'electric_guitar_muted','overdriven_guitar','distortion_guitar','guitar_harmonics',
+      // Bass
+      'acoustic_bass','electric_bass_finger','electric_bass_pick','fretless_bass',
+      'slap_bass_1','slap_bass_2','synth_bass_1','synth_bass_2',
+      // Strings
+      'violin','viola','cello','contrabass','tremolo_strings','pizzicato_strings','orchestral_harp','timpani',
+      // Ensemble
+      'string_ensemble_1','string_ensemble_2','synth_strings_1','synth_strings_2',
+      'choir_aahs','voice_oohs','synth_choir','orchestra_hit',
+      // Brass
+      'trumpet','trombone','tuba','muted_trumpet','french_horn','brass_section','synth_brass_1','synth_brass_2',
+      // Reed
+      'soprano_sax','alto_sax','tenor_sax','baritone_sax','oboe','english_horn','bassoon','clarinet',
+      // Pipe
+      'piccolo','flute','recorder','pan_flute','blown_bottle','shakuhachi','whistle','ocarina',
+      // Synth Lead
+      'lead_1_square','lead_2_sawtooth','lead_3_calliope','lead_4_chiff',
+      'lead_5_charang','lead_6_voice','lead_7_fifths','lead_8_bass__lead',
+      // Synth Pad
+      'pad_1_new_age','pad_2_warm','pad_3_polysynth','pad_4_choir',
+      'pad_5_bowed','pad_6_metallic','pad_7_halo','pad_8_sweep',
+      // Synth FX
+      'fx_1_rain','fx_2_soundtrack','fx_3_crystal','fx_4_atmosphere',
+      'fx_5_brightness','fx_6_goblins','fx_7_echoes','fx_8_scifi',
+      // Ethnic
+      'sitar','banjo','shamisen','koto','kalimba','bagpipe','fiddle','shanai',
+      // Percussive
+      'tinkle_bell','agogo','steel_drums','woodblock','taiko_drum','melodic_tom','synth_drum','reverse_cymbal',
+      // Sound FX
+      'guitar_fret_noise','breath_noise','seashore','bird_tweet','telephone_ring','helicopter','applause','gunshot',
+    ];
+    const ROMPLER_BANKS = ['MusyngKite', 'FluidR3_GM'];
+    const ROMPLER_SF2_FILES = [
+      { name: 'Galaxy Electric Pianos', url: 'https://smpldsnds.github.io/soundfonts/soundfonts/galaxy-electric-pianos.sf2' },
+      { name: 'GIGA HQ FM GM',          url: 'https://smpldsnds.github.io/soundfonts/soundfonts/giga-hq-fm-gm.sf2' },
+      { name: 'Supersaw Collection',    url: 'https://smpldsnds.github.io/soundfonts/soundfonts/supersaw-collection.sf2' },
+      { name: 'Yamaha Grand Lite',      url: 'https://smpldsnds.github.io/soundfonts/soundfonts/yamaha-grand-lite.sf2' },
+    ];
+
+    class RomplerInstrument extends SynthInstrument {
+      constructor(id, name, x, y) {
+        super(id, name, x, y);
+        this.synthType            = 'rompler';
+        this.romplerType          = 'sf1';   // 'sf1' | 'sf2'
+        this.romplerBank          = 'MusyngKite';
+        this.romplerInstrument    = 'acoustic_grand_piano';
+        this.romplerSf2Url        = ROMPLER_SF2_FILES[0].url;
+        this.romplerSf2Instrument = null;
+        this._sf2InstrumentNames  = [];
+        this.release              = 1.5;
+        this.filterType           = 'lowpass';
+        this.filterFreq           = 20000;
+        this.filterQ              = 1.0;
+        this._smplr               = null;
+        this._smplrLoading        = false;
+        this._refreshSf2List      = null;
+
+        this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
+        this._romplerBridge = new Tone.Gain(1).connect(this._filter);
+        this._romplerLoad();
+      }
+
+      noteOn(note, vel = 100) {
+        if (!this._smplr || this._smplrLoading) return;
+        this._noteHighlight(note, true);
+        try { this._smplr.start({ note, velocity: vel, stopId: note }); } catch(e) {}
+      }
+
+      noteOff(note) {
+        this._noteHighlight(note, false);
+        if (!this._smplr) return;
+        try { this._smplr.stop({ stopId: note }); } catch(e) {}
+      }
+
+      allNotesOff() {
+        if (!this._smplr) return;
+        try { this._smplr.stop(); } catch(e) {}
+      }
+
+      triggerAtTime(note, dur, time, vel) {
+        if (!this._smplr || this._smplrLoading) return;
+        this._noteHighlight(note, true);
+        const velocity = Math.round(Math.min(vel, 1.0) * 127);
+        try {
+          this._smplr.start({ note, velocity, time, duration: dur, ampRelease: this.release });
+        } catch(e) {}
+        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+      }
+
+      updateFilter() {
+        if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType });
+      }
+
+      dispose() {
+        if (this._smplr) { try { this._smplr.stop(); } catch(e) {} this._smplr = null; }
+        if (this._romplerBridge) { try { this._romplerBridge.dispose(); } catch(e) {} this._romplerBridge = null; }
+        if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }
+        super.dispose();
+      }
+    }
+
     // ── Kit definitions (Shiny Drum Machine kits) ──
     const DRUM_KITS = [
       {id: 'R8',             name: 'Roland R-8'},
@@ -6450,9 +6664,12 @@
             if (vel > 0) this.triggerInstrument(name, vel, time);
           }
         }, Array.from({length: this.numSteps}, (_, i) => i), interval);
-        this._seq.start(0);
+        const isLive = Tone.Transport.state === 'started';
+        const intervalSec = Tone.Time(interval).toSeconds();
+        const seqStart = isLive && intervalSec > 0 && Tone.Transport.seconds >= intervalSec
+          ? '@' + interval : 0;
+        this._seq.start(seqStart);
         this.isPlaying = true;
-        if (Tone.Transport.state !== 'started') Tone.Transport.start();
       }
 
       stopSequencer() {
@@ -6480,7 +6697,6 @@
       t.style.left = (s.x - TW / 2) + 'px';
       t.style.top = (s.y - TH / 2) + 'px';
       t.style.setProperty('--col', s.color);
-      t.style.borderColor = s.color + '55'; // dim border at rest
 
       const wc = document.createElement('canvas');
       wc.className = 'tile-canvas';
@@ -6654,7 +6870,7 @@
       const W = canvas.width, H = canvas.height;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
       if (!synth._analyser) return;
       const data = synth._analyser.getValue();
@@ -6662,7 +6878,7 @@
       ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
-      ctx.strokeStyle = synth.color + 'cc';
+      ctx.strokeStyle = synth.color;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       for (let i = 0; i < data.length; i++) {
@@ -6677,7 +6893,7 @@
       const W = canvas.width, H = canvas.height;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
 
       const lanes = drum.INSTRUMENTS;
@@ -6856,10 +7072,7 @@
         const pos = s.playheadPos();
         if (pos === null) { ph.style.display = 'none'; continue; }
         // PS mode: pos is 0..1 of PS buffer; tile waveform shows PS buffer (x=0..TW), so use pos directly
-        const tileAbsPos = (s.psStretch > 1 && s._psBuffer && s._psPlayingBuffer)
-          ? pos
-          : s.loopStart + pos * (s.loopEnd - s.loopStart);
-        const tileX = tileAbsPos * TW;
+        const tileX = pos * TW;
         ph.style.left = tileX + 'px';
         ph.style.display = 'block';
       }
@@ -7248,6 +7461,8 @@
       openCards.delete(id);
       const tile = document.getElementById('t' + id);
       if (tile) tile.classList.remove('active', 'expanded');
+      const synth = synths.get(id) || drums.get(id);
+      if (synth) synth._refreshSf2List = null;
       updateSampleList();
     }
 
@@ -7722,6 +7937,168 @@
         qs('.kp-pdampvar').addEventListener('input', () => { synth.pluckDampingVariation  = parseFloat(qs('.kp-pdampvar').value); });
         qs('.kp-charvar').addEventListener('input',  () => { synth.characterVariation     = parseFloat(qs('.kp-charvar').value); });
         qs('.kp-spread').addEventListener('input',   () => { synth.stereoSpread           = parseFloat(qs('.kp-spread').value); });
+
+      } else if (synth.synthType === 'rompler') {
+        const fmtFreq = v => parseFloat(v) >= 1000 ? (parseFloat(v)/1000).toFixed(1)+' kHz' : Math.round(parseFloat(v))+' Hz';
+        const isSf2 = synth.romplerType === 'sf2';
+        const statusTxt = synth._smplrLoading ? 'Loading…' : synth._smplr ? (isSf2 ? (synth._sf2InstrumentNames.length + ' inst') : 'Ready') : '—';
+        typeBody.innerHTML = `
+          <div class="card-accordion">
+            <div class="card-acc-hdr open">PRESETS</div>
+            <div class="card-acc-body open"><div class="csec">
+              <div class="synth-btn-row" style="margin-bottom:8px">
+                <button class="synth-btn ${!isSf2?'act':''}" data-rtype="sf1">Soundfont</button>
+                <button class="synth-btn ${isSf2?'act':''}"  data-rtype="sf2">Soundfont 2</button>
+              </div>
+              <div class="rom-sf1-wrap" style="${isSf2?'display:none':''}">
+                <div class="synth-row" style="margin-bottom:6px;align-items:center;gap:6px">
+                  <div class="synth-lbl">Bank</div>
+                  <select class="rom-bank-sel" style="flex:1;background:var(--b1);color:var(--hi);border:1px solid var(--b3);border-radius:3px;padding:2px 4px;font-size:10px;font-family:inherit">
+                    ${ROMPLER_BANKS.map(b=>`<option value="${b}"${b===synth.romplerBank?' selected':''}>${b}</option>`).join('')}
+                  </select>
+                  <span class="rompler-status" style="font-size:9px;color:var(--mid);flex-shrink:0;min-width:36px;text-align:right">${isSf2?'—':statusTxt}</span>
+                </div>
+                <div class="fm-preset-list rom-preset-list"></div>
+              </div>
+              <div class="rom-sf2-wrap" style="${!isSf2?'display:none':''}">
+                <div class="synth-row" style="margin-bottom:6px;align-items:center;gap:6px">
+                  <div class="synth-lbl">File</div>
+                  <select class="rom-sf2-sel" style="flex:1;background:var(--b1);color:var(--hi);border:1px solid var(--b3);border-radius:3px;padding:2px 4px;font-size:10px;font-family:inherit">
+                    ${ROMPLER_SF2_FILES.map(f=>`<option value="${f.url}"${f.url===synth.romplerSf2Url?' selected':''}>${f.name}</option>`).join('')}
+                  </select>
+                  <span class="rompler-status" style="font-size:9px;color:var(--mid);flex-shrink:0;min-width:36px;text-align:right">${isSf2?statusTxt:'—'}</span>
+                </div>
+                <div class="fm-preset-list rom-sf2-preset-list"></div>
+              </div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">FILTER</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="synth-row" style="margin-bottom:6px">
+                <div class="synth-lbl">Type</div>
+                <div class="synth-btn-row" style="flex:1">
+                  <button class="synth-btn ${synth.filterType==='lowpass'?'act':''}"  data-rflt="lowpass">LP</button>
+                  <button class="synth-btn ${synth.filterType==='highpass'?'act':''}" data-rflt="highpass">HP</button>
+                  <button class="synth-btn ${synth.filterType==='bandpass'?'act':''}" data-rflt="bandpass">BP</button>
+                </div>
+              </div>
+              <div class="crow"><span class="clbl">Cutoff</span>${mkCsl('rm-ffreq','20','20000','1',synth.filterFreq)}</div>
+              <div class="crow"><span class="clbl">Reso</span>${mkCsl('rm-fq','0.01','20','0.01',synth.filterQ)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">ENVELOPE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Release</span>${mkCsl('rm-rel','0.01','10','0.01',synth.release)}</div>
+            </div></div>
+          </div>`;
+
+        const updateStatusLocal = txt => qas('.rompler-status').forEach(b => { b.textContent = txt; });
+
+        // SF1 preset list
+        const renderSf1Presets = () => {
+          const list = qs('.rom-preset-list'); if (!list) return;
+          list.innerHTML = '';
+          ROMPLER_INSTRUMENTS.forEach(inst => {
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item' + (inst === synth.romplerInstrument ? ' fm-preset-active' : '');
+            item.textContent = inst.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+            item.addEventListener('click', () => {
+              synth.romplerInstrument = inst;
+              updateStatusLocal('Loading…');
+              synth._romplerLoad();
+              list.querySelectorAll('.fm-preset-item').forEach((el, j) => el.classList.toggle('fm-preset-active', ROMPLER_INSTRUMENTS[j] === inst));
+            });
+            list.appendChild(item);
+          });
+          const active = list.querySelector('.fm-preset-active');
+          if (active) active.scrollIntoView({ block: 'nearest' });
+        };
+
+        // SF2 instrument list (dynamic — populated after SF2 loads)
+        const renderSf2Presets = () => {
+          const list = qs('.rom-sf2-preset-list'); if (!list) return;
+          list.innerHTML = '';
+          const names = synth._sf2InstrumentNames || [];
+          if (!names.length) {
+            const ph = document.createElement('div');
+            ph.className = 'fm-preset-item';
+            ph.style.opacity = '0.4';
+            ph.textContent = synth._smplrLoading ? 'Loading SF2…' : 'Select a file above';
+            list.appendChild(ph);
+            return;
+          }
+          names.forEach(inst => {
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item' + (inst === synth.romplerSf2Instrument ? ' fm-preset-active' : '');
+            item.textContent = inst;
+            item.addEventListener('click', () => {
+              synth.romplerSf2Instrument = inst;
+              if (synth._smplr) synth._smplr.loadInstrument(inst).catch(e => {});
+              list.querySelectorAll('.fm-preset-item').forEach(el => el.classList.toggle('fm-preset-active', el.textContent === inst));
+            });
+            list.appendChild(item);
+          });
+          const active = list.querySelector('.fm-preset-active');
+          if (active) active.scrollIntoView({ block: 'nearest' });
+        };
+
+        // Callback so _romplerLoad can refresh the SF2 list when file finishes loading
+        synth._refreshSf2List = () => {
+          renderSf2Presets();
+          updateStatusLocal((synth._sf2InstrumentNames?.length || 0) + ' inst');
+        };
+
+        // Show the right section initially
+        if (synth.romplerType === 'sf2') { renderSf2Presets(); }
+        else { renderSf1Presets(); }
+
+        // SF1 / SF2 type toggle
+        qas('[data-rtype]').forEach(btn => btn.addEventListener('click', () => {
+          const newType = btn.dataset.rtype;
+          if (synth.romplerType === newType) return;
+          synth.romplerType = newType;
+          qas('[data-rtype]').forEach(b => b.classList.toggle('act', b.dataset.rtype === newType));
+          qs('.rom-sf1-wrap').style.display = newType === 'sf2' ? 'none' : '';
+          qs('.rom-sf2-wrap').style.display = newType === 'sf2' ? '' : 'none';
+          if (newType === 'sf2') {
+            // If SF2 not loaded yet for current URL, load it
+            if (!synth._smplr || synth._sf2InstrumentNames.length === 0) synth._romplerLoad();
+            else renderSf2Presets();
+          } else {
+            synth._romplerLoad();
+          }
+        }));
+
+        // SF1 bank selector
+        qs('.rom-bank-sel').addEventListener('change', e => {
+          synth.romplerBank = e.target.value;
+          updateStatusLocal('Loading…');
+          synth._romplerLoad();
+        });
+
+        // SF2 file selector
+        qs('.rom-sf2-sel').addEventListener('change', e => {
+          synth.romplerSf2Url = e.target.value;
+          synth._sf2InstrumentNames = [];
+          synth.romplerSf2Instrument = null;
+          renderSf2Presets();
+          synth._romplerLoad();
+        });
+
+        initCslider(qs('.rm-ffreq').closest('.cslider'), fmtFreq);
+        initCslider(qs('.rm-fq').closest('.cslider'),    v => parseFloat(v).toFixed(2));
+        initCslider(qs('.rm-rel').closest('.cslider'),   fmtFade);
+
+        qas('[data-rflt]').forEach(btn => btn.addEventListener('click', () => {
+          synth.filterType = btn.dataset.rflt;
+          qas('[data-rflt]').forEach(b => b.classList.toggle('act', b.dataset.rflt === synth.filterType));
+          synth.updateFilter();
+        }));
+        qs('.rm-ffreq').addEventListener('input', () => { synth.filterFreq = parseFloat(qs('.rm-ffreq').value); synth.updateFilter(); });
+        qs('.rm-fq').addEventListener('input',    () => { synth.filterQ    = parseFloat(qs('.rm-fq').value);    synth.updateFilter(); });
+        qs('.rm-rel').addEventListener('input',   () => { synth.release    = parseFloat(qs('.rm-rel').value); });
       }
     }
 
@@ -7743,6 +8120,7 @@
             <option value="fm"${synth.synthType==='fm'?' selected':''}>FM</option>
             <option value="wavetable"${synth.synthType==='wavetable'?' selected':''}>Wavetable</option>
             <option value="karplus"${synth.synthType==='karplus'?' selected':''}>Karplus</option>
+            <option value="rompler"${synth.synthType==='rompler'?' selected':''}>Rompler</option>
           </select>
           <button class="card-dup" title="Duplicate">&#x29C9;</button>
           <button class="card-remove" title="Remove">&#x1F5D1;</button>
@@ -8025,6 +8403,19 @@
         createSynthTile(dup);
         updateSampleList();
         return;
+      } else if (synth.synthType === 'rompler') {
+        dup = new RomplerInstrument(id, synth.name, synth.x + offset, synth.y + offset);
+        dup.romplerBank = synth.romplerBank;
+        dup.romplerInstrument = synth.romplerInstrument;
+        dup.release = synth.release;
+        dup.filterType = synth.filterType; dup.filterFreq = synth.filterFreq; dup.filterQ = synth.filterQ;
+        dup.updateFilter();
+        // Share loaded smplr instance if available, otherwise reload
+        if (synth._smplr) {
+          dup._smplrLoading = false;
+          // Reload independently so destination wires correctly to dup's bridge
+          dup._romplerLoad();
+        }
       } else { return; }
       dup._currentDb = synth._currentDb;
       dup._currentPan = synth._currentPan;
@@ -10844,7 +11235,7 @@
     }
 
     function saveProject() {
-      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], lfos: [], riffs: [], drums: [], chords: [] };
+      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], synths: [], lfos: [], riffs: [], drums: [], chords: [] };
       for (const [, s] of samples) {
         if (!(s instanceof Sample)) continue;
         const fxChainData = s.fxChain.map(inst => {
@@ -10892,6 +11283,59 @@
           volDb: drum._currentDb, panPos: drum._currentPan,
           fxChain: fxChainData,
         });
+      }
+      // Save synths
+      for (const [, synth] of synths) {
+        if (!(synth instanceof SynthInstrument)) continue;
+        const fxChainData = synth.fxChain.map(inst => {
+          if (inst.type === 'eq') return { type: 'eq', bands: inst.eqData.bands.map(b => ({ ...b })) };
+          return { type: inst.type, params: { ...inst.params }, postFader: !!inst.postFader };
+        });
+        const sd = {
+          id: synth.id, name: synth.name, x: synth.x, y: synth.y, color: synth.color,
+          synthType: synth.synthType, muted: synth.muted,
+          volDb: synth._currentDb, panPos: synth._currentPan,
+          fxChain: fxChainData,
+        };
+        if (synth.synthType === 'analog') {
+          Object.assign(sd, {
+            oscType: synth.oscType, filterType: synth.filterType, filterFreq: synth.filterFreq, filterQ: synth.filterQ,
+            attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
+            portamento: synth.portamento, currentPreset: synth.currentPreset,
+          });
+        } else if (synth.synthType === 'fm') {
+          Object.assign(sd, {
+            harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex,
+            attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
+            modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease,
+            currentPreset: synth.currentPreset, _usingCustom: synth._usingCustom,
+            _customPresets: synth._usingCustom ? synth._customPresets.map(p => ({ ...p })) : [],
+          });
+        } else if (synth.synthType === 'wavetable') {
+          Object.assign(sd, {
+            currentWave: synth.currentWave, detune1: synth.detune1, detune2: synth.detune2,
+            osc2octave: synth.osc2octave, width: synth.width,
+            cutoff: synth.cutoff, resonance: synth.resonance, envAmount: synth.envAmount,
+            filterAttack: synth.filterAttack, filterDecay: synth.filterDecay,
+            attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
+          });
+        } else if (synth.synthType === 'karplus') {
+          Object.assign(sd, {
+            characterVariation: synth.characterVariation, stringDamping: synth.stringDamping,
+            stringDampingVariation: synth.stringDampingVariation, stringDampingCalc: synth.stringDampingCalc,
+            stringTension: synth.stringTension, pluckDamping: synth.pluckDamping,
+            pluckDampingVariation: synth.pluckDampingVariation,
+            stereoSpread: synth.stereoSpread, bodyResonation: synth.bodyResonation,
+          });
+        } else if (synth.synthType === 'rompler') {
+          Object.assign(sd, {
+            romplerType: synth.romplerType, romplerBank: synth.romplerBank,
+            romplerInstrument: synth.romplerInstrument, romplerSf2Url: synth.romplerSf2Url,
+            romplerSf2Instrument: synth.romplerSf2Instrument,
+            release: synth.release, filterType: synth.filterType, filterFreq: synth.filterFreq, filterQ: synth.filterQ,
+          });
+        }
+        projectData.synths.push(sd);
       }
       // Save LFOs
       for (const [, lfo] of lfos) {
@@ -10967,6 +11411,7 @@
 
       // Clear existing session
       [...samples.keys()].forEach(id => removeSample(id));
+      for (const sid of [...synths.keys()]) removeSynth(sid);
       soloId = null;
 
       // Restore BPM
@@ -11120,9 +11565,119 @@
             drums.set(id, drum);
             createSynthTile(drum);
             drum.loadKit(drum.kitId);
+            drum.startSequencer();
           } catch(e) { console.error('Failed to restore drum machine:', e); }
         }
       }
+      // Restore synths
+      if (Array.isArray(data.synths)) {
+        for (const sd of data.synths) {
+          try {
+            const id = nextId++;
+            if (sd.id != null) idMap[sd.id] = id;
+            let synth;
+            if (sd.synthType === 'analog') {
+              synth = new AnalogSynth(id, sd.name || ('Synth ' + id), sd.x || 300, sd.y || 300);
+              if (sd.oscType) { synth.oscType = sd.oscType; synth.updateOscType(); }
+              if (sd.filterType) synth.filterType = sd.filterType;
+              if (sd.filterFreq != null) synth.filterFreq = sd.filterFreq;
+              if (sd.filterQ    != null) synth.filterQ    = sd.filterQ;
+              synth.updateFilter();
+              if (sd.attack  != null) synth.attack  = sd.attack;
+              if (sd.decay   != null) synth.decay   = sd.decay;
+              if (sd.sustain != null) synth.sustain = sd.sustain;
+              if (sd.release != null) synth.release = sd.release;
+              synth.updateEnvelope();
+              if (sd.portamento != null) { synth.portamento = sd.portamento; if (synth._poly) synth._poly.set({ portamento: sd.portamento }); }
+              if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
+            } else if (sd.synthType === 'fm') {
+              synth = new FMSynthInstrument(id, sd.name || ('FM Synth ' + id), sd.x || 300, sd.y || 300);
+              if (sd.harmonicity     != null) synth.harmonicity     = sd.harmonicity;
+              if (sd.modulationIndex != null) synth.modulationIndex = sd.modulationIndex;
+              synth.updateFMParams();
+              if (sd.attack    != null) synth.attack    = sd.attack;
+              if (sd.decay     != null) synth.decay     = sd.decay;
+              if (sd.sustain   != null) synth.sustain   = sd.sustain;
+              if (sd.release   != null) synth.release   = sd.release;
+              synth.updateEnvelope();
+              if (sd.modAttack   != null) synth.modAttack   = sd.modAttack;
+              if (sd.modDecay    != null) synth.modDecay    = sd.modDecay;
+              if (sd.modSustain  != null) synth.modSustain  = sd.modSustain;
+              if (sd.modRelease  != null) synth.modRelease  = sd.modRelease;
+              synth.updateModEnv();
+              if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
+              if (sd._usingCustom && Array.isArray(sd._customPresets) && sd._customPresets.length) {
+                synth._customPresets = sd._customPresets.map(p => ({ ...p }));
+                synth._usingCustom = true;
+              }
+            } else if (sd.synthType === 'wavetable') {
+              synth = new WavetableSynth(id, sd.name || ('Wavetable ' + id), sd.x || 300, sd.y || 300);
+              if (sd.currentWave  != null) { synth.currentWave  = sd.currentWave;  synth.updateWave(); }
+              if (sd.detune1      != null)   synth.detune1      = sd.detune1;
+              if (sd.detune2      != null)   synth.detune2      = sd.detune2;
+              if (sd.osc2octave   != null)   synth.osc2octave   = sd.osc2octave;
+              if (sd.width        != null)   synth.width        = sd.width;
+              if (sd.cutoff       != null)   synth.cutoff       = sd.cutoff;
+              if (sd.resonance    != null) { synth.resonance    = sd.resonance;    synth.updateFilter(); }
+              if (sd.envAmount    != null)   synth.envAmount    = sd.envAmount;
+              if (sd.filterAttack != null)   synth.filterAttack = sd.filterAttack;
+              if (sd.filterDecay  != null)   synth.filterDecay  = sd.filterDecay;
+              if (sd.attack       != null)   synth.attack       = sd.attack;
+              if (sd.decay        != null)   synth.decay        = sd.decay;
+              if (sd.sustain      != null)   synth.sustain      = sd.sustain;
+              if (sd.release      != null)   synth.release      = sd.release;
+            } else if (sd.synthType === 'karplus') {
+              synth = new KarplusSynth(id, sd.name || ('Karplus ' + id), sd.x || 300, sd.y || 300);
+              if (sd.characterVariation     != null) synth.characterVariation     = sd.characterVariation;
+              if (sd.stringDamping          != null) synth.stringDamping          = sd.stringDamping;
+              if (sd.stringDampingVariation != null) synth.stringDampingVariation = sd.stringDampingVariation;
+              if (sd.stringDampingCalc)              synth.stringDampingCalc      = sd.stringDampingCalc;
+              if (sd.stringTension          != null) synth.stringTension          = sd.stringTension;
+              if (sd.pluckDamping           != null) synth.pluckDamping           = sd.pluckDamping;
+              if (sd.pluckDampingVariation  != null) synth.pluckDampingVariation  = sd.pluckDampingVariation;
+              if (sd.stereoSpread           != null) synth.stereoSpread           = sd.stereoSpread;
+              if (sd.bodyResonation)                 synth.bodyResonation         = sd.bodyResonation;
+            } else if (sd.synthType === 'rompler') {
+              synth = new RomplerInstrument(id, sd.name || ('Rompler ' + id), sd.x || 300, sd.y || 300);
+              if (sd.romplerType)              synth.romplerType          = sd.romplerType;
+              if (sd.romplerBank)              synth.romplerBank          = sd.romplerBank;
+              if (sd.romplerInstrument)        synth.romplerInstrument    = sd.romplerInstrument;
+              if (sd.romplerSf2Url)            synth.romplerSf2Url        = sd.romplerSf2Url;
+              if (sd.romplerSf2Instrument)     synth.romplerSf2Instrument = sd.romplerSf2Instrument;
+              if (sd.release   != null) synth.release   = sd.release;
+              if (sd.filterType)         synth.filterType = sd.filterType;
+              if (sd.filterFreq != null) synth.filterFreq = sd.filterFreq;
+              if (sd.filterQ    != null) synth.filterQ    = sd.filterQ;
+              synth.updateFilter();
+              synth._romplerLoad();
+            } else {
+              continue; // unknown type
+            }
+            if (sd.color) synth.color = sd.color;
+            synth._currentDb  = sd.volDb  ?? 0;
+            synth._currentPan = sd.panPos ?? 0;
+            synth._applyVol(); synth._applyPan();
+            if (sd.muted) { synth.muted = true; synth._applyVol(); }
+            // Restore FX chain
+            if (Array.isArray(sd.fxChain)) {
+              for (const fi of sd.fxChain) {
+                const inst = synth.addFxInstance(fi.type);
+                if (!inst) continue;
+                if (fi.type === 'eq' && fi.bands) {
+                  fi.bands.forEach((b, i) => { inst.eqData.bands[i] = { ...b }; inst.eqData.applyBand(i); });
+                } else if (fi.params) {
+                  Object.assign(inst.params, fi.params);
+                  applyFxNodeParams(inst);
+                }
+                if (fi.postFader) { inst.postFader = true; synth.rebuildFxChain(); }
+              }
+            }
+            synths.set(id, synth);
+            createSynthTile(synth);
+          } catch(e) { console.error('Failed to restore synth:', sd.name, e); }
+        }
+      }
+
       // Restore chords
       for (const cid of [...chords.keys()]) removeChords(cid);
       if (Array.isArray(data.chords)) {
@@ -11161,6 +11716,7 @@
           ch.decade = cd.decade || '';
           chords.set(cid, ch);
           createChordsNode(ch);
+          document.getElementById('chords-' + cid)?.classList.add('collapsed');
           if (Array.isArray(cd.destinations)) {
             for (const oldId of cd.destinations) {
               const targetId = idMap[oldId] ?? (getInstrument(oldId) ? oldId : null);
@@ -11198,6 +11754,7 @@
           riff.quantize = rd.quantize !== false;
           riffs.set(rid, riff);
           createRiffNode(riff);
+          document.getElementById('riff-' + rid)?.classList.add('collapsed');
           if (Array.isArray(rd.destinations)) {
             for (const oldId of rd.destinations) {
               const targetId = idMap[oldId] ?? (getInstrument(oldId) ? oldId : null);
@@ -11241,9 +11798,11 @@
           }
           lfos.set(lid, lfo);
           createLfoNode(lfo);
+          document.getElementById('lfo-' + lid)?.classList.add('collapsed');
         }
       }
       updateEmpty();
+      playAll();
     }
 
     // ════════════════════════════════════════════════════
@@ -11483,7 +12042,6 @@
       el.id = 'lfo-' + lfo.id;
       el.style.left = (lfo.x - LFO_W / 2) + 'px';
       el.style.top = (lfo.y - LFO_H_MIN / 2) + 'px';
-      el.style.borderColor = lfo.color;
 
       el.innerHTML = `
         <div class="lfo-titlebar" title="Click to collapse/expand">
@@ -13804,6 +14362,7 @@
       const drum = new DrumMachine(id, 'DRUMS ' + id, x, y);
       drums.set(id, drum);
       const t = createSynthTile(drum);
+      if (!isPlaying) playAll(); else drum.startSequencer();
       openSynthCard(id, t);
     });
 
@@ -13839,6 +14398,7 @@
       const riff = new RiffSequencer(id, pos.x + RIFF_W / 2, pos.y + 160);
       riffs.set(id, riff);
       createRiffNode(riff);
+      if (!isPlaying) playAll(); else riff.reschedule();
     });
 
     // ── Add Chords button ──
@@ -13850,7 +14410,7 @@
       chords.set(id, ch);
       createChordsNode(ch);
       initChordsAI();
-      if (isPlaying) ch.schedule();
+      if (!isPlaying) playAll(); else ch.schedule();
     });
 
     // ════════════════════════════════════════════════════
@@ -13889,7 +14449,7 @@
 
     document.getElementById('save-btn').addEventListener('click', async () => {
       await ensureAudio();
-      if (samples.size === 0) { alert('Nothing to save — load some samples first.'); return; }
+      if (samples.size === 0 && synths.size === 0 && drums.size === 0 && riffs.size === 0 && chords.size === 0) { alert('Nothing to save — add some instruments or sequences first.'); return; }
       saveProject();
     });
     document.getElementById('open-btn').addEventListener('click', async () => {

@@ -1,6 +1,6 @@
 # FREQUENCER
 
-A browser-based multi-sample spatial looper. Drag audio files onto a 2D canvas — vertical position controls volume, horizontal position controls stereo pan. Every sample loops continuously. Open `index.html` in any modern browser.
+A browser-based multi-instrument spatial looper. Drag audio files onto a 2D canvas — vertical position controls volume, horizontal position controls stereo pan. Layer samples, synths, drum machines, chord progressions, and melodic riffs, all in sync with a global transport. Open `index.html` in any modern browser.
 
 ---
 
@@ -9,7 +9,7 @@ A browser-based multi-sample spatial looper. Drag audio files onto a 2D canvas �
 - **Y axis → Volume.** Top = +6 dB, bottom = silence.
 - **X axis → Stereo pan.** Left edge = hard left, right edge = hard right.
 
-Drag tiles anywhere; audio updates in real time.
+Drag any tile or node anywhere; audio updates in real time. The canvas is infinite and scrollable. A dot-grid background serves as visual reference.
 
 ---
 
@@ -21,7 +21,7 @@ Drag audio files or folders onto the canvas, or click `+ Import`. Supported: WAV
 
 ## Sample Tiles
 
-Each tile shows the sample's waveform rendered in its assigned color, a white live playhead, and a stereo VU meter. A master VU meter sits in the header. The app uses a monochrome (black and white) visual style throughout — only the waveforms carry color.
+Each tile shows the sample's waveform in its assigned color, a white live playhead, and a stereo VU meter. A master VU meter sits fixed in the lower right. The app uses a monochrome (black and white) visual style — only waveforms carry color.
 
 | Interaction | Result |
 |-------------|--------|
@@ -29,28 +29,30 @@ Each tile shows the sample's waveform rendered in its assigned color, a white li
 | Double-click | Toggle play / stop |
 | Drag | Move — volume and pan update live |
 
+**Tile buttons** — each tile has `M` (mute) and `S` (solo) buttons for quick mixing without opening a card.
+
 ---
 
 ## Edit Card
 
-Click a tile to open its floating edit card. Multiple cards can be open at once. The card has a white border and displays the sample's waveform in its assigned color.
+Click a tile to open its floating edit card. Multiple cards can be open at once.
 
-**Playback modes** (row above the waveform) — select how the sample plays:
+**Playback modes** (row above the waveform):
 
 | Mode | Behaviour |
 |------|-----------|
 | LOOP | Loops the loop region continuously (default) |
 | REV | Plays the loop region in reverse, continuously |
 | GRAN | Granular synthesis (see Granular Mode below) |
-| TRIG | Waits for an external trigger — only plays on demand |
+| TRIG | Waits for a sequencer trigger — plays on demand only |
 
-In **TRIG** mode the sample stops looping and waits silently. The Play button fires it once. Connecting a step sequencer wire automatically switches the sample to TRIG and drives it from the sequencer. Clicking LOOP, REV, or GRAN while a sequencer is connected disconnects it and restores continuous playback.
+In **TRIG** mode the sample stops looping and waits silently. Connecting a step sequencer wire automatically switches the sample to TRIG and drives it from the sequencer.
 
 **Controls** — Play · Stop · Mute · Solo
 
-The remaining parameters are grouped into collapsible accordion sections (click a section header to expand; multiple sections can be open at once):
+Parameters are grouped into collapsible accordion sections:
 
-**PLAYBACK** — Loop start/end handles and sliders, File Position, and Grid Sync settings. Grid Sync options are hidden in GRAN and TRIG modes.
+**PLAYBACK** — Loop start/end handles and sliders, File Position, and Grid Sync settings.
 - *Loop Points* — drag handles on the waveform or use the Start/End sliders. Waveform supports zoom (drag vertically) and pan (drag horizontally); double-click to reset.
 - *File Position* — start offset within the loop region. In Grid Sync mode applies silently on the next subdivision.
 - *Grid Sync* — lock to BPM: `1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32`, with Dot (×1.5) and 3let (÷1.5) variants; `÷2` / `÷3` multipliers skip every other or every third trigger.
@@ -61,7 +63,7 @@ The remaining parameters are grouped into collapsible accordion sections (click 
 
 **PITCH+TIME** — Pitch Shift (±24 st, speed unchanged) · Timestretch (±24 st, changes speed and pitch) · Paulstretch (extreme slow-down).
 
-**EFFECTS** — FX rack. Add unlimited effect instances; each has a PRE/POST fader toggle. Click ✕ to remove.
+**EFFECTS** — FX rack. Add unlimited effect instances; each has a PRE/POST fader toggle.
 
 | Button | Effect |
 |--------|--------|
@@ -80,59 +82,54 @@ The remaining parameters are grouped into collapsible accordion sections (click 
 
 ## Granular Mode
 
-Activate with the **GRAN** button in the playback mode row. The sample's loop region is used as the grain source — the regular player and playhead are replaced by a granular engine.
+Activate with the **GRAN** playback mode button. The loop region becomes the grain source.
 
-**Controls** (shown in the GRAN sliders section):
+| Slider | Description |
+|--------|-------------|
+| Position | Center position of grain playback within the loop region |
+| Spread | Random scatter of grain start points around Position |
+| Density | Grain trigger rate — low = sparse (~500ms), high = dense (~15ms) |
 
-| Slider | Range | Description |
-|--------|-------|-------------|
-| Position | 0–100% | Center position of grain playback within the loop region |
-| Spread | 0–100% | Random scatter of grain start points around Position |
-| Density | 0–100% | Grain trigger rate — low = sparse (~500ms apart), high = dense (~15ms apart) |
-
-- Pitch and playback speed are inherited from the **PITCH+TIME** section and apply to the granular engine just like normal playback.
-- Loop handles still control the source region; moving them updates the engine in real time without restarting.
-- All three controls are LFO-targetable for evolving, modulated textures.
-- The cloud visualization on the card waveform shows grain positions and spread in real time.
-- Switching to LOOP, REV, or TRIG exits granular mode and resumes normal playback.
+- Pitch and stretch settings from **PITCH+TIME** also apply to the granular engine.
+- All three controls are LFO-targetable for evolving textures.
+- A cloud visualization on the card waveform shows grain positions in real time.
 
 ---
 
 ## Step Sequencer
 
-Add step sequencers to your canvas to trigger samples rhythmically. Connect them to one or more samples via wires.
+Add step sequencers to the canvas via `+ Seq`. Connect them to samples via wires.
 
-- **Steps** — 1 to 16 steps per pattern. Each step button toggles on/off. The active step is highlighted in real time, in sync with the audio.
-- **Gate** — controls how much of the sample plays each step. At 100% the full loop region plays (capped to the loop end); lower values chop it shorter. The slider uses a curved scale for fine control at short durations.
-- **Subdivisions** — lock to the global transport grid: `1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32` and triplet variants.
-- **Grid Sync** — when on, step timing locks to the global BPM and subdivision. When off, use the **Rate** slider to set a free-running step interval in seconds.
-- **Wires** — drag from the sequencer port onto a sample tile to connect. A step sequencer can drive multiple samples simultaneously. Cables draw to the waveform on open edit cards.
-- **LFO Targeting** — LFO wires can connect to the **Steps** or **Gate** sliders on a sequencer node to modulate pattern length or gate amount over time.
+- **Steps** — 1 to 16 steps per pattern. Each step toggles on/off. The active step is highlighted in sync with the audio.
+- **Gate** — controls how much of the sample plays each step. Curved scale for fine control at short durations.
+- **Subdivisions** — `1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32` and triplet variants.
+- **Grid Sync** — lock to BPM, or use the **Rate** slider for a free-running interval in seconds.
+- **Wires** — drag from the sequencer port onto a sample tile to connect. A sequencer can drive multiple samples simultaneously.
+- **LFO Targeting** — LFO wires can modulate the **Steps** or **Gate** sliders of a sequencer.
 - **Organization** — Minimize, Duplicate, or Delete from the sequencer header.
 
 ---
 
 ## LFO Modulator System
 
-Add LFOs to your canvas to modulate any sample parameter (Pitch, Stretch, Volume, Pan, Loop Points, or FX parameters).
+Add LFOs to the canvas via `+ LFO`. Modulate any sample parameter (Pitch, Stretch, Volume, Pan, Loop Points, or FX parameters).
 
 - **Presets** — Sine, Square, Triangle, Random, and Blank (flat line).
 - **Custom Shapes** — Click to add breakpoints, Shift + Click to remove. Drag to reshape.
-- **Modulation Wires** — Drag from the LFO port onto any parameter slider or the **EQ canvas** in a sample card to create a link.
-- **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for rhythmic filter sweeps.
-- **FX Instance Targeting** — Modulate parameters of specific effect instances in your rack independently.
-- **Range Control** — Set Min/Max boundaries for each modulation target.
+- **Modulation Wires** — Drag from the LFO port onto any parameter slider or the **EQ canvas** to create a link.
+- **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for filter sweeps.
+- **Range Control** — Set Min/Max boundaries per modulation target.
 - **Sync** — Free-running (seconds) or locked to the project grid (bars/subdivisions).
-- **Organization** — Minimize (compact tile view), Duplicate (clone all settings), or Delete.
-- **Visual Feedback** — Sample tiles physically move across the canvas when Volume or Pan are modulated (while cards are closed). Animated EQ curves and handles show active modulation in real time.
+- **Visual Feedback** — Tiles physically move across the canvas when Volume or Pan are modulated. Animated EQ curves and handles show active modulation in real time.
+- **Organization** — Minimize, Duplicate, or Delete.
 
 ---
 
 ## Synth Instruments
 
-Add synthesizers to the canvas via the footer buttons.
+Add synthesizers to the canvas via the `+ Synth` footer button.
 
-### Analog Synth (`+ Synth → Analog`)
+### Analog Synth
 
 A polyphonic subtractive synthesizer built on Tone.PolySynth.
 
@@ -140,76 +137,149 @@ A polyphonic subtractive synthesizer built on Tone.PolySynth.
 - **ADSR envelope** — Attack, Decay, Sustain, Release
 - **Filter** — LP / HP / BP with Frequency and Q controls
 - **Portamento** — glide between notes
+- **FX rack** — same effects as sample cards
 - **Keyboard** — 2-octave mouse-playable keyboard (C3–B4); octave shift buttons
 
-### FM Synth (`+ Synth → FM`)
+### FM Synth
 
 A frequency-modulation synthesizer with a built-in library of 32 DX7-style presets.
 
 - **FM Parameters** — Harmonicity (carrier:modulator ratio), Modulation Index
 - **Carrier & Modulation envelopes** — independent ADSR for carrier and modulator
 - **Preset library** — 32 classic DX7 patches; load custom banks via SysEx `.syx` files
+- **FX rack** — same effects as sample cards
 - **Keyboard** — same 2-octave playable keyboard as Analog
 
-Both synth types share volume, pan, and mute/solo controls consistent with the sample tiles.
+Both synth types share volume, pan, and mute/solo controls consistent with sample tiles. Synth cards are draggable and support Duplicate and Remove.
+
+---
+
+## Drum Machine
+
+Add a drum machine to the canvas via `+ Drum Machine`. Each instance is a standalone 6-lane step sequencer with sample-based kits.
+
+### Lanes
+
+Six lanes: **Kick · Snare · Hi-Hat · Tom 1 · Tom 2 · Tom 3**.
+
+### Step Grid
+
+- **Steps** — 4 to 64 steps per pattern, configurable with the +/− buttons.
+- **Velocity** — each step cycles through Off → Soft → Accent (left-click to advance, right-click to go back). Soft and Accent hits are visually distinguished.
+- **Per-lane pitch** — a ±12 semitone pitch slider sits next to each lane for tuning individual drums.
+
+### Kits
+
+15 sample kits sourced from the [Web Audio Samples](https://googlechromelabs.github.io/web-audio-samples/) library:
+
+Roland R-8 · Roland CR-78 · Korg KPR-77 · LinnDrum · Kit 3 · Kit 8 · Techno · Stark · Breakbeat 8 · Breakbeat 9 · Breakbeat 13 · Acoustic Kit · 4OP-FM · Cheebacabra 1 · Cheebacabra 2
+
+Switch kits at any time; samples stream and cache on demand.
+
+### Transport
+
+- **Grid Sync** — lock step timing to the global BPM at the selected subdivision (`32n · 16n · 8n · 4n`).
+- **Free mode** — use the BPM slider to set an independent tempo (20–400 BPM).
+- **CLR** — clear all steps across all lanes.
+
+### Mixer & Effects
+
+Volume, Pan, and the full shared FX rack (EQ, Reverb, Delay, Tremolo, Distortion, Chorus, Phaser, Bit Crusher).
+
+---
+
+## Chord Sequencer
+
+Add a chord sequencer to the canvas via `+ Chords`. Programs chord progressions that drive connected synths and samplers.
+
+### Step Grid
+
+Up to 16 steps. Each step shows the chord name and a velocity bar. Click a step to select it; click again to enable/disable. Steps can be expanded with the +/− controls.
+
+### AI Chord Suggestions
+
+When a step is selected, an inline suggestions panel appears with chord recommendations generated by the **chord-seq-ai** model (ONNX Runtime, lazy-loaded on first use). Suggestions are conditioned on:
+
+- The chord(s) already in the sequence (context-aware progressions)
+- **Genre** filter — Any · Rock · Folk · Pop · Soundtrack · R&B/Soul · Country · Jazz · Experimental · Reggae · Hip Hop · Electronic · Metal · Blues · Classical
+- **Era** filter — Any · 1950s through 2020s
+
+Click any suggestion to set it on the selected step.
+
+### Scale & Root
+
+Select a root note and scale (55+ options, shared with the Riff module). All chords snap to the scale. **Oct ▼▲** and **Semi ▼▲** buttons transpose the entire progression; the current offset is shown in semitones.
+
+### Voicing
+
+- **Voicing slider** — Drop2 · Drop1 · Root · Inv1 · Inv2 (controls chord inversion and voicing spread)
+- **VL (Voice Leading)** checkbox — enables smooth voice leading between steps
+
+### Playback Modes
+
+| Mode | Behaviour |
+|------|-----------|
+| Off | Chords trigger as block voicings on each step |
+| Strum | Notes roll across the chord; Speed and Direction (↓ ↑ ↕ ?) are configurable |
+| Arp | Arpeggiated playback with Rate, Octave range (1–4), Mode (Up/Down/Up-Down/Random/Order/Thumb), Hold, and Step Arp |
+
+**Step Arp** — enables a custom rhythmic gate pattern within the arp, with its own step count.
+
+### Grid & Subdivisions
+
+- **Grid** — lock to BPM at the selected subdivision (`1 bar · ½ · ¼ · ¼. · ⅛ · ⅛. · 1/16`), or **free** mode with a rate slider.
+- **Wires** — drag from the wire port onto a synth or sampler tile to connect. A chord sequencer can drive multiple instruments simultaneously.
+- **Organization** — Minimize (compact tile view), Duplicate, or Delete.
 
 ---
 
 ## Riff Sequencer
 
-Add melodic step sequencers to the canvas via `+ Riff`. Each riff connects to one or more synths or samplers via wires and loops a melodic pattern in sync with the transport.
+Add melodic step sequencers to the canvas via `+ Riff`. Each riff connects to synths or samplers via wires and loops a melodic pattern in sync with the transport.
 
 ### Step Grid
 
-Up to 64 steps arranged in an 8-column grid. Each step shows its note name and a **velocity bar** — a colored fill from the bottom of the cell representing the step's velocity (full height = full velocity). Click and drag up/down on any step to adjust its velocity.
+Up to 64 steps in an 8-column grid. Each step shows its note name and a velocity bar (drag up/down to adjust velocity).
 
-- **● Rec** — enter step-entry mode; keys/mouse pressed on the keyboard fill the current cursor step and advance automatically
-- **Rest** — skip the cursor step (leave it silent) and advance
-- **Clear** — erase all steps in the pattern
-- **Steps +/−** — increase or decrease the number of active steps (1–64)
+- **● Rec** — step-entry mode; keys/mouse pressed on the keyboard fill the cursor step and advance automatically
+- **Rest** — skip the cursor step and advance
+- **Clear** — erase all steps
+- **Steps +/−** — 1–64 steps
 
 ### Grid & Subdivision
 
-- **Grid button** — when on, step timing locks to the transport BPM at the selected musical subdivision; when off, use the **Rate** slider for a free-running step interval in seconds
-- **Subdivision** — `1 bar` through `1/32`, with dotted (`.`) and triplet (`T`) variants for each
+- **Grid** — lock to BPM at the selected subdivision; off = free Rate slider
+- **Subdivision** — `1 bar` through `1/32`, with dotted (`.`) and triplet (`T`) variants
 
 ### Transform Controls
 
 | Control | Action |
 |---------|--------|
-| **Oct ▼▲** | Shift all notes in the pattern up or down one octave |
-| **Semi ▼▲** | Transpose all notes up or down one semitone, snapping to the selected scale |
-| **+ (interval)** | Add a harmony voice at the chosen interval (1–7 semitones, or 8 = octave) above each note, snapped to the current scale |
+| **Oct ▼▲** | Shift all notes up or down one octave |
+| **Semi ▼▲** | Transpose all notes up or down one semitone, snapping to scale |
+| **+ (interval)** | Add a harmony voice at the chosen interval (1–7 st, or 8 = octave) above each note, snapped to scale |
 
 ### Scale & Root
 
-Select a root note and scale from a library of 55+ scales (modes, world scales, jazz scales, and more). When a scale is selected:
+55+ scales (modes, world scales, jazz scales). Out-of-scale keys are dimmed; all input and transposition snaps to the selected scale. Chromatic disables all snapping.
 
-- Out-of-scale keys on the keyboard are dimmed
-- All notes entered or transposed snap to the nearest in-scale degree
-- The **+ interval** harmony voice also snaps to the scale
+### Keyboard & QWERTY Input
 
-Chromatic (default) disables all snapping.
-
-### Keyboard
-
-A 2-octave mouse-playable keyboard with octave shift buttons. Notes snap to the current scale on input.
-
-**QWERTY input** (when the riff node is focused — click it first):
+A 2-octave mouse-playable keyboard with octave shift buttons. QWERTY mapping (when the riff node is focused):
 
 | Keys | Notes |
 |------|-------|
 | `A W S E D F T G Y H U J` | C C# D D# E F F# G G# A A# B |
 | `K O L P` | C C# D D# (next octave) |
 | `Z` / `X` | Octave down / up |
-| `R` or `Space` | Rest (skip current step) |
-| `← →` | Move step selection left / right |
-| `↑ ↓` | Transpose selected step up / down (scale-snapped) |
+| `R` or `Space` | Rest |
+| `← →` | Move step selection |
+| `↑ ↓` | Transpose selected step (scale-snapped) |
 | `Delete` / `Backspace` | Clear selected step |
 
 ### Wires
 
-Drag from the riff's wire port onto a synth tile or sampler tile to connect. A riff can drive multiple instruments simultaneously. The connection is shown as a colored wire on the canvas.
+Drag from the riff's wire port onto a synth tile or sampler tile to connect. A riff can drive multiple instruments simultaneously.
 
 ---
 
@@ -223,7 +293,14 @@ Drag from the riff's wire port onto a synth tile or sampler tile to connect. A r
 | Metro | Toggle metronome click | — |
 | ⏺ Rec | Record all stems + stereo mix to WAV | — |
 
-**Recording** — press Rec to start, press again to stop. A modal offers: stereo mix only, stems ZIP only, or both.
+**Recording** — press Rec to start, press again to stop. A modal offers: stereo mix only, stems ZIP, or both.
+
+---
+
+## Session Save / Load
+
+- **Save** — exports the entire session (sample metadata, all module states, positions) as a `.frequencer` JSON file.
+- **Open** — loads a previously saved `.frequencer` file, restoring the full session.
 
 ---
 
@@ -237,23 +314,25 @@ Drag from the riff's wire port onto a synth tile or sampler tile to connect. A r
 
 ---
 
-## Audio Chain (per sample)
+## Audio Chain
 
-Normal mode:
+**Normal mode (per sample):**
 ```
 AudioBuffer → Player(s) → FadeGain → ClipGain → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
 ```
 
-Granular mode:
+**Granular mode (per sample):**
 ```
 AudioBuffer → GranularEngine → GranGain → ClipGain → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
 ```
 
-A second player (`xfPlayer`) handles crossfade transitions and, in Grid Sync mode, the wrapped portion of a loop when File Position is offset from the loop start. Fades without crossfade are baked into the buffer directly. In granular mode the regular players are disconnected and the GranularEngine drives the chain directly.
+**Synth / Drum Machine:**
+```
+Tone.PolySynth / DrumBus → Pan → Volume → [Post-fader FX] → Output
+```
 
 ---
 
 ## Sample List
 
-A small monospace list in the bottom-right corner of the canvas (left of the master VU meter) shows all loaded samples. Names are capped at 20 characters. Grey = card closed; white = card open. Click any name to open or close that sample's edit card.
-
+A small monospace list in the lower-right corner (left of the master VU meter) shows all loaded samples. Grey = card closed; white = card open. Click any name to open or close that sample's edit card.
