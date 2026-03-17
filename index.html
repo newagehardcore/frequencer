@@ -6593,12 +6593,13 @@
         for (const n of this.INSTRUMENTS) this.pitches[n] = 0;
 
         // Playback
-        this.isPlaying   = false;
-        this.currentStep = -1;
-        this.gridSync    = true;
-        this.subdiv      = '16n';
-        this.rate        = 120;   // BPM when unsynced
-        this._seq        = null;
+        this.isPlaying    = false;
+        this.currentStep  = -1;
+        this.gridSync     = true;
+        this.subdiv       = '16n';
+        this.rate         = 120;   // BPM when unsynced
+        this._seq         = null;
+        this._activeSrcs  = [];    // pending AudioBufferSourceNodes — cancelled on stop
 
         // Audio entry point: drum hits → _drumBus → pan → vol → fx
         this._drumBus = new Tone.Gain(1);
@@ -6643,14 +6644,19 @@
         const ctx = Tone.context.rawContext;
         const at  = typeof time === 'number' ? time : ctx.currentTime;
         const src = ctx.createBufferSource();
-        src.buffer           = bufs[name];
+        src.buffer             = bufs[name];
         src.playbackRate.value = Math.pow(2, (this.pitches[name] || 0) / 12);
         const hg = ctx.createGain();
         hg.gain.value = velocity === 1 ? 0.45 : 1.0;
         src.connect(hg);
         hg.connect(this._drumBus.input);
+        this._activeSrcs.push(src);
         src.start(at);
-        src.onended = () => { src.disconnect(); hg.disconnect(); };
+        src.onended = () => {
+          src.disconnect(); hg.disconnect();
+          const i = this._activeSrcs.indexOf(src);
+          if (i !== -1) this._activeSrcs.splice(i, 1);
+        };
       }
 
       // ── Sequencer ──
@@ -6664,18 +6670,21 @@
             if (vel > 0) this.triggerInstrument(name, vel, time);
           }
         }, Array.from({length: this.numSteps}, (_, i) => i), interval);
-        const isLive = Tone.Transport.state === 'started';
-        const intervalSec = Tone.Time(interval).toSeconds();
-        const seqStart = isLive && intervalSec > 0 && Tone.Transport.seconds >= intervalSec
-          ? '@' + interval : 0;
-        this._seq.start(seqStart);
+        // Always start at transport position 0 so the sequence is phase-locked to the
+        // transport origin. Tone.js fires events at 0, I, 2I, … so any currently-running
+        // transport will pick up at the correct step for the current position, and the
+        // sequence loops back to step 1 exactly when the next full cycle completes.
+        this._seq.start(0);
         this.isPlaying = true;
       }
 
       stopSequencer() {
         if (this._seq) { try { this._seq.stop(); this._seq.dispose(); } catch(e){} this._seq = null; }
-        this.isPlaying   = false;
-        this.currentStep = -1;
+        // Cancel any hits that were pre-scheduled into the Web Audio lookahead buffer
+        for (const src of this._activeSrcs) { try { src.stop(); } catch(e){} }
+        this._activeSrcs  = [];
+        this.isPlaying    = false;
+        this.currentStep  = -1;
       }
 
       noteOn() {} noteOff() {} allNotesOff() {}
@@ -10762,7 +10771,7 @@
 
     document.getElementById('btn-play').addEventListener('click', async () => {
       await ensureAudio();
-      isPlaying ? pauseAll() : playAll();
+      isPlaying ? stopAll() : playAll();
     });
     document.getElementById('btn-stop').addEventListener('click', async () => {
       await ensureAudio();
@@ -10777,7 +10786,7 @@
       for (const [, riff] of riffs) riff.reschedule();
       for (const [, ch] of chords) if (ch instanceof ChordsSequencer) ch.reschedule();
       for (const [, drum] of drums) {
-        if (drum instanceof DrumMachine && !drum.isPlaying) {
+        if (drum instanceof DrumMachine) {
           drum.startSequencer();
           const cardInfo = openCards.get(drum.id);
           if (cardInfo) {
@@ -10797,7 +10806,7 @@
       Tone.Transport.pause();
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
       for (const [, drum] of drums) {
-        if (drum instanceof DrumMachine && drum.isPlaying) {
+        if (drum instanceof DrumMachine) {
           drum.stopSequencer();
           const cardInfo = openCards.get(drum.id);
           if (cardInfo) {
@@ -10818,7 +10827,7 @@
       for (const [, riff] of riffs) riff.unschedule();
       for (const [, ch] of chords) if (ch instanceof ChordsSequencer) ch.unschedule();
       for (const [, drum] of drums) {
-        if (drum instanceof DrumMachine && drum.isPlaying) {
+        if (drum instanceof DrumMachine) {
           drum.stopSequencer();
           const cardInfo = openCards.get(drum.id);
           if (cardInfo) {
@@ -14549,7 +14558,7 @@
 
       if (e.code === 'Space') {
         e.preventDefault();
-        if (audioReady) isPlaying ? pauseAll() : playAll();
+        if (audioReady) isPlaying ? stopAll() : playAll();
       }
       if (e.key === '.') stopAll();
       if (e.key === 'Escape') {
