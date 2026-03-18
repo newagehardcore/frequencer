@@ -26,8 +26,8 @@
       --mid: rgba(255,255,255,0.5);
       --hi: #ffffff;
       --white: #ffffff;
-      --hdr: 0px;
-      --ftr: 60px;
+      --hdr: 44px;
+      --ftr: 54px;
     }
 
     html,
@@ -81,32 +81,59 @@
       text-transform: uppercase;
     }
 
-    /* ═══ HEADER OVERLAYS ═══ */
-    #logo {
+    /* ═══ HEADER BAR ═══ */
+    #hdr {
       position: fixed;
-      top: 12px;
-      left: 16px;
-      z-index: 100;
-      font-size: 16px;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--hdr);
+      z-index: 300;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      gap: 0;
+    }
+    #hdr-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #logo {
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: -0.03em;
       color: #fff;
       pointer-events: none;
+      margin-right: 4px;
     }
-
-    #hdr-btns {
-      position: fixed;
-      top: 8px;
-      right: 16px;
-      z-index: 100;
+    #hdr-right {
       display: flex;
-      gap: 6px;
       align-items: center;
+      gap: 4px;
     }
-
-    #import-btn,
     #save-btn,
     #open-btn {
+      background: none;
+      border: 1px solid #444;
+      color: var(--mid);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    #save-btn:hover,
+    #open-btn:hover {
+      border-color: #fff;
+      color: #fff;
+    }
+    .hdr-add-btn {
       background: none;
       border: 1px solid #444;
       color: var(--mid);
@@ -115,14 +142,12 @@
       font-weight: 700;
       letter-spacing: -0.03em;
       text-transform: uppercase;
-      padding: 5px 12px;
+      padding: 4px 10px;
       cursor: pointer;
       transition: all 0.1s;
+      white-space: nowrap;
     }
-
-    #import-btn:hover,
-    #save-btn:hover,
-    #open-btn:hover {
+    .hdr-add-btn:hover {
       border-color: #fff;
       color: #fff;
     }
@@ -163,7 +188,7 @@
     /* ═══ CANVAS ═══ */
     #cv {
       position: fixed;
-      top: var(--hdr);
+      top: 0;
       left: 0;
       right: 0;
       bottom: var(--ftr);
@@ -192,7 +217,7 @@
     /* ═══ EMPTY STATE ═══ */
     #empty {
       position: fixed;
-      top: var(--hdr);
+      top: 0;
       left: 0;
       right: 0;
       bottom: var(--ftr);
@@ -2633,12 +2658,21 @@
     </div>
   </div>
 
-  <!-- HEADER OVERLAY -->
-  <div id="logo">FREQUENCER</div>
-  <div id="hdr-btns">
-    <button id="open-btn">Open</button>
-    <button id="save-btn">Save</button>
-    <button id="import-btn">+ Import</button>
+  <!-- HEADER BAR -->
+  <div id="hdr">
+    <div id="hdr-left">
+      <div id="logo">FREQUENCER</div>
+      <button id="open-btn">Open</button>
+      <button id="save-btn">Save</button>
+    </div>
+    <div id="hdr-right">
+      <button class="hdr-add-btn" id="btn-add-sampler" title="Add Sampler">+ Sampler</button>
+      <button class="hdr-add-btn" id="btn-add-synth" title="Add Synth">+ Synth</button>
+      <button class="hdr-add-btn" id="btn-add-drums" title="Add Drum Machine">+ Drum Machine</button>
+      <button class="hdr-add-btn" id="btn-add-riff" title="Add Riff Sequencer">+ Riff</button>
+      <button class="hdr-add-btn" id="btn-add-chords" title="Add Chords">+ Chords</button>
+      <button class="hdr-add-btn" id="btn-add-lfo" title="Add LFO Modulator">+ LFO</button>
+    </div>
   </div>
 
   <!-- CANVAS -->
@@ -2682,24 +2716,6 @@
         </svg>
       </button>
     </div>
-    <div class="fsec">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-        <div class="flbl">BPM</div>
-        <div id="bpm-val">120</div>
-      </div>
-    </div>
-    <div class="fsec" id="ftr-transpose">
-      <div class="flbl">Transpose</div>
-      <div style="display:flex;align-items:center;gap:4px">
-        <button class="tbtn" id="btn-trans-dn" style="width:18px;height:18px;min-width:0;font-size:14px;line-height:1">−</button>
-        <span id="trans-val" style="font-size:11px;min-width:28px;text-align:center;font-variant-numeric:tabular-nums">0</span>
-        <button class="tbtn" id="btn-trans-up" style="width:18px;height:18px;min-width:0;font-size:14px;line-height:1">+</button>
-      </div>
-    </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="tog-metro">Metro</button>
-      <div id="metro-dot"></div>
-    </div>
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="btn-rec" title="Record stems + mix">
         <svg viewBox="0 0 12 12" fill="currentColor">
@@ -2711,39 +2727,23 @@
         <div id="rec-timer">--:--</div>
       </div>
     </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-sampler" title="Add Sampler"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Sample</button>
+    <div class="fsec">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div class="flbl">BPM</div>
+        <div id="bpm-val">120</div>
+      </div>
     </div>
     <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-synth" title="Add Synth"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Synth</button>
+      <button class="tbtn" id="tog-metro">Metro</button>
+      <div id="metro-dot"></div>
     </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-drums" title="Add Drum Machine"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Drum Machine</button>
-    </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-riff" title="Add Riff Sequencer"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Riff</button>
-    </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-chords" title="Add Chords"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        Chords</button>
-    </div>
-    <div class="fsec" style="gap:8px">
-      <button class="tbtn" id="btn-add-lfo" title="Add LFO Modulator"
-        style="width:auto;padding:4px 8px;font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:-0.03em;text-transform:uppercase">+
-        LFO</button>
-    </div>
-    <div class="finfo">
-      <div class="flbl">Samples</div>
-      <div class="finfo-val"><b id="sc">0</b> loaded</div>
+    <div class="fsec" id="ftr-transpose">
+      <div class="flbl">Transpose</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="tbtn" id="btn-trans-dn" style="width:18px;height:18px;min-width:0;font-size:14px;line-height:1">−</button>
+        <span id="trans-val" style="font-size:11px;min-width:28px;text-align:center;font-variant-numeric:tabular-nums">0</span>
+        <button class="tbtn" id="btn-trans-up" style="width:18px;height:18px;min-width:0;font-size:14px;line-height:1">+</button>
+      </div>
     </div>
   </div>
 
@@ -8947,7 +8947,7 @@
     function updateEmpty() {
       const total = samples.size + synths.size + drums.size;
       document.getElementById('empty').classList.toggle('gone', total > 0);
-      document.getElementById('sc').textContent = samples.size;
+      const scEl = document.getElementById('sc'); if (scEl) scEl.textContent = samples.size;
       updateSampleList();
     }
 
@@ -14535,11 +14535,7 @@
       else importList(e.dataTransfer.files, dropPos);
     });
 
-    document.getElementById('import-btn').addEventListener('click', async () => {
-      await ensureAudio();
-      document.getElementById('file-input').click();
-    });
-    document.getElementById('file-input').addEventListener('change', async e => {
+document.getElementById('file-input').addEventListener('change', async e => {
       importList(e.target.files); e.target.value = '';
     });
 
