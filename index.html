@@ -2952,13 +2952,13 @@
     // Returns { startTime, startStep } for quantized scheduling when transport is running.
     // If transport was just started (tPos < one step) or is stopped, returns immediate start at step 0.
     function _seqSyncOffset(interval) {
-      if (Tone.Transport.state !== 'started') return { startTime: undefined, startStep: 0 };
-      const intervalSec = Tone.Time(interval).toSeconds();
-      const tPos = Tone.Transport.seconds;
-      if (intervalSec <= 0 || tPos < intervalSec) return { startTime: undefined, startStep: 0 };
-      // Quantize entry to next interval boundary; calculate which step we'll be on there
-      const startStep = Math.ceil(tPos / intervalSec);
-      return { startTime: '@' + interval, startStep };
+      // Always anchor to transport position 0 (same as DrumMachine seq.start(0)).
+      // scheduleRepeat(cb, I, 0) fires at 0, I, 2I… so when transport is already at T,
+      // the first fire lands at ceil(T/I)*I — the correct phase-locked step boundary.
+      const startStep = Tone.Transport.state === 'started'
+        ? Math.ceil(Tone.Transport.seconds / Tone.Time(interval).toSeconds())
+        : 0;
+      return { startTime: 0, startStep };
     }
 
     class RiffSequencer {
@@ -3080,8 +3080,7 @@
         this._part.loop = true;
         this._part.loopStart = 0;
         this._part.loopEnd = loopDurSec;
-        const isLive = Tone.Transport.state === 'started';
-        this._part.start(isLive ? '@1n' : '+0');
+        this._part.start(0);
       }
 
       unschedule() {
