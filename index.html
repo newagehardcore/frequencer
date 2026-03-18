@@ -2688,6 +2688,14 @@
         <div id="bpm-val">120</div>
       </div>
     </div>
+    <div class="fsec" id="ftr-transpose">
+      <div class="flbl">Transpose</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="tbtn" id="btn-trans-dn" style="width:18px;height:18px;min-width:0;font-size:14px;line-height:1">−</button>
+        <span id="trans-val" style="font-size:11px;min-width:28px;text-align:center;font-variant-numeric:tabular-nums">0</span>
+        <button class="tbtn" id="btn-trans-up" style="width:18px;height:18px;min-width:0;font-size:14px;line-height:1">+</button>
+      </div>
+    </div>
     <div class="fsec" style="gap:8px">
       <button class="tbtn" id="tog-metro">Metro</button>
       <div id="metro-dot"></div>
@@ -2818,6 +2826,7 @@
 
     let _activeRiffId = null; // which riff node receives QWERTY input
     let _activeChordsId = null; // which chords node has keyboard focus
+    let globalTranspose = 0;   // semitones, -24…+24
 
     // QWERTY → note-within-octave mapping (code → [noteName, octaveOffset])
     const RIFF_QWERTY_MAP = {
@@ -2902,6 +2911,12 @@
       'Bebop Major':         [0,2,4,5,7,8,9,11],
     };
     const RIFF_NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+    // Shift a pitch-class root name by st semitones
+    function transposeRoot(root, st) {
+      const i = RIFF_NOTE_NAMES.indexOf(root);
+      return i === -1 ? root : RIFF_NOTE_NAMES[((i + st) % 12 + 12) % 12];
+    }
 
     // Snap a note name to the nearest note in the given scale semitones (relative to root)
     function snapToScale(noteName, rootName, scaleIntervals) {
@@ -3025,16 +3040,20 @@
             const intervals = RIFF_SCALES[this.scale] || RIFF_SCALES['Chromatic'];
             notes.push(snapToScale(harmRaw, this.scaleRoot, intervals));
           }
+          // Apply global transpose at output (non-destructive to stored notes)
+          const tNotes = globalTranspose
+            ? notes.map(n => midiToNoteName(noteToSemis(n) + globalTranspose))
+            : notes;
           // Light up keyboard keys for played notes
           const kbdProxy = riffKbdProxies.get(this.id);
-          for (const n of notes) {
+          for (const n of tNotes) {
             kbdProxy?._noteHighlight?.(n, true);
             setTimeout(() => kbdProxy?._noteHighlight?.(n, false), (noteDur + 0.05) * 1000);
           }
           for (const instrId of this.destinations) {
             const instr = getInstrument(instrId);
             if (!instr || instr.muted) continue;
-            for (const n of notes) {
+            for (const n of tNotes) {
               if (instr instanceof SynthInstrument) {
                 instr.triggerAtTime(n, noteDur, time, vel);
               } else if (instr instanceof Sample) {
@@ -3044,7 +3063,7 @@
             }
           }
           if (this._midiCapture) {
-            for (const n of notes) {
+            for (const n of tNotes) {
               const midi = noteToSemis(n);
               this._midiCapture.noteOn(time, midi, Math.round(vel * 100));
               this._midiCapture.noteOff(time + noteDur, midi);
@@ -3059,15 +3078,16 @@
         const loopDurSec = this.loopBars * 4 * (60 / bpm);
         const events = this.notes.map(n => ({ time: n.time, note: n.note, duration: n.duration }));
         this._part = new Tone.Part((time, val) => {
+          const tNote = globalTranspose ? midiToNoteName(noteToSemis(val.note) + globalTranspose) : val.note;
           for (const instrId of this.destinations) {
             const instr = getInstrument(instrId);
             if (!instr || instr.muted) continue;
             if (instr instanceof SynthInstrument) {
-              instr.triggerAtTime(val.note, val.duration, time, 1.0);
-              instr._noteHighlight?.(val.note, true);
-              Tone.Transport.scheduleOnce(() => instr._noteHighlight?.(val.note, false), '+' + val.duration);
+              instr.triggerAtTime(tNote, val.duration, time, 1.0);
+              instr._noteHighlight?.(tNote, true);
+              Tone.Transport.scheduleOnce(() => instr._noteHighlight?.(tNote, false), '+' + val.duration);
             } else if (instr instanceof Sample) {
-              const semis = noteToSemis(val.note) - noteToSemis('C4');
+              const semis = noteToSemis(tNote) - noteToSemis('C4');
               instr.triggerAtTime(time, val.duration, 1.0, semis);
             }
           }
@@ -3220,18 +3240,19 @@
         if (!audioReady) return;
 
         const playNotes = (midiNotes, time, dur) => {
+          const tMidi = globalTranspose ? midiNotes.map(n => n + globalTranspose) : midiNotes;
           for (const instrId of this.destinations) {
             const instr = getInstrument(instrId);
             if (!instr || instr.muted) continue;
             if (instr instanceof SynthInstrument) {
-              for (const n of midiNotes.map(midiToNoteName)) instr.triggerAtTime(n, dur, time, 0.75);
+              for (const n of tMidi.map(midiToNoteName)) instr.triggerAtTime(n, dur, time, 0.75);
             } else if (instr instanceof Sample) {
-              const semis = noteToSemis(midiToNoteName(midiNotes[0])) - noteToSemis('C4');
+              const semis = noteToSemis(midiToNoteName(tMidi[0])) - noteToSemis('C4');
               instr.triggerAtTime(time, dur, 0.75, semis);
             }
           }
           if (this._midiCapture) {
-            for (const midi of midiNotes) {
+            for (const midi of tMidi) {
               this._midiCapture.noteOn(time, midi, 75);
               this._midiCapture.noteOff(time + dur, midi);
             }
@@ -4210,7 +4231,7 @@
 
       setPitch(st) {
         this.pitchST = st;
-        this.ps.pitch = st;
+        this.ps.pitch = st + globalTranspose;
       }
 
       setStretch(st) {
@@ -7587,19 +7608,22 @@
         if (activeNotes.has(note)) return;
         activeNotes.add(note);
         if (el) el.classList.add('skact');
-        synth.noteOn(note, 100);
+        const tNote = globalTranspose ? midiToNoteName(noteToSemis(note) + globalTranspose) : note;
+        synth.noteOn(tNote, 100);
       };
       const kbdNoteOff = (note, el) => {
         if (!activeNotes.has(note)) return;
         activeNotes.delete(note);
         if (el) el.classList.remove('skact');
-        synth.noteOff(note);
+        const tNote = globalTranspose ? midiToNoteName(noteToSemis(note) + globalTranspose) : note;
+        synth.noteOff(tNote);
       };
       document.addEventListener('mouseup', () => {
         activeNotes.forEach(note => {
           const k = kbdEl.querySelector(`[data-note="${note}"]`);
           if (k) k.classList.remove('skact');
-          synth.noteOff(note);
+          const tNote = globalTranspose ? midiToNoteName(noteToSemis(note) + globalTranspose) : note;
+          synth.noteOff(tNote);
         });
         activeNotes.clear();
       });
@@ -10776,6 +10800,12 @@
       await ensureAudio();
       stopAll();
     });
+    document.getElementById('btn-trans-dn').addEventListener('click', () => applyGlobalTranspose(globalTranspose - 1));
+    document.getElementById('btn-trans-up').addEventListener('click', () => applyGlobalTranspose(globalTranspose + 1));
+    document.getElementById('trans-val').addEventListener('click', () => {
+      const v = prompt('Transpose (semitones, −24 to +24):', globalTranspose);
+      if (v !== null && !isNaN(parseInt(v))) applyGlobalTranspose(parseInt(v));
+    });
 
     function playAll() {
       isPlaying = true;
@@ -10838,6 +10868,51 @@
       }
       // beat-pos removed
       cancelAnimationFrame(beatRaf);
+    }
+
+    function applyGlobalTranspose(st) {
+      globalTranspose = Math.max(-24, Math.min(24, st));
+
+      // Update footer display
+      const transVal = document.getElementById('trans-val');
+      if (transVal) transVal.textContent = (globalTranspose >= 0 ? '+' : '') + globalTranspose;
+
+      // Samples: re-apply pitch with new offset
+      for (const [, s] of samples) if (s instanceof Sample) s.ps.pitch = s.pitchST + globalTranspose;
+
+      // Riffs: update root dropdown in open cards + keyboard highlight
+      for (const [, riff] of riffs) {
+        const cardInfo = openCards.get(riff.id);
+        if (!cardInfo) continue;
+        const sel = cardInfo.el.querySelector('.riff-root-sel');
+        if (sel) sel.value = transposeRoot(riff.scaleRoot, globalTranspose);
+        const kbdEl = cardInfo.el.querySelector('.synth-keyboard');
+        if (kbdEl) {
+          const intervals = RIFF_SCALES[riff.scale] || RIFF_SCALES['Chromatic'];
+          applyScaleToKeyboard(kbdEl, transposeRoot(riff.scaleRoot, globalTranspose), intervals);
+        }
+      }
+
+      // Chords: update root dropdown + step labels in open cards
+      for (const [, ch] of chords) {
+        if (!(ch instanceof ChordsSequencer)) continue;
+        const cardInfo = openCards.get(ch.id);
+        if (!cardInfo) continue;
+        const sel = cardInfo.el.querySelector('.chords-root-sel');
+        if (sel) sel.value = transposeRoot(ch.scaleRoot, globalTranspose);
+        // Update each step label to show transposed chord name
+        cardInfo.el.querySelectorAll('.chords-step[data-idx]').forEach(cell => {
+          const idx = parseInt(cell.dataset.idx);
+          const step = ch.steps[idx];
+          if (step && step.tokenId !== null) {
+            const chord = CHORD_VOCAB[step.tokenId];
+            if (chord) {
+              const lbl = cell.querySelector('.chords-step-label');
+              if (lbl) lbl.textContent = transposeRoot(chord.root, globalTranspose) + chord.suffix;
+            }
+          }
+        });
+      }
     }
 
     function beatTick() {
@@ -11243,7 +11318,7 @@
     }
 
     function saveProject() {
-      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, samples: [], synths: [], lfos: [], riffs: [], drums: [], chords: [] };
+      const projectData = { version: 1, bpm: Tone.Transport.bpm.value, globalTranspose, samples: [], synths: [], lfos: [], riffs: [], drums: [], chords: [] };
       for (const [, s] of samples) {
         if (!(s instanceof Sample)) continue;
         const fxChainData = s.fxChain.map(inst => {
@@ -11427,6 +11502,8 @@
         Tone.Transport.bpm.value = data.bpm;
         document.getElementById('bpm-val').textContent = Math.round(data.bpm);
       }
+      // Restore global transpose
+      applyGlobalTranspose(typeof data.globalTranspose === 'number' ? data.globalTranspose : 0);
 
       // idMap: old saved sample id → new runtime id (for reconnecting LFO/seq cables)
       const idMap = {};
@@ -12521,8 +12598,9 @@
       const scaleOptsHtml = Object.keys(RIFF_SCALES).map(name =>
         `<option value="${name}"${name === riff.scale ? ' selected' : ''}>${name}</option>`
       ).join('');
+      const _riffEffRoot = transposeRoot(riff.scaleRoot, globalTranspose);
       const rootOptsHtml = RIFF_NOTE_NAMES.map(n =>
-        `<option value="${n}"${n === riff.scaleRoot ? ' selected' : ''}>${n}</option>`
+        `<option value="${n}"${n === _riffEffRoot ? ' selected' : ''}>${n}</option>`
       ).join('');
 
       el.innerHTML = `
@@ -12861,11 +12939,16 @@
         for (const n of riff.notes) n.note = snapToScale(n.note, riff.scaleRoot, intervals);
         buildStepGrid();
         if (isPlaying) riff.reschedule();
-        // Update keyboard highlight
+        // Update keyboard highlight using effective (transposed) root
         const kbdEl = el.querySelector('.synth-keyboard');
-        applyScaleToKeyboard(kbdEl, riff.scaleRoot, intervals);
+        applyScaleToKeyboard(kbdEl, transposeRoot(riff.scaleRoot, globalTranspose), intervals);
       }
-      q('.riff-root-sel').addEventListener('change', e => { riff.scaleRoot = e.target.value; applyScale(); });
+      q('.riff-root-sel').addEventListener('change', e => {
+        // Dropdown always shows the effective (transposed) root; back-compute base root
+        riff.scaleRoot = transposeRoot(e.target.value, -globalTranspose);
+        e.target.value = transposeRoot(riff.scaleRoot, globalTranspose); // keep showing effective root
+        applyScale();
+      });
       q('.riff-scale-sel').addEventListener('change', e => { riff.scale = e.target.value; applyScale(); });
 
       // ── Transform controls ──
@@ -13198,8 +13281,9 @@
       const scaleOptsHtml = Object.keys(RIFF_SCALES).map(name =>
         `<option value="${name}"${name === chordsInst.scale ? ' selected' : ''}>${name}</option>`
       ).join('');
+      const _chEffRoot = transposeRoot(chordsInst.scaleRoot, globalTranspose);
       const rootOptsHtml = RIFF_NOTE_NAMES.map(n =>
-        `<option value="${n}"${n === chordsInst.scaleRoot ? ' selected' : ''}>${n}</option>`
+        `<option value="${n}"${n === _chEffRoot ? ' selected' : ''}>${n}</option>`
       ).join('');
       const genreOptsHtml = genreOptions.map(g =>
         `<option value="${g}"${g === chordsInst.genre ? ' selected' : ''}>${g || 'Any Genre'}</option>`
@@ -13381,7 +13465,9 @@
 
           const lbl = document.createElement('div');
           lbl.className = 'chords-step-label';
-          lbl.textContent = sd.tokenId !== null ? (CHORD_VOCAB[sd.tokenId]?.name || '—') : '—';
+          lbl.textContent = sd.tokenId !== null
+            ? (CHORD_VOCAB[sd.tokenId] ? transposeRoot(CHORD_VOCAB[sd.tokenId].root, globalTranspose) + CHORD_VOCAB[sd.tokenId].suffix : '—')
+            : '—';
           cell.appendChild(lbl);
 
           const vel = document.createElement('div');
@@ -13477,7 +13563,7 @@
             // Update step cell
             const cell = q(`.chords-step[data-idx="${stepIdx}"]`);
             if (cell) {
-              cell.querySelector('.chords-step-label').textContent = token.name;
+              cell.querySelector('.chords-step-label').textContent = transposeRoot(token.root, globalTranspose) + token.suffix;
               cell.classList.add('enabled');
             }
             updateMiniGrid();
@@ -13748,7 +13834,9 @@
 
       // Scale/root — also refresh suggestions
       q('.chords-root-sel').addEventListener('change', e => {
-        e.stopPropagation(); chordsInst.scaleRoot = e.target.value;
+        e.stopPropagation();
+        chordsInst.scaleRoot = transposeRoot(e.target.value, -globalTranspose);
+        e.target.value = transposeRoot(chordsInst.scaleRoot, globalTranspose);
         if (selectedStep >= 0) openSuggestionsPanel(selectedStep);
       });
       q('.chords-scale-sel').addEventListener('change', e => {
