@@ -1,0 +1,541 @@
+    /* ═══ DRUM MACHINE CARD ═══ */
+    .synth-card.drum-card { width: 500px; }
+    .synth-card.drum-card.open { max-height: 1400px; }
+
+    .dm-controls {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-wrap: wrap;
+    }
+    .dm-kit-sel {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 3px 6px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 100px;
+    }
+    .dm-play-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      padding: 2px 9px;
+      cursor: pointer;
+      line-height: 1.4;
+      font-family: Helvetica, Arial, sans-serif;
+      transition: background 0.1s;
+      flex-shrink: 0;
+    }
+    .dm-play-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .dm-play-btn.dm-playing { background: rgba(255,255,255,0.1); color: #fff; border-color: #fff; }
+    .dm-clr-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      font-size: 8px;
+      font-weight: 700;
+      font-family: Helvetica, Arial, sans-serif;
+      letter-spacing: 0.05em;
+      padding: 3px 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .dm-clr-btn:hover { background: rgba(255,50,50,0.15); color: rgba(255,100,100,0.9); border-color: rgba(255,80,80,0.4); }
+    .dm-sync-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      font-size: 8px;
+      font-weight: 700;
+      font-family: Helvetica, Arial, sans-serif;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s;
+    }
+    .dm-sync-btn.synced { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.5); }
+    .dm-subdiv-sel {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.8);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 3px 5px;
+      cursor: pointer;
+      width: 52px;
+      flex-shrink: 0;
+    }
+    .dm-rate-slider { width: 90px; flex-shrink: 0; }
+    .dm-steps-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .dm-steps-ctrl button {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.6);
+      font-size: 10px;
+      line-height: 1;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dm-steps-ctrl button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .dm-steps-val {
+      font-size: 8px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      min-width: 18px;
+      text-align: center;
+    }
+    .dm-kit-status {
+      font-size: 8px;
+      color: rgba(255,255,255,0.35);
+      font-style: italic;
+    }
+
+    /* Step sequencer grid — 3-column layout: labels | scrollable steps | pitch */
+    .dm-grid {
+      display: flex;
+      align-items: flex-start;
+      padding: 7px 0 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .dm-lbls-col {
+      flex-shrink: 0;
+      width: 44px;
+      padding-left: 10px;
+    }
+    .dm-lane-lbl {
+      height: 18px;
+      margin-bottom: 5px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 6px;
+    }
+    .dm-lane-lbl:last-child { margin-bottom: 0; }
+    .dm-steps-scroll {
+      overflow-x: auto;
+      flex: 1;
+      padding-bottom: 4px;
+    }
+    .dm-steps-scroll::-webkit-scrollbar { height: 3px; }
+    .dm-steps-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    .dm-steps-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 2px; }
+    .dm-lane-steps {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 5px;
+    }
+    .dm-lane-steps:last-child { margin-bottom: 0; }
+    .dm-step {
+      width: 19px;
+      height: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      border-radius: 1px;
+      flex-shrink: 0;
+      transition: background 0.05s, border-color 0.05s;
+      position: relative;
+    }
+    /* Beat grid grouping: slightly brighter left border every 4 steps */
+    .dm-step:nth-child(4n+1) { border-left-color: rgba(255,255,255,0.28); }
+    .dm-step[data-vel="1"] {
+      background: var(--lane-col);
+      border-color: var(--lane-col);
+      opacity: 0.55;
+    }
+    .dm-step[data-vel="2"] {
+      background: var(--lane-col);
+      border-color: var(--lane-col);
+      opacity: 1;
+    }
+    .dm-step.dm-step-head {
+      outline: 2px solid rgba(255,255,255,0.7);
+      outline-offset: 1px;
+      z-index: 1;
+    }
+    .dm-pitch-col {
+      flex-shrink: 0;
+      width: 81px;
+      padding: 0 10px 0 5px;
+    }
+    .dm-pitch-wrap {
+      height: 18px;
+      margin-bottom: 5px;
+    }
+    .dm-pitch-wrap:last-child { margin-bottom: 0; }
+    .dm-pitch-wrap .cslider {
+      height: 18px;
+    }
+    .synth-scope-canvas {
+      display: block;
+      width: 100%;
+      height: 72px;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.6);
+      margin-bottom: 4px;
+    }
+
+    /* ════════════════════════════════════════════════════
+       RIFF NODE
+    ════════════════════════════════════════════════════ */
+    /* ════════════════════════════════════════════════════
+       RIFF NODE — matches seq-node style
+    ════════════════════════════════════════════════════ */
+    .riff-node {
+      position: absolute;
+      width: 340px;
+      background: #000;
+      border: 1px solid #fff;
+      user-select: none;
+      z-index: 10;
+      cursor: default;
+      font-family: Helvetica, Arial, sans-serif;
+      color: #fff;
+      font-size: 11px;
+    }
+    .riff-node.dragging { z-index: inherit; }
+    .riff-node.collapsed { width: 136px; padding: 0; background: var(--surface, #000); }
+    .riff-node.collapsed .riff-titlebar { display: none; }
+    .riff-node.collapsed .riff-body { display: none; }
+    .riff-node.collapsed .riff-min-footer { display: block; }
+    .riff-node.collapsed .riff-mini-grid { display: grid; }
+    .riff-mini-grid {
+      display: none;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 2px; padding: 6px 8px;
+      box-sizing: border-box;
+      height: 40px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .riff-mini-step {
+      height: 10px; background: rgba(255,255,255,0.06); border-radius: 1px;
+    }
+    .riff-mini-step.has-note { background: var(--riff-color, #fff); }
+    .riff-mini-step.cur { outline: 1px solid rgba(255,255,255,0.85); }
+    .riff-min-footer {
+      display: none; height: 16px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.78); padding-left: 6px; line-height: 16px;
+    }
+    .riff-titlebar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; background: #000; cursor: grab;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .riff-titlebar:active { cursor: grabbing; }
+    .riff-node.riff-focused .riff-titlebar { background: rgba(255,255,255,0.05); }
+    .riff-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--riff-color, #fff); }
+    .riff-name {
+      flex: 1; font-size: 11px; font-weight: 700; letter-spacing: -0.03em;
+      text-transform: uppercase; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; color: #fff;
+    }
+    .riff-hdr-btn {
+      background: none; border: none; color: rgba(255,255,255,0.4);
+      font-size: 13px; cursor: pointer; padding: 0 2px; line-height: 1;
+      flex-shrink: 0; font-family: inherit;
+    }
+    .riff-hdr-btn:hover { color: #fff; }
+    .riff-body { display: flex; flex-direction: column; }
+    /* Step grid */
+    .riff-step-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      gap: 3px; padding: 8px 8px 4px;
+    }
+    .riff-step {
+      aspect-ratio: 1; min-height: 22px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      cursor: pointer; transition: background 0.06s, border-color 0.06s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .riff-step.has-note { border-color: rgba(255,255,255,0.3); }
+    .riff-step.selected { border-color: var(--riff-color, #fff) !important; box-shadow: inset 0 0 0 1px var(--riff-color, #fff); }
+    .riff-step.entry-cursor { background: rgba(255,255,255,0.08); border-color: #fff; }
+    .riff-step.playing { background: #fff !important; border-color: #fff !important; }
+    .riff-step.playing .riff-step-note { color: #000 !important; }
+    .riff-step.playing .riff-step-num { color: #000; }
+    .riff-step-num { font-size: 6px; opacity: 0.3; position: absolute; top: 2px; left: 3px; line-height: 1; z-index: 1; }
+    .riff-step-note { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.35); position: relative; z-index: 1; }
+    .riff-step.has-note .riff-step-note { color: #fff; }
+    .riff-step-vel {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--riff-color, #fff);
+      opacity: 0; pointer-events: none;
+    }
+    .riff-step.has-note .riff-step-vel { opacity: 0.85; }
+    .riff-step.playing .riff-step-vel { background: rgba(0,0,0,0.18) !important; opacity: 1; }
+    /* Control rows — match seq padding */
+    .riff-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 8px;
+    }
+    .riff-row.sep { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 5px; }
+    .riff-lbl {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: -0.03em; color: rgba(255,255,255,0.45); flex-shrink: 0;
+    }
+    .riff-sel {
+      background: #000; border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.7); font-size: 9px; font-family: 'Courier New', monospace;
+      padding: 3px 4px; cursor: pointer; flex: 1; min-width: 0;
+    }
+    .riff-sel:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+    /* Step-entry REC / REST buttons */
+    .riff-step-btn {
+      flex: 1; padding: 5px 0; background: #000; border: 1px solid #333;
+      color: #7d7d7d; font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px; font-weight: 700; letter-spacing: -0.03em;
+      text-transform: uppercase; cursor: pointer; transition: all 0.08s;
+    }
+    .riff-step-btn:hover { border-color: #fff; color: #fff; }
+    .riff-step-btn.act { background: #fff; color: #000; border-color: #fff; }
+    .riff-step-btn.rec-act { background: #c00; color: #fff; border-color: #c00; }
+    /* Chords playback section */
+    .chords-playback-body { display: flex; flex-direction: column; gap: 4px; padding: 0 8px 6px; }
+    .chords-pm-btn {
+      flex: 1; padding: 3px 6px; background: #000; border: 1px solid #333;
+      color: rgba(255,255,255,0.4); cursor: pointer; font-size: 9px;
+      font-family: inherit; transition: all 0.08s;
+    }
+    .chords-pm-btn.act { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.6); color: #fff; }
+    .chords-strum-dir-btn, .chords-arp-oct-btn {
+      width: 22px; height: 18px; background: #000; border: 1px solid #333;
+      color: rgba(255,255,255,0.4); cursor: pointer; font-size: 10px; line-height: 1;
+      font-family: inherit; transition: all 0.08s; padding: 0;
+    }
+    .chords-strum-dir-btn.act, .chords-arp-oct-btn.act { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.1); }
+    .chords-arp-hold-btn.act { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); color: #fff; }
+    /* Step Arp grid */
+    .chords-sarp-body { display: none; flex-direction: column; gap: 4px; padding: 4px 8px 6px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .chords-sarp-body.open { display: flex; }
+    .chords-sarp-grid { display: flex; flex-direction: row; gap: 2px; }
+    .sarp-col { display: flex; flex-direction: column; flex: 1; gap: 2px; }
+    .sarp-cell {
+      height: 12px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+      transition: background 0.05s, border-color 0.05s;
+    }
+    .sarp-cell:hover { background: rgba(255,255,255,0.15); }
+    .sarp-cell.on { background: var(--chords-color, #fff); border-color: var(--chords-color, #fff); opacity: 0.85; }
+    .sarp-col.playing .sarp-cell { border-color: rgba(255,255,255,0.35); }
+    .sarp-col.playing .sarp-cell.on { opacity: 1; filter: brightness(1.25); }
+    .chords-wire-line { stroke-dasharray: 6 4; opacity: 0.55; stroke-width: 2; fill: none; }
+
+    /* Transform buttons (oct/transpose) */
+    .riff-xfm-btn, .chords-xfm-btn {
+      width: 20px; height: 20px; background: #000; border: 1px solid #333;
+      color: #7d7d7d; cursor: pointer; font-size: 9px; line-height: 1;
+      font-family: inherit; transition: all 0.08s; padding: 0;
+    }
+    .riff-xfm-btn:hover, .chords-xfm-btn:hover { border-color: #fff; color: #fff; }
+    /* Steps +/- */
+    .riff-steps-ctrl { display: flex; align-items: center; gap: 4px; }
+    .riff-steps-ctrl button {
+      width: 18px; height: 18px; background: #000; border: 1px solid #333;
+      color: #7d7d7d; cursor: pointer; font-size: 13px; line-height: 1;
+      font-family: inherit; transition: all 0.08s;
+    }
+    .riff-steps-ctrl button:hover { border-color: #fff; color: #fff; }
+    .riff-steps-val { font-size: 10px; min-width: 22px; text-align: center; color: rgba(255,255,255,0.7); }
+    /* Piano roll (record mode) */
+    .riff-pianoroll {
+      display: block; width: 100%; height: 56px;
+      background: #000; border-top: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .riff-rec-status { font-size: 9px; color: rgba(255,255,255,0.4); flex: 1; }
+    @keyframes riff-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .riff-step-btn.rec-act { animation: riff-blink 0.8s infinite; }
+    /* Keyboard section */
+    .riff-kbd-wrap { padding: 4px 8px 2px; }
+    .riff-kbd-hint { font-size: 7px; color: rgba(255,255,255,0.25); text-align: center; padding: 1px 8px 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+    /* Wire */
+    .riff-wire-row { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; }
+    .riff-wire-port {
+      display: block; width: 16px; height: 16px; border-radius: 50%;
+      background: #000; border: 2px solid rgba(255,255,255,0.4);
+      cursor: crosshair; transition: border-color 0.15s, background 0.15s; flex-shrink: 0;
+    }
+    .riff-wire-port:hover { border-color: #fff; background: #1a1a1a; }
+    .riff-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .riff-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
+    .riff-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
+    .riff-dest-unlink { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 10px; padding: 0 2px; }
+    .riff-dest-unlink:hover { color: #f44; }
+    /* ── CHORDS NODE ── */
+    .chords-node {
+      position: absolute; width: 420px; background: #000;
+      border: 1px solid #fff;
+      user-select: none; z-index: 10; cursor: default;
+      font-family: Helvetica, Arial, sans-serif; color: #fff; font-size: 11px;
+    }
+    .chords-node.dragging { z-index: inherit; }
+    .chords-node.collapsed { width: 136px; padding: 0; background: #000; }
+    .chords-node.collapsed .chords-titlebar { display: none; }
+    .chords-node.collapsed .chords-body { display: none; }
+    .chords-node.collapsed .chords-min-footer { display: block; }
+    .chords-node.collapsed .chords-mini-grid { display: flex; }
+    .chords-mini-grid {
+      display: none; flex-direction: row; gap: 2px;
+      padding: 6px 8px; box-sizing: border-box;
+      height: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .chords-mini-step {
+      flex: 1; height: 100%; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 6px; font-weight: 700; overflow: hidden;
+      color: rgba(255,255,255,0.5); text-overflow: ellipsis; white-space: nowrap;
+    }
+    .chords-mini-step.enabled { border-color: var(--chords-color, #fff); color: var(--chords-color, #fff); background: rgba(255,255,255,0.04); }
+    .chords-mini-step.playing { background: var(--chords-color, #fff) !important; color: #000 !important; border-color: var(--chords-color, #fff) !important; }
+    .chords-min-footer {
+      display: none; height: 16px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.78); padding-left: 6px; line-height: 16px;
+    }
+    .chords-titlebar {
+      display: flex; align-items: center; gap: 8px; padding: 5px 8px;
+      background: #000; cursor: grab; border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .chords-titlebar:active { cursor: grabbing; }
+    .chords-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--chords-color, #fff); }
+    .chords-name { flex: 1; font-size: 11px; font-weight: 700; letter-spacing: -0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .chords-hdr-btn { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 13px; cursor: pointer; padding: 0 2px; font-family: inherit; line-height: 1; flex-shrink: 0; }
+    .chords-hdr-btn:hover { color: #fff; }
+    .chords-body { display: flex; flex-direction: column; }
+    /* Step grid */
+    .chords-step-row {
+      display: grid; gap: 3px; padding: 8px 8px 4px;
+    }
+    .chords-step {
+      height: 52px; background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(255,255,255,0.15);
+      cursor: pointer; position: relative; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: background 0.06s, border-color 0.06s;
+    }
+    .chords-step.enabled {
+      border-style: solid; border-color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.05);
+    }
+    .chords-step.enabled:hover { border-color: rgba(255,255,255,0.5); }
+    .chords-step.selected { border-color: var(--chords-color, #fff) !important; border-style: solid !important; box-shadow: inset 0 0 0 1px var(--chords-color, #fff); }
+    .chords-step.playing { background: #fff !important; border-color: #fff !important; border-style: solid !important; }
+    .chords-step.playing .chords-step-label { color: #000 !important; }
+    .chords-step.playing .chords-step-num { color: #000; }
+    .chords-step-num { font-size: 6px; opacity: 0.3; position: absolute; top: 2px; left: 3px; line-height: 1; }
+    .chords-step-label { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.3); text-align: center; padding: 0 2px; line-height: 1.2; }
+    .chords-step.enabled .chords-step-label { color: #fff; }
+    .chords-step-vel {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: var(--chords-color, #fff); opacity: 0.6; pointer-events: none;
+    }
+    .chords-step.enabled .chords-step-vel { opacity: 0.8; }
+    /* Control rows */
+    .chords-row {
+      display: flex; align-items: center; gap: 6px; padding: 3px 8px;
+    }
+    .chords-row.sep { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 5px; }
+    .chords-lbl {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: -0.03em; color: rgba(255,255,255,0.45); flex-shrink: 0;
+    }
+    .chords-sel {
+      background: #000; border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.7); font-size: 9px; font-family: 'Courier New', monospace;
+      padding: 3px 4px; cursor: pointer; flex: 1; min-width: 0;
+    }
+    .chords-sel:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+    /* Steps +/- */
+    .chords-steps-ctrl { display: flex; align-items: center; gap: 4px; }
+    .chords-steps-ctrl button {
+      width: 18px; height: 18px; background: #000; border: 1px solid #333;
+      color: #7d7d7d; cursor: pointer; font-size: 13px; line-height: 1;
+      font-family: inherit; transition: all 0.08s; padding: 0;
+    }
+    .chords-steps-ctrl button:hover { border-color: #fff; color: #fff; }
+    .chords-steps-val { font-size: 10px; min-width: 22px; text-align: center; color: rgba(255,255,255,0.7); }
+    /* Inline chord suggestions panel */
+    .chords-suggestions {
+      display: none; flex-direction: column;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      max-height: 200px; overflow-y: auto;
+    }
+    .chords-suggestions.open { display: flex; }
+    .chords-sug-hdr {
+      font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.3); padding: 5px 10px 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+    }
+    .chords-sug-hdr-del {
+      margin-left: auto; font-size: 7px; color: rgba(255,255,255,0.2);
+      font-weight: 400; text-transform: none; letter-spacing: 0;
+    }
+    .chords-pick-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 8px 4px 10px; cursor: pointer; transition: background 0.05s; flex-shrink: 0;
+    }
+    .chords-pick-item:hover { background: rgba(255,255,255,0.07); }
+    .chords-pick-item.active-chord { background: rgba(255,255,255,0.1); }
+    .chords-pick-name {
+      font-size: 10px; font-weight: 700; min-width: 52px; flex-shrink: 0;
+      color: #fff; font-family: 'Courier New', monospace;
+    }
+    .chords-pick-bar-wrap { flex: 1; height: 5px; background: rgba(255,255,255,0.08); overflow: hidden; }
+    .chords-pick-bar { height: 100%; background: var(--chords-color, #00cccc); }
+    .chords-pick-play {
+      background: none; border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.45);
+      font-size: 9px; cursor: pointer; padding: 2px 5px; font-family: inherit;
+      flex-shrink: 0; transition: all 0.08s;
+    }
+    .chords-pick-play:hover { border-color: #fff; color: #fff; }
+    /* Wire */
+    .chords-wire-row { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; }
+    .chords-wire-port {
+      display: block; width: 16px; height: 16px; border-radius: 50%;
+      background: #000; border: 2px solid rgba(255,255,255,0.4); cursor: crosshair;
+      transition: border-color 0.15s; flex-shrink: 0;
+    }
+    .chords-wire-port:hover { border-color: #fff; background: #1a1a1a; }
+    .chords-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .chords-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
+    .chords-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
+    .chords-dest-unlink { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 10px; padding: 0 2px; }
+    .chords-dest-unlink:hover { color: #f44; }

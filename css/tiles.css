@@ -1,0 +1,232 @@
+    /* ═══ TILE ═══ */
+    .tile {
+      position: absolute;
+      width: 136px;
+      height: 56px;
+      background: var(--surface);
+      border: 1px solid #fff;
+      cursor: grab;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .tile:hover {
+      border-color: #fff;
+    }
+
+    .tile.playing {
+      border-color: #fff;
+    }
+
+    .tile.active {
+      border-color: #fff;
+      outline: 1px solid #fff;
+      outline-offset: 2px;
+    }
+
+    .tile.muted {
+      opacity: 0.22;
+    }
+
+    .tile.solo-dim {
+      opacity: 0.1;
+    }
+
+    .tile.expanded {
+      z-index: 50;
+      cursor: default;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .tile.dragging {
+      cursor: grabbing;
+      z-index: 50;
+    }
+
+    .tile-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* playhead: white vertical line */
+    .tile-ph {
+      position: absolute;
+      top: 0;
+      bottom: 14px;
+      width: 1px;
+      background: #fff;
+      display: none;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .tile.playing .tile-ph {
+      display: block;
+    }
+
+    .tile-lbl {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2px 5px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.78);
+      background: rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 2;
+    }
+
+    .tile.playing .tile-lbl {
+      color: var(--hi);
+    }
+
+    .tile-gbadge {
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      z-index: 3;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--b3);
+      display: none;
+    }
+
+    .tile.grid-on .tile-gbadge {
+      display: block;
+      color: var(--mid);
+    }
+
+    .tile.soloed .tile-gbadge {
+      color: #fff;
+    }
+
+    .tile-gran-badge {
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      z-index: 3;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--b3);
+      display: none;
+    }
+
+    .tile.gran-on .tile-gran-badge {
+      display: block;
+      color: var(--mid);
+    }
+
+    .tile.gran-on.playing .tile-gran-badge {
+      color: #fff;
+    }
+
+    .tile-gran-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      display: none;
+    }
+    .tile.gran-on.playing .tile-gran-canvas { display: block; }
+
+    /* Playback mode row buttons */
+    .playmode-btn {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4);
+      cursor: pointer;
+      font-family: Helvetica, Arial, sans-serif;
+      transition: all 0.1s;
+    }
+    .playmode-btn:hover {
+      border-color: rgba(255,255,255,0.5);
+      color: rgba(255,255,255,0.8);
+    }
+    .playmode-btn.act {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    /* Mode row above waveform */
+    .card-mode-row {
+      display: flex;
+      gap: 0;
+      padding: 4px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .card-mode-row .playmode-btn {
+      border-radius: 0;
+      border-right-width: 0;
+    }
+    .card-mode-row .playmode-btn:last-child {
+      border-right-width: 1px;
+    }
+
+    /* Accordion sections */
+    .card-accordion {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .card-acc-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      user-select: none;
+    }
+    .card-acc-hdr:hover { color: #fff; }
+    .card-acc-hdr::after {
+      content: '▸';
+      font-size: 8px;
+      transition: transform 0.15s;
+    }
+    .card-acc-hdr.open { color: rgba(255,255,255,0.85); }
+    .card-acc-hdr.open::after { transform: rotate(90deg); }
+    .card-acc-body { display: none; }
+    .card-acc-body.open { display: block; }
+
+    /* Synth card titlebar click closes card */
+    .synth-card .card-titlebar { cursor: pointer; user-select: none; }
+
+    /* Gran overlay canvas */
+    .card-gran-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Gran sliders section - hidden by default */
+    .gran-sliders {
+      display: none;
+    }
+    .gran-sliders.visible {
+      display: block;
+    }
+    .loop-grid-section.hidden {
+      display: none;
+    }
+

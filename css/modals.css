@@ -1,0 +1,153 @@
+    /* ═══ REC DOWNLOAD MODAL ═══ */
+    #rec-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #rec-modal-box {
+      background: var(--surface);
+      border: 1px solid var(--b2);
+      padding: 32px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      min-width: 260px;
+    }
+
+    #rec-modal-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    #rec-modal-sub {
+      font-size: 10px;
+      color: var(--mid);
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    #rec-modal-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .rec-mbtn {
+      width: 100%;
+      padding: 9px 0;
+      background: #000;
+      border: 1px solid var(--b2);
+      color: var(--mid);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.08s;
+    }
+
+    .rec-mbtn:hover {
+      border-color: var(--white);
+      color: var(--white);
+    }
+
+    .rec-mbtn.primary {
+      border-color: var(--b3);
+      color: var(--hi);
+    }
+
+    .rec-mbtn.cancel {
+      border-color: transparent;
+      color: var(--b3);
+      font-size: 10px;
+    }
+
+    .rec-mbtn.cancel:hover {
+      border-color: transparent;
+      color: var(--mid);
+    }
+
+    /* ═══ RECORD BUTTON ═══ */
+    .tbtn.recording {
+      background: #fff;
+      border-color: #fff;
+      color: #000;
+      animation: rec-blink 1s step-start infinite;
+    }
+
+    @keyframes rec-blink {
+
+      0%,
+      100% {
+        background: #fff;
+        border-color: #fff;
+        color: #000;
+      }
+
+      50% {
+        background: #000;
+        border-color: rgba(255,255,255,0.8);
+        color: #fff;
+      }
+    }
+
+    #rec-timer {
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: var(--b3);
+      letter-spacing: -0.03em;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    #rec-timer.active {
+      color: rgba(255,255,255,0.8);
+    }
+
+    /* ═══ PAULSTRETCH LOADING OVERLAY ═══ */
+    .tile-ps-loading {
+      position: absolute;
+      inset: 0;
+      bottom: 14px;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .tile-ps-lbl {
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+    }
+
+    .tile-ps-bar-wrap {
+      width: 76%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .tile-ps-bar {
+      height: 100%;
+      background: #fff;
+      width: 0%;
+    }
+
