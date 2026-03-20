@@ -1,6 +1,62 @@
 # FREQUENCER
 
-A browser-based multi-instrument spatial looper. Drag audio files onto a 2D canvas — vertical position controls volume, horizontal position controls stereo pan. Layer samples, synths, drum machines, chord progressions, and melodic riffs, all in sync with a global transport. Open `index.html` in any modern browser.
+A browser-based multi-instrument spatial looper. Drag audio files onto a 2D canvas — vertical position controls volume, horizontal position controls stereo pan. Layer samples, synths, drum machines, chord progressions, and melodic riffs, all in sync with a global transport.
+
+---
+
+## Running Locally
+
+The app requires a local HTTP server (browsers block multi-file JS over `file://`).
+
+```bash
+python3 -m http.server 8080 --directory ~/Desktop/frequencer
+```
+
+Then open `http://localhost:8080`.
+
+For **GitHub Pages / any web host**, just deploy the folder as-is — no build step needed.
+
+---
+
+## Project Structure
+
+```
+frequencer/
+├── index.html          ← HTML shell (~150 lines)
+├── css/
+│   ├── base.css        ← Reset + CSS variables
+│   ├── layout.css      ← Drop overlay, header, canvas, empty state
+│   ├── tiles.css       ← Sample / synth / drum tiles
+│   ├── cards.css       ← Sample edit cards, sliders, EQ, FX chain
+│   ├── modals.css      ← Recording modal, Paulstretch overlay
+│   ├── lfo.css         ← LFO nodes
+│   ├── synth.css       ← Synth cards, piano keyboard, wavetable UI
+│   └── drums.css       ← Drum machine card
+└── js/
+    ├── constants.js    ← All globals, maps, color palettes
+    ├── sequencers.js   ← RiffSequencer, ChordsSequencer, LFO classes + chord AI
+    ├── audio-unlock.js ← AudioContext init (ensureAudio)
+    ├── granular.js     ← GranularEngine class
+    ├── sample.js       ← Sample class (audio chain, playback, tile/card management)
+    ├── presets.js      ← Analog presets, DX7 presets, wavetable engine
+    ├── instruments.js  ← SynthInstrument base + AnalogSynth, FMSynth, Wavetable,
+    │                      KarplusSynth, Rompler, DrumMachine
+    ├── tile-ui.js      ← Tile + waveform + VU drawing, color helpers
+    ├── phloop.js       ← requestAnimationFrame loop (playheads, VU, grain viz)
+    ├── import.js       ← File import and drag-drop position logic
+    ├── playback.js     ← startSample, removeSample, removeSynth
+    ├── synth-cards.js  ← Synth and drum card UI
+    ├── sample-cards.js ← Sample edit card UI
+    ├── transport.js    ← Play / stop / BPM, MidiCapture
+    ├── recording.js    ← Stem and mix recording
+    ├── save-load.js    ← saveProject / loadProject
+    ├── paulstretch.js  ← Web Worker time-stretcher
+    ├── lfo-nodes.js    ← LFO node UI creation
+    ├── riff-nodes.js   ← Riff node UI creation
+    ├── chords-nodes.js ← Chords node UI creation
+    ├── wiring.js       ← LFO wire drawing + modulation tick
+    ├── events.js       ← Drag-drop + keyboard handlers
+    └── main.js         ← Init
 
 ---
 
