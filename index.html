@@ -1154,6 +1154,10 @@
       right: -6px;
     }
 
+    /* ── Sync mode toggle ── */
+    .card-sync-mode { font-size: 8px; padding: 0 5px; opacity: 0.5; }
+    .card-sync-mode.act { opacity: 1; }
+
     .card-fp {
       position: absolute;
       top: 0;
@@ -3897,10 +3901,10 @@
       if (!_audioInitPromise) {
         _audioInitPromise = (async () => {
           await Tone.start();
-          Tone.Transport.start();
           masterMeter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
           masterSamplesGain.connect(masterMeter);
           audioReady = true;
+          playAll();  // auto-start transport + visual state on first user gesture
         })();
       }
       return _audioInitPromise;
@@ -4094,12 +4098,14 @@
         this._revBuf = null;
         this.loopStart = 0;  // normalized 0..1
         this.loopEnd = 1;
+        this._origLoopEnd = 1;  // user's manually-set loop end (not modified by subdivision snapping)
         this.filePosition = 0; // normalized 0..1, initial playback start within loop
         this.muted = false;
         this.gridSync = false;
-        this.subdiv = 1;
+        this.subdiv = 'sample';
         this.subdivFactor = 1; // 1 = normal, 1.5 = dotted, 0.667 = triplet
         this.gridMulti = 1;   // 1 = every, 2 = every other, 3 = every 3rd
+        this._nudgeMs = 0;    // timing offset in ms, applied to every grid fire (±150ms)
 
         this.attackTime = 0;    // seconds
         this.releaseTime = 0;   // seconds
@@ -4123,6 +4129,8 @@
         this.playing = false;
         this._anchorAcTime = null; // AudioContext.currentTime tracking anchor
         this._anchorBufferPos = 0; // Absolute buffer seconds tracking anchor
+        this._gridLoopBufDur = 0; // buffer-seconds per grid loop period (set by playGrid)
+        this._gridNativeLoop = false; // true when player.loop=true is active (no envelope)
         this._gridEv = null;
         this._filePosTimer = null;
         this._pendingRestart = false; // set to restart on the next loop wrap boundary
@@ -4182,6 +4190,19 @@
         this._psRendering = false;
         this._psPlayingBuffer = false; // true when player is running _psBuffer
         this._psBuildTimer = null;
+
+        // ── Sync state ──
+        this._syncActive = false;
+        this._syncBpm = null;         // detected BPM of loop region
+        this._syncMode = 'analog';    // 'analog' | 'digital'
+        this._syncRate = 1;           // analog: projectBPM/syncBpm multiplier on playbackRate
+        this._syncRateMult = 1;       // ×2 / ÷2 octave correction
+        this._syncFftSize = 2048;     // digital: phase vocoder FFT window (512/2048/4096)
+        this._syncSrcBuf = null;      // digital: original buffer before stretch (for re-sync)
+        this._syncOrigLoopStart = 0;  // 0-1 loop bounds before sync (to restore on clear)
+        this._syncOrigLoopEnd = 1;
+        this._syncResyncTimer = null;
+        this._onBpmChange = null;     // set by applySync(); called on project BPM change
         this._psFadedBuf = null;  // cached faded-loop buffer for PS mode (attack/release/xfade baked in)
         this._psSrcStart = 0;     // loopStart saved at render time (source region)
         this._psSrcEnd = 1;       // loopEnd saved at render time
@@ -4217,7 +4238,7 @@
         const raw = this.reversed ? (this.duration - this.filePosSec) : this.filePosSec;
         return Math.max(0, Math.min(this._revEnd - 0.001, raw));
       }
-      get _pbRate() { return Math.pow(2, this.stretchST / 12); }
+      get _pbRate() { return Math.pow(2, this.stretchST / 12) * (this._syncRate || 1); }
       // Duration of the active buffer (PS buffer when PS is live, else raw source)
       get _activeDur() { return (this.psStretch > 1 && this._psBuffer) ? this._psBuffer.duration : this.duration; }
 
@@ -4789,40 +4810,81 @@
       // Each fire: stop previous player, start new one-shot for min(loopLen, subdivSec).
       // 'wait' mode: sample plays once, then silence until next subdivision fires.
       // 'cut' mode: always cut to subdivSec length regardless of sample length.
-      playGrid() {
+      playGrid(continuePlayer = false) {
         ++this._seqTrigVer; // invalidate any pending seq Draw callbacks
         this._cancelGrid();
-        this._stopPlayer();
-        this._stopXfLoop();
+        if (!continuePlayer) {
+          this._stopPlayer();
+          this._stopXfLoop();
+        }
         // Granular mode: use play() instead (no grid quantization for granular)
         if (this.granular && this._gran) { this.play(); return; }
+
+        if (!continuePlayer) {
+          // Bail early if there's no audio data to play (e.g. buffer still loading)
+          if (!this._srcBuf) return;
+          // Restore source buffer in case a faded buffer was previously loaded
+          const setBuf = (pl) => {
+            try {
+              if (typeof pl.buffer.set === 'function') pl.buffer.set(this._srcBuf);
+              else pl.buffer._buffer = this._srcBuf;
+            } catch (e) { console.warn('playGrid: setBuf failed', e); }
+          };
+          setBuf(this.player);
+          setBuf(this.xfPlayer);
+        }
         this.player.loop = false;
         this.xfPlayer.loop = false;
 
-        // Restore source buffer in case a faded buffer was previously loaded
-        const setBuf = (pl) => {
-          if (typeof pl.buffer.set === 'function') pl.buffer.set(this._srcBuf);
-          else pl.buffer._buffer = this._srcBuf;
-        };
-        setBuf(this.player);
-        setBuf(this.xfPlayer);
-
         const ctx = Tone.context.rawContext;
         const bpm = Tone.Transport.bpm.value;
-        const subdivSec = (60 / bpm) * (4 / this.subdiv) * this.subdivFactor;
-        const gridPeriod = subdivSec * this.gridMulti;
+        const barSec = (60 / bpm) * 4;
+        let subdivSec, quantizeSec, gridPeriod;
+        if (this.subdiv === 'sample') {
+          // Sample mode: snap gridPeriod to the nearest whole number of bars.
+          // This keeps every repeat phase-locked to the bar grid (no drift).
+          // The sample plays its natural length; any gap before the next bar is silence.
+          const rawDur = Math.max(0.01, this.lenSec / this._pbRate);
+          const nBars = Math.max(1, Math.ceil(rawDur / barSec));
+          subdivSec = nBars * barSec;
+          gridPeriod = subdivSec;
+          quantizeSec = barSec;
+        } else {
+          subdivSec = (60 / bpm) * (4 / this.subdiv) * this.subdivFactor;
+          gridPeriod = subdivSec * this.gridMulti;
+          // Snap first fire to the smaller of barSec or gridPeriod.
+          // This ensures: (a) for super-bar subdivisions (2.5 bars, 3 bars, etc.) the first
+          // fire always lands on a bar boundary rather than a non-bar 2.5-bar boundary;
+          // (b) for sub-bar subdivisions the snap is still to the subdivision boundary.
+          quantizeSec = Math.min(barSec, gridPeriod);
+        }
         this._loopLen = this.lenSec;
 
-        // Quantize start to the next subdivision boundary
+        // Compute the ABSOLUTE transport position of the next grid boundary.
+        // Using absolute time (not '+relative') keeps samples phase-locked to
+        // Tone.Sequence events (drum machine, metronome) which also fire at
+        // absolute transport positions 0, period, 2*period, ...
         const transportPos = Tone.Transport.seconds;
-        const secsSinceBeat = transportPos % subdivSec;
-        const offsetToNext = secsSinceBeat < 0.01 ? 0 : (subdivSec - secsSinceBeat);
+        const nudgeSec = (this._nudgeMs || 0) * 0.001;
+        const psLatencySec = this.ps.windowSize || 0.1;
+        const secsSinceBeat = transportPos % quantizeSec;
+        const prevBoundary = transportPos - secsSinceBeat;
+        // Snap to current boundary if within 10ms, otherwise next boundary.
+        const nextBoundary = (secsSinceBeat < 0.01 ? prevBoundary : prevBoundary + quantizeSec) + nudgeSec;
+        // Apply PS latency compensation: schedule the player psLatencySec early so
+        // audio emerges from the PitchShift chain exactly on the beat.
+        // If compensation puts us in the past (e.g. transport just started, or triggered
+        // within psLatencySec of a boundary), fire immediately — the first fire's audio
+        // will emerge up to psLatencySec late, but every subsequent fire is bar-locked.
+        let firstFireAt = nextBoundary - psLatencySec;
+        if (firstFireAt <= transportPos) {
+          firstFireAt = transportPos + 0.001;
+        }
 
         if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
-          // Snap the first iteration to the grid boundary, then run the exact same
-          // two-player crossfade loop as non-grid mode.
-          const firstFireAt = ctx.currentTime + offsetToNext + 0.005;
-          this._playCrossfadeLoop(firstFireAt);
+          // Convert absolute transport position → audio context time for the crossfade path
+          const timeFromNow = Math.max(0.003, firstFireAt - transportPos);
+          this._playCrossfadeLoop(ctx.currentTime + timeFromNow);
           return;
         }
 
@@ -4833,36 +4895,86 @@
         // event but it would never fire.
         if (Tone.Transport.state !== 'started') Tone.Transport.start();
 
-        const firstFireAt = '+' + offsetToNext.toFixed(4);
+        // Buffer seconds that exactly fills one grid period at the current playback rate.
+        // Tone.js Player.start duration = buffer seconds; real-time = bufSec / _pbRate.
+        const periodBufDur = gridPeriod * this._pbRate;
+        // Loop region: clamp to actual available buffer (in case _pbRate > 1 would exceed it).
+        const loopBufDur = Math.min(Math.max(0.001, this._revEnd - this._revStart), periodBufDur);
+
+        // Store for playheadPos() wrapping logic (set before fire() runs).
+        this._gridLoopBufDur = loopBufDur;
+        this._gridNativeLoop = !(this.attackTime > 0 || this.releaseTime > 0);
+
+        // After the first fire the player runs via its own native loop (or one-shot repeat).
+        // 'firstFirePending' tells fire() whether to set everything up or just refresh anchors.
+        let firstFirePending = true;
+
         const fire = (time) => {
-          try { this.player.stop(time); } catch (e) { }
-          try { this.xfPlayer.stop(time); } catch (e) { }
-          // Reset gains at the fire boundary — cancel any future-scheduled values and force to clean state
-          this.xfGain.gain.cancelScheduledValues(time);
-          this.xfGain.gain.setValueAtTime(0, time);
-          this.fadeGain.gain.cancelScheduledValues(time);
-          this.fadeGain.gain.setValueAtTime(1, time);
+          const isFirst = firstFirePending;
+          firstFirePending = false;
 
-          const startPos = this._revFilePos;
-          const dur = Math.max(0.01, this.lenSec / this._pbRate);
-          // Seg1: filePos → loopEnd (one-shot via player / fadeGain)
-          const seg1Dur = Math.max(0.001, (this._revEnd - startPos) / this._pbRate);
-          // Seg2: loopStart → fill remaining grid period (via xfPlayer / xfGain)
-          const seg2Dur = dur - seg1Dur;
+          const hasEnvelope = this.attackTime > 0 || this.releaseTime > 0;
+          const fg = this.fadeGain.gain;
 
-          this._applyFadeGain(time, dur);
-          this.player.loop = false;
-          try { this.player.start(time, startPos, seg1Dur); } catch (e) { console.warn('Grid seg1 failed', e); }
+          if (isFirst) {
+            // ── First fire: stop any previous player and start fresh ──
+            try { this.player.stop(time); } catch (e) {}
+            try { this.xfPlayer.stop(time); } catch (e) {}
+            // Cancel any pending "stopped" state transitions in Tone.js Player's internal
+            // timeline (e.g. from _stopPlayer() declick stops scheduled at now+5ms).
+            // Without this, the declick-stop from a preceding stop()+playGrid() cycle
+            // fires ~4ms after fire() starts the new playback, silently cutting it off.
+            if (this.player._state?.cancel) this.player._state.cancel(time);
+            if (this.xfPlayer._state?.cancel) this.xfPlayer._state.cancel(time);
+            this.xfGain.gain.cancelScheduledValues(time);
+            this.xfGain.gain.setValueAtTime(0, time);
+            fg.cancelScheduledValues(time);
 
-          if (seg2Dur > 0.001) {
-            this.xfGain.gain.setValueAtTime(1, time + seg1Dur);
-            this.xfPlayer.loop = false;
-            try { this.xfPlayer.start(time + seg1Dur, this._revStart, seg2Dur); } catch (e) { console.warn('Grid seg2 failed', e); }
+            if (!hasEnvelope) {
+              // Native loop: WebAudio handles the loop splice at the sample level —
+              // no ABSN stop/start at loop boundaries, no amplitude gap.
+              this.player.loopStart = this._revStart;
+              this.player.loopEnd   = this._revStart + loopBufDur;
+              this.player.loop = true;
+              // Brief declick only on first entry (cutting into audio from silence).
+              fg.setValueAtTime(0, time);
+              fg.linearRampToValueAtTime(1, time + DECLICK_S);
+              try { this.player.start(time, this._revStart); } catch (e) { console.warn('Grid start failed', e); }
+            } else {
+              // Envelope mode: one-shot per grid period, full fade applied.
+              const dur = Math.max(0.01, loopBufDur / this._pbRate);
+              this._applyFadeGain(time, dur);
+              this.player.loop = false;
+              try { this.player.start(time, this._revStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
+            }
+          } else if (hasEnvelope) {
+            // ── Loop-back, envelope mode: stop/restart without the declick ramp ──
+            // (The declick ramp is only needed when starting from silence; seamless
+            //  loop-backs have no discontinuity so no ramp is needed — it only causes
+            //  a 5ms amplitude dropout that creates the audible "hiccup".)
+            try { this.player.stop(time); } catch (e) {}
+            try { this.xfPlayer.stop(time); } catch (e) {}
+            this.xfGain.gain.cancelScheduledValues(time);
+            this.xfGain.gain.setValueAtTime(0, time);
+            fg.cancelScheduledValues(time);
+            const dur = Math.max(0.01, loopBufDur / this._pbRate);
+            // Apply release fade if set; no attack/declick ramp for loop-backs.
+            fg.setValueAtTime(1, time);
+            if (this.releaseTime > 0) {
+              const rel = Math.min(this.releaseTime, dur * 0.45);
+              const rStart = time + Math.max(0, dur - rel);
+              fg.setValueAtTime(1, rStart);
+              fg.linearRampToValueAtTime(0, time + dur);
+            }
+            this.player.loop = false;
+            try { this.player.start(time, this._revStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
           }
+          // else: no-envelope loop-back — native loop is running, nothing to do for audio.
 
+          // Always update the visual playhead anchor so the waveform display resets.
           Tone.Draw.schedule(() => {
             this._anchorAcTime = time;
-            this._anchorBufferPos = startPos;
+            this._anchorBufferPos = this._revStart;
           }, time);
         };
 
@@ -5075,11 +5187,18 @@
         const rStart = this._revStart, rEnd = this._revEnd;
 
         if (this.gridSync && this._xfTimeout === null) {
-          // Mirror the two-segment fire() logic: seg1 plays filePos→loopEnd, seg2 plays loopStart→remainder
-          const startPos = this._anchorBufferPos; // = filePos captured at fire time via Tone.Draw.schedule
+          if (this._gridNativeLoop && this._gridLoopBufDur > 0) {
+            // Native loop (player.loop=true, no envelope): WebAudio handles the splice
+            // sample-accurately. Wrap elapsed buffer position modulo the loop length so
+            // the playhead stays smooth even during the Tone.Draw race window (~scheduleAheadTime).
+            const rawBuf = (elapsed * this._pbRate) % this._gridLoopBufDur;
+            const fwd = Math.max(0, Math.min(1, rawBuf / this.lenSec));
+            return this.reversed ? 1 - fwd : fwd;
+          }
+          // Envelope mode: player stops/restarts each period — clamp to prevent overshoot.
+          const startPos = this._anchorBufferPos; // = _revStart captured via Tone.Draw.schedule
           const gridDur = Math.max(0.01, this.lenSec / this._pbRate);
           const seg1Dur = Math.max(0.001, (rEnd - startPos) / this._pbRate);
-          // Clamp elapsed to one grid period so the playhead never overshoots between fires
           const t = Math.min(elapsed, gridDur);
           let visPos;
           if (t <= seg1Dur) {
@@ -8869,6 +8988,7 @@
       s.color = src.color;
       s.loopStart = src.loopStart;
       s.loopEnd = src.loopEnd;
+      s._origLoopEnd = src._origLoopEnd ?? src.loopEnd;
       s.filePosition = src.filePosition;
       s.reversed = src.reversed;
       if (src.reversed && src._revBuf) s._revBuf = src._revBuf; // share reversed buffer
@@ -8880,6 +9000,7 @@
       s.subdiv = src.subdiv;
       s.subdivFactor = src.subdivFactor;
       s.gridMulti = src.gridMulti;
+      s._nudgeMs = src._nudgeMs || 0;
       s.attackTime = src.attackTime;
       s.releaseTime = src.releaseTime;
       s.crossfadeTime = src.crossfadeTime;
@@ -9011,6 +9132,220 @@
       updateSampleList();
     }
 
+    // ── BPM detection: spectral flux onset + autocorrelation + multi-candidate octave resolution ──
+    function _detectBpm(audioBuffer) {
+      const sr = audioBuffer.sampleRate;
+      // Limit to 30s so long files don't take forever
+      const maxLen = Math.min(audioBuffer.length, Math.round(30 * sr));
+
+      // Mix to mono
+      const mono = new Float32Array(maxLen);
+      for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
+        const d = audioBuffer.getChannelData(c);
+        for (let i = 0; i < maxLen; i++) mono[i] += d[i] / audioBuffer.numberOfChannels;
+      }
+
+      // === Spectral flux onset detection ===
+      // Much more sensitive to transient attacks than simple RMS.
+      // For each 10ms frame, compute FFT and sum positive spectral magnitude increases.
+      const hopSec = 0.01;
+      const hop = Math.round(hopSec * sr);
+      const N = 1024; // FFT window
+      const numFrames = Math.max(8, Math.floor((maxLen - N) / hop) + 1);
+
+      // Hann window
+      const hann = new Float32Array(N);
+      for (let i = 0; i < N; i++) hann[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (N - 1)));
+
+      const flux = new Float32Array(numFrames);
+      const prevMag = new Float32Array(N >> 1);
+
+      for (let f = 0; f < numFrames; f++) {
+        const s0 = f * hop;
+        const re = new Float32Array(N), im = new Float32Array(N);
+        for (let i = 0; i < N && s0 + i < maxLen; i++) re[i] = mono[s0 + i] * hann[i];
+        _fft(re, im, false);
+        let sf = 0;
+        for (let k = 1; k < N >> 1; k++) {
+          const mag = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
+          const diff = mag - prevMag[k];
+          if (diff > 0) sf += diff;
+          prevMag[k] = mag;
+        }
+        flux[f] = Math.log1p(sf * 20);
+      }
+
+      // Adaptive mean subtraction: suppress slow-moving background energy
+      const avgW = Math.round(0.4 / hopSec);
+      const onset = new Float32Array(numFrames);
+      for (let f = 0; f < numFrames; f++) {
+        let sum = 0, cnt = 0;
+        for (let j = Math.max(0, f - avgW); j <= Math.min(numFrames - 1, f + avgW); j++) { sum += flux[j]; cnt++; }
+        onset[f] = Math.max(0, flux[f] - (sum / cnt) * 0.88);
+      }
+
+      // === Normalized autocorrelation over 50–240 BPM range ===
+      const lagMin = Math.max(1, Math.round(60 / 240 / hopSec));
+      const lagMax = Math.round(60 / 50 / hopSec);
+
+      let mean = 0;
+      for (let f = 0; f < numFrames; f++) mean += onset[f];
+      mean /= numFrames;
+      let variance = 0;
+      for (let f = 0; f < numFrames; f++) { const d = onset[f] - mean; variance += d * d; }
+      variance = variance / numFrames || 1e-9;
+
+      const ac = new Float32Array(lagMax + 1);
+      for (let lag = lagMin; lag <= lagMax; lag++) {
+        let sum = 0;
+        const n = numFrames - lag;
+        for (let f = 0; f < n; f++) sum += (onset[f] - mean) * (onset[f + lag] - mean);
+        ac[lag] = sum / (n * variance);
+      }
+
+      // === Score a BPM by how well its harmonic series matches the autocorrelation ===
+      // Checks ×1 (full), ×2 (sub-half), ×3, ×4, and ×0.5 (double-time)
+      function scoreBpm(bpm) {
+        let score = 0;
+        const lag1 = 60 / bpm / hopSec;
+        const harmonics = [[1, 1.0], [2, 0.45], [3, 0.25], [4, 0.12], [0.5, 0.35]];
+        for (const [mult, w] of harmonics) {
+          const l = Math.round(lag1 * mult);
+          if (l >= lagMin && l <= lagMax) score += w * Math.max(0, ac[l]);
+        }
+        return score;
+      }
+
+      // Collect local maxima in AC as candidate periods
+      const candidates = [];
+      for (let lag = lagMin + 1; lag < lagMax; lag++) {
+        if (ac[lag] > 0 && ac[lag] > ac[lag - 1] && ac[lag] >= ac[lag + 1])
+          candidates.push(60 / (lag * hopSec));
+      }
+      // Always include global argmax as a fallback candidate
+      let gMax = lagMin;
+      for (let lag = lagMin; lag <= lagMax; lag++) if (ac[lag] > ac[gMax]) gMax = lag;
+      candidates.push(60 / (gMax * hopSec));
+
+      // For each candidate, test the BPM itself plus common octave multiples.
+      // Score each via harmonic consistency and pick the best in the musical range 58–210 BPM.
+      const octaveMults = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
+      let bestBpm = 120, bestScore = -Infinity;
+      for (const c of candidates) {
+        for (const m of octaveMults) {
+          const b = c * m;
+          if (b < 58 || b > 210) continue;
+          const s = scoreBpm(b);
+          if (s > bestScore) { bestScore = s; bestBpm = b; }
+        }
+      }
+
+      return Math.round(bestBpm * 10) / 10;
+    }
+
+    // ── Inline radix-2 FFT (in-place, real + imaginary Float32Arrays) ──
+    function _fft(re, im, inverse) {
+      const n = re.length;
+      for (let i = 1, j = 0; i < n; i++) {
+        let bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) {
+          let t = re[i]; re[i] = re[j]; re[j] = t;
+          t = im[i]; im[i] = im[j]; im[j] = t;
+        }
+      }
+      for (let len = 2; len <= n; len <<= 1) {
+        const ang = (inverse ? -1 : 1) * 2 * Math.PI / len;
+        const wRe = Math.cos(ang), wIm = Math.sin(ang);
+        for (let i = 0; i < n; i += len) {
+          let cRe = 1, cIm = 0;
+          for (let k = 0; k < (len >> 1); k++) {
+            const aRe = re[i + k], aIm = im[i + k];
+            const h = i + k + (len >> 1);
+            const bRe = re[h] * cRe - im[h] * cIm;
+            const bIm = re[h] * cIm + im[h] * cRe;
+            re[i + k] = aRe + bRe; im[i + k] = aIm + bIm;
+            re[h] = aRe - bRe;     im[h] = aIm - bIm;
+            const nRe = cRe * wRe - cIm * wIm;
+            cIm = cRe * wIm + cIm * wRe; cRe = nRe;
+          }
+        }
+      }
+      if (inverse) { for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; } }
+    }
+
+    // ── Phase-vocoder time stretch (pitch-preserving, Hermitian-symmetric) ──
+    function _phaseVocoderStretch(inputBuf, timeRatio, fftSize = 2048) {
+      const sr = inputBuf.sampleRate, channels = inputBuf.numberOfChannels;
+      const N = fftSize, hopA = N >> 2;
+      const hopS = Math.max(1, Math.round(hopA * timeRatio));
+      const inLen = inputBuf.length;
+      const outLen = Math.max(1, Math.round(inLen * timeRatio));
+      const outBuf = new AudioBuffer({ numberOfChannels: channels, length: outLen, sampleRate: sr });
+
+      const hann = new Float32Array(N);
+      for (let i = 0; i < N; i++) hann[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / N));
+      const TWO_PI = 2 * Math.PI;
+      const HALF = N >> 1;
+
+      for (let ch = 0; ch < channels; ch++) {
+        const inData  = inputBuf.getChannelData(ch);
+        const outData = new Float32Array(outLen);
+        const outNorm = new Float32Array(outLen);
+        const re = new Float32Array(N), im = new Float32Array(N);
+        // Only track phases for positive-freq bins (0..N/2)
+        const prevPhase = new Float32Array(HALF + 1);
+        const phaseAcc  = new Float32Array(HALF + 1);
+
+        let outPos = 0;
+        for (let inPos = 0; outPos < outLen; inPos += hopA) {
+          // Analysis frame
+          for (let i = 0; i < N; i++) {
+            re[i] = (inPos + i < inLen ? inData[inPos + i] : 0) * hann[i];
+            im[i] = 0;
+          }
+          _fft(re, im, false);
+
+          // Phase vocoder — positive bins only
+          for (let k = 0; k <= HALF; k++) {
+            const mag   = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
+            const phase = Math.atan2(im[k], re[k]);
+            let dPhase  = phase - prevPhase[k] - TWO_PI * k * hopA / N;
+            dPhase -= TWO_PI * Math.round(dPhase / TWO_PI);
+            phaseAcc[k]  += (TWO_PI * k / N + dPhase / hopA) * hopS;
+            prevPhase[k]  = phase;
+            re[k] = mag * Math.cos(phaseAcc[k]);
+            im[k] = mag * Math.sin(phaseAcc[k]);
+          }
+          // Enforce Hermitian symmetry → real-valued IFFT output
+          for (let k = 1; k < HALF; k++) { re[N - k] = re[k]; im[N - k] = -im[k]; }
+          im[0] = 0; im[HALF] = 0;
+
+          _fft(re, im, true);
+
+          for (let i = 0; i < N; i++) {
+            const p = outPos + i;
+            if (p >= outLen) break;
+            outData[p] += re[i] * hann[i];
+            outNorm[p] += hann[i] * hann[i];
+          }
+          outPos += hopS;
+        }
+
+        for (let i = 0; i < outLen; i++) { if (outNorm[i] > 1e-8) outData[i] /= outNorm[i]; }
+        outBuf.getChannelData(ch).set(outData);
+      }
+      return outBuf;
+    }
+
+    // Beat-onset extraction: snap BPM grid to nearest energy peaks
+    function _notifySyncBpmChange(newBpm) {
+      for (const s of samples.values()) {
+        if (s._syncActive && typeof s._onBpmChange === 'function') s._onBpmChange(newBpm);
+      }
+    }
+
     function createCardForSample(s, tile) {
       const cardEl = document.createElement('div');
       cardEl.className = 'sample-card';
@@ -9076,6 +9411,50 @@
               <button class="cbtn ms-btn card-mute-btn">M</button>
               <button class="cbtn ms-btn card-solo-btn">S</button>
             </div>
+            <div class="crow" style="padding-top:2px;gap:3px">
+              <button class="cbtn card-sync-btn" style="flex:0 0 auto;padding:4px 10px">SYNC</button>
+              <input class="card-sync-bpm" type="number" min="20" max="400" step="0.1" placeholder="BPM" style="width:52px;flex:0 0 auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:3px;padding:2px 4px;font-size:10px;text-align:center;-moz-appearance:textfield" title="Sample BPM — edit to override auto-detection">
+              <button class="cbtn card-sync-mode-btn" style="flex:1">Analog</button>
+              <button class="cbtn card-sync-x2" title="Double tempo">×2</button>
+              <button class="cbtn card-sync-d2" title="Half tempo">÷2</button>
+            </div>
+            <div class="card-sync-dig-ctrls crow" style="display:none;padding-top:0;padding-bottom:4px;gap:3px">
+              <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px">Quality:</span>
+              <button class="cbtn card-sync-quality" data-q="512" title="Crisp transients, smaller window">Crisp</button>
+              <button class="cbtn card-sync-quality act" data-q="2048" title="Balanced">Bal</button>
+              <button class="cbtn card-sync-quality" data-q="4096" title="Smooth, larger window">Smooth</button>
+            </div>
+            <div class="crow" style="padding-top:0;padding-bottom:2px;min-height:0">
+              <span class="card-sync-status" style="font-size:8px;color:rgba(255,255,255,0.5);padding-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;line-height:1.2"></span>
+            </div>
+          </div>
+          <div class="csec loop-grid-section" style="border-top:1px solid rgba(255,255,255,0.08);border-bottom:none;padding:6px 8px">
+            <div class="crow">
+              <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
+              <select class="card-subdiv" style="flex:1">
+                <option value="sample" selected>Sample</option>
+                <option value="0.25">4 bars</option>
+                <option value="0.333">3 bars</option>
+                <option value="0.4">2.5 bars</option>
+                <option value="0.5">2 bars</option>
+                <option value="0.667">1.5 bars</option>
+                <option value="1">1 bar</option>
+                <option value="2">1/2</option>
+                <option value="4">1/4</option>
+                <option value="8">1/8</option>
+                <option value="16">1/16</option>
+                <option value="32">1/32</option>
+              </select>
+              <button class="cbtn ms-btn card-dot-btn">Dot</button>
+              <button class="cbtn ms-btn card-tri-btn">3let</button>
+              <button class="cbtn ms-btn card-skip2-btn">÷2</button>
+              <button class="cbtn ms-btn card-skip3-btn">÷3</button>
+            </div>
+            <div class="crow" style="padding-top:4px;gap:5px">
+              <span class="clbl" style="flex:0 0 36px;font-size:8px">Nudge</span>
+              <input type="range" class="card-nudge" min="-150" max="150" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
+              <span class="card-nudge-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:38px;text-align:right;flex:0 0 38px">0 ms</span>
+            </div>
           </div>
           <div class="card-accordion">
             <div class="card-acc-hdr">PLAYBACK</div>
@@ -9105,28 +9484,6 @@
                     <input type="range" class="card-filepos" min="0" max="1" step="0.0001" value="0">
                     <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
                   </div>
-                </div>
-              </div>
-              <div class="csec loop-grid-section" style="border-top:1px solid rgba(255,255,255,0.08);border-bottom:none;padding:6px 8px">
-                <div class="crow">
-                  <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
-                  <select class="card-subdiv" style="flex:1">
-                    <option value="0.25">4 bars</option>
-                    <option value="0.333">3 bars</option>
-                    <option value="0.4">2.5 bars</option>
-                    <option value="0.5">2 bars</option>
-                    <option value="0.667">1.5 bars</option>
-                    <option value="1" selected>1 bar</option>
-                    <option value="2">1/2</option>
-                    <option value="4">1/4</option>
-                    <option value="8">1/8</option>
-                    <option value="16">1/16</option>
-                    <option value="32">1/32</option>
-                  </select>
-                  <button class="cbtn ms-btn card-dot-btn">Dot</button>
-                  <button class="cbtn ms-btn card-tri-btn">3let</button>
-                  <button class="cbtn ms-btn card-skip2-btn">÷2</button>
-                  <button class="cbtn ms-btn card-skip3-btn">÷3</button>
                 </div>
               </div>
             </div>
@@ -9286,6 +9643,8 @@
       q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
       q('.card-skip2-btn').classList.toggle('act', s.gridMulti === 2);
       q('.card-skip3-btn').classList.toggle('act', s.gridMulti === 3);
+      q('.card-nudge').value = s._nudgeMs || 0;
+      q('.card-nudge-val').textContent = (s._nudgeMs || 0) + ' ms';
       q('.card-mute-btn').classList.toggle('mute-on', s.muted);
       q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
       q('.card-grid').classList.toggle('act', s.gridSync);
@@ -9300,16 +9659,21 @@
       cardEl.querySelectorAll('.cslider').forEach(w => w._syncPos && w._syncPos());
 
       function setGridUI(on) {
+        const isSample = on && s.subdiv === 'sample';
         const sub = q('.card-subdiv');
         sub.style.opacity = on ? '1' : '0.4';
         sub.style.pointerEvents = on ? 'all' : 'none';
-        q('.clh-e').style.pointerEvents = on ? 'none' : 'all';
-        q('.clh-e').style.opacity = on ? '0.35' : '1';
+        // In sample mode the user controls their own loop end
+        const lockEnd = on && !isSample;
+        q('.clh-e').style.pointerEvents = lockEnd ? 'none' : 'all';
+        q('.clh-e').style.opacity = lockEnd ? '0.35' : '1';
         const leRow = q('.card-loopend')?.closest('.crow');
-        if (leRow) { leRow.style.opacity = on ? '0.35' : '1'; leRow.style.pointerEvents = on ? 'none' : 'all'; }
+        if (leRow) { leRow.style.opacity = lockEnd ? '0.35' : '1'; leRow.style.pointerEvents = lockEnd ? 'none' : 'all'; }
+        // Dot/triplet/skip modifiers don't apply in sample mode
         ['.card-dot-btn', '.card-tri-btn', '.card-skip2-btn', '.card-skip3-btn'].forEach(sel => {
-          q(sel).style.opacity = on ? '1' : '0.4';
-          q(sel).style.pointerEvents = on ? 'all' : 'none';
+          const active = on && !isSample;
+          q(sel).style.opacity = active ? '1' : '0.4';
+          q(sel).style.pointerEvents = active ? 'all' : 'none';
         });
       }
       setGridUI(s.gridSync);
@@ -9575,6 +9939,191 @@
       // Start anim immediately if granular is already active
       if (s.granular) startGranAnim();
 
+      // ── SYNC ──
+      const setSync = txt => { const sl = q('.card-sync-status'); if (sl) sl.textContent = txt; };
+
+      function _setSyncBuf(newBuf, loopStartSec, loopEndSec) {
+        s.raw = newBuf;
+        s.duration = newBuf.duration;
+        s.peaks = null; s._fadedBuf = null; s._psBuffer = null; s._psPlayingBuffer = false;
+        s.loopStart = loopStartSec / newBuf.duration;
+        s.loopEnd   = loopEndSec / newBuf.duration;
+        if (typeof s.player.buffer.set === 'function') s.player.buffer.set(newBuf);
+        else s.player.buffer._buffer = newBuf;
+        if (typeof s.xfPlayer.buffer.set === 'function') s.xfPlayer.buffer.set(newBuf);
+        else s.xfPlayer.buffer._buffer = newBuf;
+        updateLoopReg();
+        refreshTileWave(s);
+      }
+
+      async function applySync() {
+        const mode = s._syncMode;
+        const src = s._syncSrcBuf || s.raw;   // always stretch from original
+        const sr = src.sampleRate, ch = src.numberOfChannels;
+
+        // Restore original loop bounds when re-syncing from _syncSrcBuf
+        const loopStart0 = s._syncActive ? s._syncOrigLoopStart : s.loopStart;
+        const loopEnd0   = s._syncActive ? s._syncOrigLoopEnd   : s.loopEnd;
+        const loopStartSec = loopStart0 * src.duration;
+        const loopEndSec   = loopEnd0   * src.duration;
+        const startSample  = Math.floor(loopStart0 * src.length);
+        const endSample    = Math.ceil(loopEnd0   * src.length);
+        const regionLen    = endSample - startSample;
+
+        if (regionLen < sr * 0.5) { setSync('Region too short'); return; }
+
+        const regionBuf = new AudioBuffer({ numberOfChannels: ch, length: regionLen, sampleRate: sr });
+        for (let c = 0; c < ch; c++)
+          regionBuf.getChannelData(c).set(src.getChannelData(c).subarray(startSample, endSample));
+
+        // Detect BPM — priority: manual input > stored value > auto-detect
+        const bpmInputEl = q('.card-sync-bpm');
+        const manualBpm = bpmInputEl ? parseFloat(bpmInputEl.value) : NaN;
+        let detectedBpm;
+        if (!isNaN(manualBpm) && manualBpm >= 20 && manualBpm <= 400) {
+          detectedBpm = manualBpm;
+        } else if (s._syncBpm) {
+          detectedBpm = s._syncBpm;
+        } else {
+          setSync('Analyzing…');
+          await new Promise(r => setTimeout(r, 0));
+          try {
+            detectedBpm = _detectBpm(regionBuf);
+            if (!detectedBpm || detectedBpm < 20 || detectedBpm > 400) throw new Error('Bad BPM: ' + detectedBpm);
+            if (bpmInputEl) bpmInputEl.value = detectedBpm.toFixed(1);
+          } catch (err) {
+            setSync('BPM failed'); console.error(err); return;
+          }
+        }
+
+        const projectBpm = Tone.Transport.bpm.value;
+
+        // Save state (idempotent — safe to call on re-sync)
+        s._syncBpm = detectedBpm;   // always update in case user changed manual BPM
+        if (!s._syncActive) {
+          s._syncOrigLoopStart = loopStart0;
+          s._syncOrigLoopEnd   = loopEnd0;
+          s._syncActive = true;
+        }
+        // Always ensure _syncSrcBuf is set before digital stretching
+        // (may be cleared by mode-switch reset even when already active)
+        if (mode === 'digital' && !s._syncSrcBuf) {
+          s._syncSrcBuf = s.raw;
+        }
+
+        const rateMult = s._syncRateMult || 1;
+        const effectiveRatio = (projectBpm / detectedBpm) * rateMult;
+
+        // Auto-enable grid sync so loop stays locked to transport
+        if (!s.gridSync) {
+          s.gridSync = true;
+          const gridBtn = q('.card-grid');
+          if (gridBtn) gridBtn.classList.add('act');
+          setGridUI(true);
+          s._renderTile();
+        }
+
+        const multLabel = rateMult === 2 ? ' ×2' : rateMult === 0.5 ? ' ÷2' : '';
+        const isUnity = Math.abs(effectiveRatio - 1.0) < 0.002; // < 0.2% — transparent, skip processing
+
+        if (mode === 'analog') {
+          // Adjust playback rate — pitch shifts with tempo (vinyl-style)
+          s._syncRate = isUnity ? 1 : effectiveRatio;
+          setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  ANA`);
+          // Update loop end handle to reflect the new _pbRate before rescheduling
+          if (s.gridSync) { snapEndToSubdiv(); }
+          if (s.playing) {
+            s.player.playbackRate = s._pbRate;
+            s.xfPlayer.playbackRate = s._pbRate;
+            s._cancelGrid(); s._stopPlayer(); s.playGrid();
+          }
+        } else {
+          // Digital: pitch-preserving time stretch — bake into buffer
+          // At unity ratio, skip the vocoder entirely to preserve original audio quality
+          if (isUnity) {
+            // Restore source buffer directly (no DSP artifacts)
+            _setSyncBuf(src, loopStartSec, loopEndSec);
+            setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  DIG`);
+            if (s.gridSync) { snapEndToSubdiv(); }
+            if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+          } else {
+            setSync('Stretching…');
+            await new Promise(r => setTimeout(r, 0));
+            let stretchedBuf;
+            try {
+              stretchedBuf = _phaseVocoderStretch(regionBuf, effectiveRatio, s._syncFftSize || 2048);
+            } catch (err) { setSync('Stretch failed'); console.error(err); return; }
+
+            const preLen = startSample;
+            const newLen = preLen + stretchedBuf.length + Math.max(0, src.length - endSample);
+            const newBuf = new AudioBuffer({ numberOfChannels: ch, length: newLen, sampleRate: sr });
+            for (let c = 0; c < ch; c++) {
+              const nd = newBuf.getChannelData(c);
+              nd.set(src.getChannelData(c).subarray(0, preLen), 0);
+              nd.set(stretchedBuf.getChannelData(c), preLen);
+              nd.set(src.getChannelData(c).subarray(endSample), preLen + stretchedBuf.length);
+            }
+
+            _setSyncBuf(newBuf, loopStartSec, loopStartSec + stretchedBuf.length / sr);
+            setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  DIG`);
+            if (s.gridSync) { snapEndToSubdiv(); }
+            if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+          }
+        }
+
+        // Install BPM-change hook so transport tempo updates propagate
+        s._onBpmChange = async (newBpm) => {
+          if (!s._syncActive) return;
+          if (s._syncMode === 'analog') {
+            s._syncRate = (newBpm / s._syncBpm) * (s._syncRateMult || 1);
+            const ml = s._syncRateMult === 2 ? ' ×2' : s._syncRateMult === 0.5 ? ' ÷2' : '';
+            setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ANA`);
+            if (s.gridSync) { snapEndToSubdiv(); }
+            if (s.playing) {
+              s.player.playbackRate = s._pbRate;
+              s.xfPlayer.playbackRate = s._pbRate;
+              s._cancelGrid(); s._stopPlayer(); s.playGrid();
+            }
+          } else {
+            // Debounced re-bake for digital mode
+            clearTimeout(s._syncResyncTimer);
+            s._syncResyncTimer = setTimeout(() => applySync(), 450);
+          }
+        };
+      }
+
+      function clearSync() {
+        if (!s._syncActive) return;
+        clearTimeout(s._syncResyncTimer);
+        s._onBpmChange = null;
+        const wasPlaying = s.playing;
+        if (wasPlaying) { s._cancelGrid?.(); s._stopPlayer(); }
+
+        // Restore original buffer if digital had baked a modified version
+        if (s._syncSrcBuf && s.raw !== s._syncSrcBuf) {
+          const origBuf = s._syncSrcBuf;
+          const origStartSec = s._syncOrigLoopStart * origBuf.duration;
+          const origEndSec   = s._syncOrigLoopEnd   * origBuf.duration;
+          _setSyncBuf(origBuf, origStartSec, origEndSec);
+        }
+
+        // Reset analog rate and player speed
+        s._syncRate = 1;
+        s.player.playbackRate = s._pbRate;
+        s.xfPlayer.playbackRate = s._pbRate;
+        s._syncActive = false;
+        s._syncBpm = null;
+        s._syncSrcBuf = null;
+        s._syncResyncTimer = null;
+        s._onBpmChange = null;
+        setSync('');
+
+        if (wasPlaying) {
+          if (s.gridSync) s.playGrid();
+          else s.play();
+        }
+      }
+
       function updateFpHandle() {
         const fpEl = q('.card-fp');
         if (!fpEl) return;
@@ -9606,8 +10155,23 @@
 
       function snapEndToSubdiv() {
         const bpm = Tone.Transport.bpm.value;
-        const subdivSec = (60 / bpm) * (4 / s.subdiv) * s.subdivFactor;
-        const snappedEnd = Math.min(1, s.loopStart + subdivSec / s.duration);
+        const barSec = (60 / bpm) * 4;
+        let bufDur;
+        if (s.subdiv === 'sample') {
+          // In sample mode, use the user's original (pre-subdivision) loop end so that
+          // switching back to "sample" always restores the full sample length.
+          const origEnd = s._origLoopEnd !== undefined ? s._origLoopEnd : s.loopEnd;
+          const origBufSec = Math.max(0, (origEnd - s.loopStart)) * s.duration;
+          const rawDur = Math.max(0.01, origBufSec / s._pbRate);
+          const nBars = Math.max(1, Math.ceil(rawDur / barSec));
+          bufDur = nBars * barSec * s._pbRate;
+        } else {
+          const subdivSec = (60 / bpm) * (4 / s.subdiv) * s.subdivFactor;
+          // Multiply by _pbRate: we need subdivSec * _pbRate buffer-seconds so that
+          // the player (running at _pbRate) produces exactly subdivSec of real audio.
+          bufDur = subdivSec * s._pbRate;
+        }
+        const snappedEnd = Math.min(1, s.loopStart + bufDur / s.duration);
         s.setLoopBounds(s.loopStart, snappedEnd);
         updateLoopReg();
       }
@@ -9677,6 +10241,7 @@
         q(sel).addEventListener('mousedown', e => {
           e.stopPropagation();
           if (!isStart && s.gridSync) return;
+          clearSync();
           const wrap = q('.card-wave-wrap');
           const rect = wrap.getBoundingClientRect(), W = rect.width - 20;
           const mm = ev => {
@@ -9706,6 +10271,8 @@
           const mu = () => {
             document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
             if (isStart && s.gridSync) { snapEndToSubdiv(); return; }
+            // Save user's manually-set loop end (before any subdivision snapping modifies it)
+            if (!isStart) s._origLoopEnd = s.loopEnd;
             // Single restart on mouseup with final bounds
             s.setLoopBounds(s.loopStart, s.loopEnd);
           };
@@ -9944,6 +10511,119 @@
         if (psLbl && s._psRendering) psLbl.textContent = 'rendering…';
         else if (psLbl) psLbl.textContent = '';
       });
+      // ── SYNC controls ──
+      function syncRefreshUI() {
+        const active = s._syncActive;
+        const mode = s._syncMode;
+        q('.card-sync-btn').classList.toggle('act', active);
+        const modeBtn = q('.card-sync-mode-btn');
+        if (modeBtn) modeBtn.textContent = mode === 'digital' ? 'Digital' : 'Analog';
+        const digEl = q('.card-sync-dig-ctrls');
+        if (digEl) digEl.style.display = mode === 'digital' ? 'flex' : 'none';
+        q('.card-sync-x2').classList.toggle('act', s._syncRateMult === 2);
+        q('.card-sync-d2').classList.toggle('act', s._syncRateMult === 0.5);
+        const fftQ = String(s._syncFftSize || 2048);
+        q('.card-body').querySelectorAll('.card-sync-quality').forEach(b => b.classList.toggle('act', b.dataset.q === fftQ));
+        const bpmInputEl = q('.card-sync-bpm');
+        if (active && s._syncBpm) {
+          const ml = s._syncRateMult === 2 ? ' ×2' : s._syncRateMult === 0.5 ? ' ÷2' : '';
+          setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ${mode === 'digital' ? 'DIG' : 'ANA'}`);
+          if (bpmInputEl && !bpmInputEl.value) bpmInputEl.value = s._syncBpm.toFixed(1);
+        } else if (!active && bpmInputEl) {
+          bpmInputEl.value = '';
+        }
+      }
+      syncRefreshUI();
+
+      // SYNC toggle
+      q('.card-sync-btn').addEventListener('click', async e => {
+        e.stopPropagation();
+        if (s._syncActive) {
+          clearSync();
+          syncRefreshUI();
+          return;
+        }
+        await ensureAudio();
+        const btn = q('.card-sync-btn');
+        btn.disabled = true;
+        try { await applySync(); syncRefreshUI(); } finally { btn.disabled = false; }
+      });
+
+      // Analog / Digital mode toggle button
+      q('.card-sync-mode-btn').addEventListener('click', async e => {
+        e.stopPropagation();
+        const newMode = s._syncMode === 'analog' ? 'digital' : 'analog';
+        s._syncMode = newMode;
+        if (s._syncActive) {
+          // Clean reset before switching: restore original buffer and zero the analog rate.
+          // This ensures neither mode inherits the other's modifications.
+          if (s._syncSrcBuf) {
+            // Digital had baked a buffer — restore the original
+            const origStart = s._syncOrigLoopStart * s._syncSrcBuf.duration;
+            const origEnd   = s._syncOrigLoopEnd   * s._syncSrcBuf.duration;
+            _setSyncBuf(s._syncSrcBuf, origStart, origEnd);
+            s._syncSrcBuf = null; // cleared; will be re-set by applySync for digital
+          }
+          s._syncRate = 1; // remove any analog rate multiplier
+          s.player.playbackRate = s._pbRate;
+          s.xfPlayer.playbackRate = s._pbRate;
+
+          const btn = q('.card-sync-btn');
+          btn.disabled = true;
+          try { await applySync(); } finally { btn.disabled = false; }
+        }
+        syncRefreshUI();
+      });
+
+      // ×2 / ÷2 rate multiplier
+      q('.card-sync-x2').addEventListener('click', async e => {
+        e.stopPropagation();
+        s._syncRateMult = s._syncRateMult === 2 ? 1 : 2;
+        if (s._syncActive) await applySync();
+        syncRefreshUI();
+      });
+      q('.card-sync-d2').addEventListener('click', async e => {
+        e.stopPropagation();
+        s._syncRateMult = s._syncRateMult === 0.5 ? 1 : 0.5;
+        if (s._syncActive) await applySync();
+        syncRefreshUI();
+      });
+
+      // Digital quality (FFT window size)
+      q('.card-body').querySelectorAll('.card-sync-quality').forEach(btn => {
+        btn.addEventListener('click', async e => {
+          e.stopPropagation();
+          s._syncFftSize = parseInt(btn.dataset.q);
+          if (s._syncActive && s._syncMode === 'digital') await applySync();
+          syncRefreshUI();
+        });
+      });
+
+      // Manual BPM input — re-sync on Enter or blur if value changed
+      const _syncBpmEl = q('.card-sync-bpm');
+      if (_syncBpmEl) {
+        _syncBpmEl.addEventListener('keydown', async e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            _syncBpmEl.blur();
+            if (s._syncActive) {
+              const btn = q('.card-sync-btn');
+              btn.disabled = true;
+              try { await applySync(); syncRefreshUI(); } finally { btn.disabled = false; }
+            }
+          }
+        });
+        _syncBpmEl.addEventListener('change', async () => {
+          if (s._syncActive) {
+            const btn = q('.card-sync-btn');
+            btn.disabled = true;
+            try { await applySync(); syncRefreshUI(); } finally { btn.disabled = false; }
+          }
+        });
+        // Prevent canvas drag when clicking input
+        _syncBpmEl.addEventListener('mousedown', e => e.stopPropagation());
+        _syncBpmEl.addEventListener('click', e => e.stopPropagation());
+      }
       q('.card-grid').addEventListener('click', e => {
         e.stopPropagation();
         s.gridSync = !s.gridSync;
@@ -9954,8 +10634,10 @@
       });
       q('.card-subdiv').addEventListener('change', e => {
         e.stopPropagation();
-        s.subdiv = parseFloat(e.target.value);
-        if (s.gridSync) snapEndToSubdiv();
+        const val = e.target.value;
+        s.subdiv = val === 'sample' ? 'sample' : parseFloat(val);
+        if (s.gridSync) { snapEndToSubdiv(); setGridUI(true); }
+        // Full restart: loop region changed, need fresh buffer/scheduling
         if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
       });
       function setSubdivMod(factor) {
@@ -9963,7 +10645,8 @@
         q('.card-dot-btn').classList.toggle('act', s.subdivFactor === 1.5);
         q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
         if (s.gridSync) snapEndToSubdiv();
-        if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+        // continuePlayer=true: keep audio going, new schedule takes over at next bar
+        if (s.playing && s.gridSync) s.playGrid(true);
       }
       q('.card-dot-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(1.5); });
       q('.card-tri-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(2 / 3); });
@@ -9971,10 +10654,29 @@
         s.gridMulti = (s.gridMulti === n) ? 1 : n;
         q('.card-skip2-btn').classList.toggle('act', s.gridMulti === 2);
         q('.card-skip3-btn').classList.toggle('act', s.gridMulti === 3);
-        if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+        // continuePlayer=true: keep audio going, new repeat period takes effect at next bar
+        if (s.playing && s.gridSync) s.playGrid(true);
       }
       q('.card-skip2-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(2); });
       q('.card-skip3-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(3); });
+
+      // Nudge slider — shift sample timing forward/back up to ±150ms
+      q('.card-nudge').addEventListener('input', e => {
+        e.stopPropagation();
+        s._nudgeMs = parseInt(e.target.value);
+        const ms = s._nudgeMs;
+        q('.card-nudge-val').textContent = (ms === 0 ? '0' : (ms > 0 ? '+' + ms : ms)) + ' ms';
+        // continuePlayer=true: sample keeps playing; new alignment fires at next bar boundary
+        if (s.playing && s.gridSync) s.playGrid(true);
+      });
+      q('.card-nudge').addEventListener('dblclick', e => {
+        e.stopPropagation();
+        s._nudgeMs = 0;
+        q('.card-nudge').value = 0;
+        q('.card-nudge-val').textContent = '0 ms';
+        if (s.playing && s.gridSync) s.playGrid(true);
+      });
+
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSample(s.id); });
 
       ['attack', 'release', 'xfade'].forEach(key => {
@@ -10066,6 +10768,7 @@
 
       lsSlider.addEventListener('input', e => {
         e.stopPropagation();
+        clearSync();
         const dur = s._activeDur;
         const sec = Math.min(parseFloat(e.target.value), s.loopEnd * dur - 1e-4);
         s.setLoopBounds(sec / dur, s.loopEnd);
@@ -10074,6 +10777,7 @@
 
       leSlider.addEventListener('input', e => {
         e.stopPropagation();
+        clearSync();
         const dur = s._activeDur;
         const sec = Math.max(parseFloat(e.target.value), s.loopStart * dur + 1e-4);
         s.setLoopBounds(s.loopStart, sec / dur);
@@ -10811,7 +11515,11 @@
       isPlaying = true;
       document.getElementById('btn-play').classList.add('playing');
       Tone.Transport.start();
-      for (const [, s] of samples) if (s instanceof Sample && !s.playing) startSample(s);
+      for (const [, s] of samples) {
+        if (s instanceof Sample && !s.playing) {
+          try { startSample(s); } catch (e) { console.warn('startSample failed:', s.id, e); }
+        }
+      }
       for (const [, riff] of riffs) riff.reschedule();
       for (const [, ch] of chords) if (ch instanceof ChordsSequencer) ch.reschedule();
       for (const [, drum] of drums) {
@@ -10825,7 +11533,7 @@
           }
         }
       }
-      if (metroOn) buildMetro();
+      buildMetro(); // always build for beat-flash; audio gated by metroOn flag
       beatTick();
     }
 
@@ -10929,22 +11637,35 @@
     }
 
     function buildMetro() {
-      if (metroPart) { metroPart.dispose(); metroPart = null; }
-      if (!metroOn) return;
-      const clk = new Tone.MetalSynth({
-        frequency: 700, harmonicity: 5.1, modulationIndex: 32,
-        resonance: 4000, octaves: 1.5,
-        envelope: { attack: 0.001, decay: 0.06, release: 0.01 }
-      }).toDestination();
-      clk.volume.value = -15;
+      if (metroPart) { try { metroPart.stop(); metroPart.dispose(); } catch(e){} metroPart = null; }
+      const ctx = Tone.context.rawContext;
       metroPart = new Tone.Sequence((time, i) => {
-        clk.frequency.value = i === 0 ? 1000 : 650;
-        clk.triggerAttackRelease('32n', time);
+        // Visual flash — always, regardless of metroOn
         Tone.Draw.schedule(() => {
           const d = document.getElementById('metro-dot');
+          if (!d) return;
           d.classList.add('flash');
           setTimeout(() => d.classList.remove('flash'), i === 0 ? 90 : 55);
         }, time);
+        // Clave audio — only when metroOn
+        if (!metroOn) return;
+        const isDown = i === 0;
+        const vol = isDown ? 0.5 : 0.34;
+        const decay = isDown ? 0.11 : 0.075;
+        // Clave: two sine partials (fundamental + harmonic) for a hollow wooden click
+        const freqs = isDown ? [2500, 3500] : [2100, 2940];
+        for (let h = 0; h < 2; h++) {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freqs[h], time);
+          g.gain.setValueAtTime(vol * (h === 0 ? 0.68 : 0.32), time);
+          g.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(time);
+          osc.stop(time + decay + 0.01);
+        }
       }, [0, 1, 2, 3], '4n');
       metroPart.start(0);
     }
@@ -10952,8 +11673,7 @@
     document.getElementById('tog-metro').addEventListener('click', () => {
       metroOn = !metroOn;
       document.getElementById('tog-metro').classList.toggle('playing', metroOn);
-      if (metroOn && isPlaying) buildMetro();
-      else if (!metroOn && metroPart) { metroPart.dispose(); metroPart = null; }
+      // No rebuild needed — sequence always runs, audio gated inside the callback
     });
 
     // BPM — drag to change, double-click to type
@@ -10967,6 +11687,7 @@
         const bpm = Math.max(20, Math.min(300, Math.round(bpmV0 + (bpmY0 - ev.clientY) * 0.5)));
         Tone.Transport.bpm.value = bpm;
         bpmEl.textContent = bpm;
+        _notifySyncBpmChange(bpm);
       };
       const mu = () => {
         document.removeEventListener('mousemove', mm);
@@ -10983,14 +11704,17 @@
         'font-family:Courier New,monospace;font-size:22px;font-weight:700;' +
         'width:70px;text-align:center;padding:1px;';
       bpmEl.replaceWith(inp); inp.focus(); inp.select();
+      let _doneCalled = false;
       const done = () => {
+        if (_doneCalled) return; _doneCalled = true;
         const v = Math.max(20, Math.min(300, parseInt(inp.value) || 120));
         Tone.Transport.bpm.value = v;
         bpmEl.textContent = v;
-        inp.replaceWith(bpmEl);
+        if (inp.parentNode) inp.replaceWith(bpmEl);
+        _notifySyncBpmChange(v);
       };
       inp.addEventListener('blur', done);
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') done(); });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); done(); } });
     });
 
     // ── MIDI capture ──
@@ -11330,9 +12054,9 @@
           name: s.name, x: s.x, y: s.y, color: s.color,
           volDb: s._currentDb, panPos: s._currentPan,
           pitchST: s.pitchST, stretchST: s.stretchST, psStretch: s.psStretch, reversed: s.reversed,
-          loopStart: s.loopStart, loopEnd: s.loopEnd, filePosition: s.filePosition,
+          loopStart: s.loopStart, loopEnd: s.loopEnd, _origLoopEnd: s._origLoopEnd, filePosition: s.filePosition,
           muted: s.muted, gridSync: s.gridSync, subdiv: s.subdiv,
-          subdivFactor: s.subdivFactor, gridMulti: s.gridMulti,
+          subdivFactor: s.subdivFactor, gridMulti: s.gridMulti, nudgeMs: s._nudgeMs || 0,
           attackTime: s.attackTime, releaseTime: s.releaseTime,
           crossfadeTime: s.crossfadeTime, clipGainDb: s.clipGainDb,
           triggerMode: s.triggerMode,
@@ -11340,6 +12064,13 @@
           grainPosition: s.grainPosition, grainSpread: s.grainSpread,
           grainDensity: s.grainDensity, grainAttack: s.grainAttack,
           grainRelease: s.grainRelease, grainPitch: s.grainPitch,
+          syncActive: s._syncActive,
+          syncBpm: s._syncBpm,
+          syncMode: s._syncMode,
+          syncRateMult: s._syncRateMult,
+          syncFftSize: s._syncFftSize,
+          syncOrigLoopStart: s._syncOrigLoopStart,
+          syncOrigLoopEnd: s._syncOrigLoopEnd,
           eqBands: s.eqBands.map(b => ({ ...b })),
           fxChain: fxChainData,
           audioB64: audioBufferToWavBase64(s.raw)
@@ -11532,11 +12263,13 @@
           s.setClipGain(sd.clipGainDb || 0);
           s.loopStart = sd.loopStart ?? 0;
           s.loopEnd = sd.loopEnd ?? 1;
+          s._origLoopEnd = sd._origLoopEnd ?? sd.loopEnd ?? 1;
           s.filePosition = sd.filePosition ?? s.loopStart;
-          s.gridSync = sd.gridSync || false;
-          s.subdiv = sd.subdiv || 1;
+          s.gridSync = sd.gridSync ?? true;
+          s.subdiv = sd.subdiv === 'sample' ? 'sample' : (sd.subdiv || 'sample');
           s.subdivFactor = sd.subdivFactor || 1;
           s.gridMulti = sd.gridMulti || 1;
+          s._nudgeMs = sd.nudgeMs || 0;
           s.attackTime = sd.attackTime || 0;
           s.releaseTime = sd.releaseTime || 0;
           s.crossfadeTime = sd.crossfadeTime || 0;
@@ -11550,6 +12283,20 @@
           if (sd.grainPitch    != null) s.grainPitch    = sd.grainPitch;
           if (sd.triggerMode) s.triggerMode = true;
           if (sd.granular) s.setGranularMode(true);
+          // Restore sync state (audio is already baked into audioB64 for digital mode)
+          if (sd.syncActive) {
+            s._syncActive        = true;
+            s._syncBpm           = sd.syncBpm || null;
+            s._syncMode          = sd.syncMode || 'analog';
+            s._syncRateMult      = sd.syncRateMult ?? 1;
+            s._syncFftSize       = sd.syncFftSize ?? 2048;
+            s._syncOrigLoopStart = sd.syncOrigLoopStart ?? s.loopStart;
+            s._syncOrigLoopEnd   = sd.syncOrigLoopEnd   ?? s.loopEnd;
+            // For analog: re-apply rate immediately
+            if (s._syncMode === 'analog' && s._syncBpm) {
+              s._syncRate = (Tone.Transport.bpm.value / s._syncBpm) * s._syncRateMult;
+            }
+          }
 
           // Restore main 5-band EQ
           if (Array.isArray(sd.eqBands) && sd.eqBands.length === 5) {

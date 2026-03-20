@@ -61,7 +61,7 @@ Parameters are grouped into collapsible accordion sections:
 
 **ENVELOPE** — Attack, Release, Crossfade (equal-power).
 
-**PITCH+TIME** — Pitch Shift (±24 st, speed unchanged) · Timestretch (±24 st, changes speed and pitch) · Paulstretch (extreme slow-down).
+**PITCH+TIME** — Pitch Shift (±24 st, speed unchanged) · Timestretch (±24 st, changes speed and pitch) · Paulstretch (extreme slow-down) · Warp (BPM-aware time stretch, see below).
 
 **EFFECTS** — FX rack. Add unlimited effect instances; each has a PRE/POST fader toggle.
 
@@ -77,6 +77,54 @@ Parameters are grouped into collapsible accordion sections:
 | BIT | Bit Crusher — Bits (1–16), Wet |
 
 **Remove** — permanently deletes the sample from the session.
+
+---
+
+## Tempo Sync
+
+Each sample card has a **SYNC** button (Play · Stop · **SYNC** · M · S row) with two modes selectable via **ANA** / **DIG** toggle buttons below:
+
+| Mode | Behaviour |
+|------|-----------|
+| **ANA** (Analog) | Detects the loop region's BPM, then adjusts `playbackRate` to match the project tempo — pitch rises/falls with speed, like a record speeding up or slowing down. Zero artifacts, zero latency. |
+| **DIG** (Digital) | Detects BPM, then time-stretches the loop region pitch-preservingly (phase vocoder) to match the project tempo. Pitch stays constant; timing changes. |
+
+**Workflow:**
+1. Set loop start/end around the rhythmic region.
+2. Choose ANA or DIG.
+3. Click **SYNC** — BPM is auto-detected and the sample locks to the project tempo.
+4. Changing the project BPM updates synced samples in real time (ANA: instant rate update; DIG: re-stretch after 450 ms debounce).
+5. Adjusting the loop region automatically clears sync; click SYNC again to re-analyze.
+
+Sync state is saved with the project. Digital mode bakes the stretched audio into the session file.
+
+---
+
+## Grid Sync
+
+The **Grid** button in the PLAYBACK section locks a sample's loop to the global transport so it always restarts on a bar boundary, phase-locked with drums, sequencers, and other synced modules.
+
+### Subdivisions
+
+| Setting | Description |
+|---------|-------------|
+| **Sample** | Loop length is rounded up to the nearest whole bar. The sample plays its full region; any gap before the next bar is silence. Switching back to Sample always restores the full loop region. |
+| **1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32** | Fixed grid period. The loop end is auto-snapped to exactly fill the chosen subdivision. |
+| **Dot (·)** | Multiplies the subdivision by ×1.5 (e.g. dotted quarter = 3/8). |
+| **3let (T)** | Divides by 1.5 (triplet). |
+| **÷2 / ÷3** | Fire only on every 2nd or 3rd grid trigger — useful for half-time or polyrhythmic patterns. |
+
+Subdivision changes take effect immediately without waiting for the next downbeat.
+
+### Nudge
+
+A ±500 ms nudge slider shifts the sample's firing phase relative to the bar grid. Use it to dial in swing, pre-delay, or offset patterns that intentionally drift from bar 1.
+
+### How It Works
+
+When Grid is active the sample fires via the global transport scheduler. Each repeat fires at the next quantization boundary; the PitchShift latency (~100 ms) is pre-compensated so audio exits the chain exactly on the beat. Loops use WebAudio's native loop splice point for sample-accurate boundaries with no gap or click. The visual playhead wraps continuously using the same timing math as the audio, so it stays tight even across loop boundaries.
+
+Sync and Grid are independent: you can use Grid without Sync (free tempo), Sync without Grid (BPM-matched but free-running loop), or both together for a fully locked loop. When Sync is activated on a sample that has Grid off, Grid is automatically enabled.
 
 ---
 
