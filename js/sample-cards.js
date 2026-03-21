@@ -308,8 +308,13 @@
             <div class="card-fp"></div>
             <div class="card-ph"></div>
             <div class="card-zoom-label"></div>
-            <canvas class="card-vu-canvas" width="20" height="80"></canvas>
           </div>
+          <div class="vp-vol-wrap lfo-slot">
+            <input type="range" class="card-vol" min="-60" max="6" step="0.1" value="0">
+          </div>
+        </div>
+        <div class="card-pan-row lfo-slot">
+          <input type="range" class="card-pan vp-pan" min="-1" max="1" step="0.01" value="0">
         </div>
         <div class="card-body">
           <div class="csec">
@@ -423,31 +428,6 @@
                 <div class="cslider-thumb"><span class="cslider-lbl">85%</span><input class="cslider-edit" type="text"></div>
               </div>
               <input type="text" class="rng-field" value="100%">
-            </div>
-          </div>
-          <div class="card-accordion">
-            <div class="card-acc-hdr">MIXER</div>
-            <div class="card-acc-body">
-              <div class="csec tight" style="border:none">
-                <div class="crow">
-                  <span class="clbl">Volume</span>
-                  <input type="text" class="rng-field" value="-60">
-                  <div class="cslider">
-                    <input type="range" class="card-vol" min="-60" max="6" step="0.1" value="0">
-                    <div class="cslider-thumb"><span class="cslider-lbl">0.0 dB</span><input class="cslider-edit" type="text"></div>
-                  </div>
-                  <input type="text" class="rng-field" value="+6">
-                </div>
-                <div class="crow">
-                  <span class="clbl">Pan</span>
-                  <input type="text" class="rng-field" value="L100">
-                  <div class="cslider">
-                    <input type="range" class="card-pan" min="-1" max="1" step="0.01" value="0">
-                    <div class="cslider-thumb"><span class="cslider-lbl">C</span><input class="cslider-edit" type="text"></div>
-                  </div>
-                  <input type="text" class="rng-field" value="R100">
-                </div>
-              </div>
             </div>
           </div>
           <div class="card-accordion">
@@ -638,7 +618,7 @@
 
       function drawWave() {
         const wrap = q('.card-wave-wrap');
-        const W = (wrap.clientWidth || 284) - 20, H = wrap.clientHeight || 80;
+        const W = (wrap.clientWidth || 284), H = wrap.clientHeight || 80;
         const c = q('.card-wave-canvas');
         c.width = W; c.height = H;
         const ctx = c.getContext('2d');
@@ -748,7 +728,7 @@
         const gc = q('.card-gran-canvas');
         if (!gc) return;
         const wrap = q('.card-wave-wrap');
-        const W = (wrap.clientWidth || 284) - 20, H = wrap.clientHeight || 80;
+        const W = (wrap.clientWidth || 284), H = wrap.clientHeight || 80;
         gc.width = W; gc.height = H;
         const ctx = gc.getContext('2d');
         ctx.clearRect(0, 0, W, H);
@@ -815,7 +795,7 @@
           norm = Math.max(s.loopStart, Math.min(s.loopEnd, norm));
           // Grain width scaled by spread
           const wrap2 = q('.card-wave-wrap');
-          const W2 = wrap2 ? (wrap2.clientWidth || 284) - 20 : 264;
+          const W2 = wrap2 ? (wrap2.clientWidth || 284) : 284;
           const minW = 1, maxW = W2 * 0.4;
           const w = minW + s.grainSpread * (maxW - minW);
           // Hue shift based on pitch offset
@@ -1098,6 +1078,7 @@
 
       if (tile) tile.classList.add('active', 'expanded');
       cv.appendChild(cardEl);
+      initVpSliders(cardEl);
       requestAnimationFrame(() => cardEl.classList.add('open'));
       requestAnimationFrame(() => { drawWave(); updateLoopReg(); updateGainHandle(); });
 
@@ -1149,7 +1130,7 @@
           if (!isStart && s.gridSync) return;
           clearSync();
           const wrap = q('.card-wave-wrap');
-          const rect = wrap.getBoundingClientRect(), W = rect.width - 20;
+          const rect = wrap.getBoundingClientRect(), W = rect.width;
           const mm = ev => {
             const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
             const { start: vs, width: vw } = getZView();
@@ -1192,7 +1173,7 @@
         if (e.buttons !== 0) return;
         const wrap = q('.card-wave-wrap');
         const rect = wrap.getBoundingClientRect();
-        const W = rect.width - 20, H = rect.height;
+        const W = rect.width, H = rect.height;
         const mx = e.clientX - rect.left, my = e.clientY - rect.top;
         if (mx < 0 || mx >= W) return;
         const { start: vs, width: vw } = getZView();
@@ -1207,11 +1188,11 @@
       });
 
       q('.card-wave-wrap').addEventListener('mousedown', e => {
-        if (e.button !== 0 || e.target.closest('.lh') || e.target.closest('.card-fp')) return;
+        if (e.button !== 0 || e.target.closest('.lh') || e.target.closest('.card-fp') || e.target.closest('.vp-vol') || e.target.closest('.vp-pan')) return;
         e.preventDefault(); e.stopPropagation();
         const wrap = q('.card-wave-wrap');
         const rect = wrap.getBoundingClientRect();
-        const W = rect.width - 20, H = rect.height;
+        const W = rect.width, H = rect.height;
         const mx = e.clientX - rect.left, my = e.clientY - rect.top;
         const mouseViewX = Math.max(0, Math.min(1, mx / W));
         const { start: vs, end: ve, width: vw } = getZView();
@@ -1644,10 +1625,6 @@
       initCslider(q('.card-release').closest('.cslider'));
       initCslider(q('.card-xfade').closest('.cslider'));
 
-      const fmtVol = v => parseFloat(v).toFixed(1) + ' dB';
-      const fmtPan = v => v < -0.01 ? 'L' + Math.round(-v * 100) : v > 0.01 ? 'R' + Math.round(v * 100) : 'C';
-      initCslider(q('.card-vol').closest('.cslider'), fmtVol);
-      initCslider(q('.card-pan').closest('.cslider'), fmtPan);
 
       // ── Loop Start / End sliders ──
       const fmtPos = v => (+v).toFixed(3) + 's';
@@ -1724,7 +1701,7 @@
         e.preventDefault();
         const wrap = q('.card-wave-wrap');
         const rect = wrap.getBoundingClientRect();
-        const W = rect.width - 20;
+        const W = rect.width;
         const mm = ev => {
           const relView = Math.max(0, Math.min(1, (ev.clientX - rect.left) / W));
           const { start: vs, width: vw } = getZView();

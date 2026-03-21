@@ -315,6 +315,19 @@
       border-color: rgba(255,255,255,0.7);
     }
 
+    .lfo-slot.lfo-override {
+      pointer-events: none;
+    }
+    .lfo-slot.lfo-override .vp-vs-thumb,
+    .lfo-slot.lfo-override .vp-hs-thumb {
+      border-color: var(--lfo-color, rgba(255,255,255,0.7));
+      color: var(--lfo-color, #fff);
+    }
+    .lfo-slot.lfo-override .vp-vs-fill,
+    .lfo-slot.lfo-override .vp-hs-fill {
+      background: var(--lfo-color, rgba(255,255,255,0.45));
+    }
+
     .lfo-badge {
       font-size: 7px;
       font-weight: 700;

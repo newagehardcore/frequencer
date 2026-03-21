@@ -11,8 +11,6 @@
       if (!_audioInitPromise) {
         _audioInitPromise = (async () => {
           await Tone.start();
-          masterMeter = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
-          masterSamplesGain.connect(masterMeter);
           audioReady = true;
           playAll();  // auto-start transport + visual state on first user gesture
         })();

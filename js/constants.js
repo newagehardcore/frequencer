@@ -10,8 +10,7 @@
     let audioReady = false;
     let isPlaying = false;
     let metroOn = false;
-    let masterMeter = null;
-    const masterSamplesGain = new Tone.Gain(1).toDestination();
+        const masterSamplesGain = new Tone.Gain(1).toDestination();
 
     const WAVE_ZOOM_MAX = 1e7;
     let soloId = null;

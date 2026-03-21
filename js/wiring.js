@@ -10,7 +10,7 @@ function startWireDrag(lfo, startEvent) {
       const sy = portRect.top + portRect.height / 2;
 
       // Highlight potential targets: sample card sliders, synth card sliders
-      document.querySelectorAll('.sample-card .cslider, .synth-card .cslider').forEach(sl => {
+      document.querySelectorAll('.sample-card .cslider, .synth-card .cslider, .sample-card .lfo-slot, .synth-card .lfo-slot').forEach(sl => {
         sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
       });
 
@@ -25,7 +25,7 @@ function startWireDrag(lfo, startEvent) {
         document.removeEventListener('mouseup', mu);
         tempLine.remove();
         // Remove highlights
-        document.querySelectorAll('.sample-card .cslider, .synth-card .cslider').forEach(sl => { sl.style.outline = ''; });
+        document.querySelectorAll('.sample-card .cslider, .synth-card .cslider, .sample-card .lfo-slot, .synth-card .lfo-slot').forEach(sl => { sl.style.outline = ''; });
 
         // Check if dropped on a target
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
@@ -34,7 +34,7 @@ function startWireDrag(lfo, startEvent) {
         // Check for tile input port or tile — connect to volume
         const tileInPort = target.closest('.tile-in-port');
         const tileEl = tileInPort ? tileInPort.closest('.tile') : target.closest('.tile');
-        if (tileEl && !target.closest('.cslider')) {
+        if (tileEl && !target.closest('.cslider, .lfo-slot')) {
           const instrId = parseInt(tileEl.id.slice(1));
           if (!isNaN(instrId)) {
             const paramClass = samples.has(instrId) ? 'card-vol' : 'synth-vol';
@@ -54,7 +54,7 @@ function startWireDrag(lfo, startEvent) {
           return;
         }
 
-        const sliderWrap = target.closest('.cslider');
+        const sliderWrap = target.closest('.cslider, .lfo-slot');
         const eqCanvas = target.classList.contains('card-eq-canvas') ? target : target.closest('.card-eq-canvas');
         if (!sliderWrap && !eqCanvas) return;
 
@@ -210,7 +210,7 @@ function startWireDrag(lfo, startEvent) {
         targetWrap = cardInfo.el.querySelector('.card-eq-canvas');
       } else {
         const slider = cardInfo.el.querySelector('.' + paramClass);
-        if (slider) targetWrap = slider.closest('.cslider');
+        if (slider) targetWrap = slider.closest('.cslider, .lfo-slot');
       }
 
       if (!targetWrap) return;
@@ -245,7 +245,7 @@ function startWireDrag(lfo, startEvent) {
         targetWrap = cardInfo.el.querySelector('.card-eq-canvas');
       } else {
         const slider = cardInfo.el.querySelector('.' + paramClass);
-        if (slider) targetWrap = slider.closest('.cslider');
+        if (slider) targetWrap = slider.closest('.cslider, .lfo-slot');
       }
 
       if (!targetWrap) return;

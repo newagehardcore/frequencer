@@ -142,7 +142,7 @@
     }
 
     .card-wave-canvas {
-      width: calc(100% - 20px);
+      width: 100%;
       height: 100%;
     }
 
@@ -839,5 +839,189 @@
 
     .finfo-val b {
       color: var(--mid);
+    }
+
+    /* ── Inline vol/pan controls ── */
+
+    /* Vol wrapper — hides native range, hosts custom .vp-vs */
+    .vp-vol-wrap {
+      flex-shrink: 0;
+      width: 20px;
+      align-self: stretch;
+      position: relative;
+      cursor: ns-resize;
+    }
+    .vp-vol-wrap > input[type=range] { display: none; }
+
+    /* Pan row — hides native range, hosts custom .vp-hs */
+    .card-pan-row {
+      position: relative;
+      height: 16px;
+      margin: 0 8px;
+      cursor: ew-resize;
+    }
+    .card-pan-row > input[type=range],
+    .dm-pan-row   > input[type=range] { display: none; }
+
+    /* ── Custom vol slider ── */
+    .vp-vs {
+      position: absolute;
+      inset: 0;
+    }
+    .vp-vs-track {
+      position: absolute;
+      inset: 7px 0;   /* 7px = half thumb height so thumb doesn't clip at extremes */
+    }
+    .vp-vs-rail {
+      position: absolute;
+      left: 50%; top: 0; bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.1);
+      border-radius: 1px;
+    }
+    .vp-vs-fill {
+      position: absolute;
+      left: 50%; bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.45);
+      border-radius: 1px;
+    }
+    .vp-vs-thumb {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 14px;
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.75);
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: ns-resize;
+    }
+    .vp-vs-thumb:hover { border-color: #fff; color: #fff; }
+
+    /* ── Custom pan slider ── */
+    .vp-hs {
+      position: absolute;
+      inset: 0;
+    }
+    .vp-hs-track {
+      position: absolute;
+      inset: 0 4px;
+    }
+    .vp-hs-rail {
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      height: 2px;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.1);
+      border-radius: 1px;
+    }
+    .vp-hs-fill {
+      position: absolute;
+      top: 50%;
+      height: 2px;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.45);
+      border-radius: 1px;
+    }
+    .vp-hs-center {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 6px;
+      background: rgba(255,255,255,0.25);
+    }
+    .vp-hs-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translateX(-50%) translateY(-50%);
+      min-width: 20px;
+      height: 14px;
+      padding: 0 3px;
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.75);
+      user-select: none;
+      white-space: nowrap;
+      cursor: ew-resize;
+    }
+    .vp-hs-thumb:hover { border-color: #fff; color: #fff; }
+
+    /* Inline edit input shared by both */
+    .vp-edit {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border: none;
+      color: #fff;
+      font-size: 6px;
+      font-weight: 700;
+      text-align: center;
+      padding: 0;
+      outline: none;
+      cursor: text;
+    }
+
+    /* Synth oscilloscope area */
+    .vp-scope-row {
+      display: flex;
+      align-items: stretch;
+      margin: 4px 8px 0;
+      height: 80px;
+    }
+    .vp-scope-wrap {
+      position: relative;
+      flex: 1;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+    .vp-scope-wrap .synth-scope-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Drum machine vol/pan layout */
+    .dm-body {
+      display: flex;
+      align-items: stretch;
+    }
+    .dm-body .dm-grid {
+      flex: 1;
+      min-width: 0;
+    }
+    .dm-pan-row {
+      margin: 0;
+      height: 16px;
+      position: relative;
+      cursor: ew-resize;
+    }
+    .dm-pan {
+      display: block;
+      width: 100%;
+      height: 16px;
+      margin: 0;
     }
 

@@ -16,7 +16,7 @@
 
         this._outputTap = new Tone.Gain(1).connect(masterSamplesGain);
         this.vol      = new Tone.Volume(0).connect(this._outputTap);
-        this.meter    = new Tone.Meter({ channels: 2, normalRange: false, smoothing: 0.85 });
+        this.meter    = new Tone.Meter({ channelCount: 2, normalRange: false, smoothing: 0.85 });
         this.vol.connect(this.meter);
         this.pan      = new Tone.Panner(0).connect(this.vol);
         this._analyser = new Tone.Analyser('waveform', 128);

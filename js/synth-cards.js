@@ -683,22 +683,18 @@
           <button class="card-remove" title="Remove">&#x1F5D1;</button>
           <button class="card-close" title="Close">&#x2715;</button>
         </div>
-        <div class="card-accordion">
-          <div class="card-acc-hdr open">SCOPE</div>
-          <div class="card-acc-body open" style="padding:4px 10px 6px">
-            <canvas class="synth-scope-canvas" width="260" height="72"></canvas>
+        <div class="vp-scope-row">
+          <div class="vp-scope-wrap">
+            <canvas class="synth-scope-canvas" width="240" height="80"></canvas>
+          </div>
+          <div class="vp-vol-wrap lfo-slot">
+            <input type="range" class="synth-vol" min="-60" max="6" step="0.1" value="${(synth._currentDb||0).toFixed(1)}">
           </div>
         </div>
+        <div class="card-pan-row lfo-slot">
+          <input type="range" class="synth-pan vp-pan" min="-1" max="1" step="0.01" value="${(synth._currentPan||0).toFixed(2)}">
+        </div>
         <div class="synth-card-body">
-          <div class="card-accordion">
-            <div class="card-acc-hdr">MIXER</div>
-            <div class="card-acc-body">
-              <div class="csec">
-                <div class="crow"><span class="clbl">Volume</span>${mkCsl('synth-vol','-60','6','0.1',(synth._currentDb||0).toFixed(1))}</div>
-                <div class="crow"><span class="clbl">Pan</span>${mkCsl('synth-pan','-1','1','0.01',(synth._currentPan||0).toFixed(2))}</div>
-              </div>
-            </div>
-          </div>
           <div class="synth-type-body"></div>
           <div class="card-accordion">
             <div class="card-acc-hdr">EFFECTS</div>
@@ -720,11 +716,6 @@
         requestAnimationFrame(updateLfoWires);
       });
 
-      // Mixer sliders
-      const fmtDb  = v => parseFloat(v).toFixed(1) + ' dB';
-      const fmtPan = v => { const n = parseFloat(v); if (Math.abs(n) < 0.01) return 'C'; return (n > 0 ? 'R' : 'L') + Math.abs(Math.round(n * 100)); };
-      initCslider(q('.synth-vol').closest('.cslider'), fmtDb);
-      initCslider(q('.synth-pan').closest('.cslider'), fmtPan);
       q('.synth-vol').addEventListener('input', () => { synth._currentDb  = parseFloat(q('.synth-vol').value); synth._applyVol(); });
       q('.synth-pan').addEventListener('input', () => { synth._currentPan = parseFloat(q('.synth-pan').value); synth._applyPan(); });
 
@@ -748,6 +739,7 @@
       _positionCard(el, tile, 300, 520);
       _makeSynthCardDrag(el, synth);
       cv.appendChild(el);
+      initVpSliders(el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -1201,15 +1193,14 @@
           </div>
           <span class="dm-kit-status">${drum._kitLoading?'Loading…':''}</span>
         </div>
-        <div class="dm-grid">${buildGridHtml()}</div>
-        <div class="card-accordion">
-          <div class="card-acc-hdr">MIXER</div>
-          <div class="card-acc-body">
-            <div class="csec">
-              <div class="crow"><span class="clbl">Volume</span>${mkCsl('synth-vol','-60','6','0.1',(drum._currentDb||0).toFixed(1))}</div>
-              <div class="crow"><span class="clbl">Pan</span>${mkCsl('synth-pan','-1','1','0.01',(drum._currentPan||0).toFixed(2))}</div>
-            </div>
+        <div class="dm-body">
+          <div class="dm-grid">${buildGridHtml()}</div>
+          <div class="vp-vol-wrap lfo-slot">
+            <input type="range" class="synth-vol" min="-60" max="6" step="0.1" value="${(drum._currentDb||0).toFixed(1)}">
           </div>
+        </div>
+        <div class="card-pan-row dm-pan-row lfo-slot">
+          <input type="range" class="synth-pan vp-pan" min="-1" max="1" step="0.01" value="${(drum._currentPan||0).toFixed(2)}">
         </div>
         <div class="card-accordion">
           <div class="card-acc-hdr">EFFECTS</div>
@@ -1351,11 +1342,6 @@
         });
       });
 
-      // Mixer sliders
-      const fmtDb  = v => parseFloat(v).toFixed(1) + ' dB';
-      const fmtPan = v => { const n = parseFloat(v); if (Math.abs(n) < 0.01) return 'C'; return (n > 0 ? 'R' : 'L') + Math.abs(Math.round(n * 100)); };
-      initCslider(q('.synth-vol').closest('.cslider'), fmtDb);
-      initCslider(q('.synth-pan').closest('.cslider'), fmtPan);
       q('.synth-vol').addEventListener('input', () => { drum._currentDb  = parseFloat(q('.synth-vol').value); drum._applyVol(); });
       q('.synth-pan').addEventListener('input', () => { drum._currentPan = parseFloat(q('.synth-pan').value); drum._applyPan(); });
 
@@ -1372,6 +1358,7 @@
       _positionCard(el, tile, 500, 560);
       _makeSynthCardDrag(el, drum);
       cv.appendChild(el);
+      initVpSliders(el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(drum.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
