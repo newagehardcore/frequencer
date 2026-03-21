@@ -264,8 +264,8 @@
         const mm = ev => {
           const dx = ev.clientX - ox, dy = ev.clientY - oy;
           if (Math.abs(dx) > 3 || Math.abs(dy) > 3) titleMoved = true;
-          const nl = oL + dx;
-          const nt = oT + dy;
+          const nl = Math.max(0, Math.min(WORLD_W - el.offsetWidth,  oL + dx));
+          const nt = Math.max(0, Math.min(WORLD_H - el.offsetHeight, oT + dy));
           el.style.left = nl + 'px'; el.style.top = nt + 'px';
           lfo.x = nl + LFO_W / 2; lfo.y = nt + LFO_H_MIN / 2;
           updateLfoWires();
@@ -300,8 +300,8 @@
         const mm = ev => {
           const dx = ev.clientX - ox, dy = ev.clientY - oy;
           if (Math.abs(dx) > 3 || Math.abs(dy) > 3) minMoved = true;
-          const nl = oL + dx;
-          const nt = oT + dy;
+          const nl = Math.max(0, Math.min(WORLD_W - el.offsetWidth,  oL + dx));
+          const nt = Math.max(0, Math.min(WORLD_H - el.offsetHeight, oT + dy));
           el.style.left = nl + 'px'; el.style.top = nt + 'px';
           lfo.x = nl + 136 / 2;  // use collapsed width for center tracking
           lfo.y = nt + 56 / 2;

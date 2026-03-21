@@ -188,12 +188,12 @@
           <!-- KEYBOARD -->
           <div class="riff-kbd-wrap" id="riff-kbd-${riff.id}"></div>
           <div class="riff-kbd-hint">A–J = white keys &nbsp;·&nbsp; W E T Y U = sharps &nbsp;·&nbsp; Z / X = oct ↓↑ &nbsp;·&nbsp; R = rest</div>
-          <!-- WIRE -->
+          <!-- WIRE DESTINATIONS -->
           <div class="riff-wire-row sep">
-            <div class="riff-wire-port" title="Drag to connect to a synth or sampler"></div>
             <div class="riff-dest-list"></div>
           </div>
         </div>
+        <div class="riff-wire-port" title="Drag to connect to a synth or sampler"></div>
       `;
 
       const q = sel => el.querySelector(sel);
@@ -568,8 +568,10 @@
         const mm = ev => {
           const dx = ev.clientX - ox, dy = ev.clientY - oy;
           if (Math.abs(dx) > 3 || Math.abs(dy) > 3) titleMoved = true;
-          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
-          riff.x = oL + dx + RIFF_W / 2; riff.y = oT + dy; updateLfoWires();
+          const nl = Math.max(0, Math.min(WORLD_W - el.offsetWidth,  oL + dx));
+          const nt = Math.max(0, Math.min(WORLD_H - el.offsetHeight, oT + dy));
+          el.style.left = nl + 'px'; el.style.top = nt + 'px';
+          riff.x = nl + RIFF_W / 2; riff.y = nt; updateLfoWires();
         };
         const mu = () => { el.classList.remove('dragging'); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
@@ -590,8 +592,10 @@
         const mm = ev => {
           const dx = ev.clientX - ox, dy = ev.clientY - oy;
           if (Math.abs(dx) > 3 || Math.abs(dy) > 3) minMoved = true;
-          el.style.left = (oL + dx) + 'px'; el.style.top = (oT + dy) + 'px';
-          riff.x = oL + dx + RIFF_W / 2; riff.y = oT + dy; updateLfoWires();
+          const nl = Math.max(0, Math.min(WORLD_W - el.offsetWidth,  oL + dx));
+          const nt = Math.max(0, Math.min(WORLD_H - el.offsetHeight, oT + dy));
+          el.style.left = nl + 'px'; el.style.top = nt + 'px';
+          riff.x = nl + RIFF_W / 2; riff.y = nt; updateLfoWires();
         };
         const mu = () => { el.classList.remove('dragging'); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);

@@ -628,5 +628,20 @@
       }
       updateEmpty();
       playAll();
+
+      // Scroll canvas to show the loaded objects
+      requestAnimationFrame(() => {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        document.querySelectorAll('.tile, .lfo-node, .riff-node, .chords-node').forEach(el => {
+          const l = parseInt(el.style.left) || 0, t = parseInt(el.style.top) || 0;
+          minX = Math.min(minX, l); minY = Math.min(minY, t);
+          maxX = Math.max(maxX, l + el.offsetWidth); maxY = Math.max(maxY, t + el.offsetHeight);
+        });
+        if (minX < Infinity) {
+          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+          cv.scrollLeft = cx - cv.clientWidth  / 2;
+          cv.scrollTop  = cy - cv.clientHeight / 2;
+        }
+      });
     }
 

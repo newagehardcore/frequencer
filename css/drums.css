@@ -352,7 +352,7 @@
     .sarp-cell.on { background: var(--chords-color, #fff); border-color: var(--chords-color, #fff); opacity: 0.85; }
     .sarp-col.playing .sarp-cell { border-color: rgba(255,255,255,0.35); }
     .sarp-col.playing .sarp-cell.on { opacity: 1; filter: brightness(1.25); }
-    .chords-wire-line { stroke-dasharray: 6 4; opacity: 0.55; stroke-width: 2; fill: none; }
+    .chords-wire-line { stroke-dasharray: 5 4; stroke-linecap: square; opacity: 0.75; stroke-width: 2; fill: none; }
 
     /* Transform buttons (oct/transpose) */
     .riff-xfm-btn, .chords-xfm-btn {
@@ -385,11 +385,13 @@
     /* Wire */
     .riff-wire-row { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; }
     .riff-wire-port {
-      display: block; width: 16px; height: 16px; border-radius: 50%;
-      background: #000; border: 2px solid rgba(255,255,255,0.4);
-      cursor: crosshair; transition: border-color 0.15s, background 0.15s; flex-shrink: 0;
+      position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #000; border: 2px solid rgba(255,255,255,0.5);
+      cursor: crosshair; transition: border-color 0.15s, background 0.15s;
+      z-index: 20;
     }
-    .riff-wire-port:hover { border-color: #fff; background: #1a1a1a; }
+    .riff-wire-port:hover { border-color: #fff; background: #222; }
     .riff-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
     .riff-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
     .riff-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
@@ -529,11 +531,12 @@
     /* Wire */
     .chords-wire-row { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; }
     .chords-wire-port {
-      display: block; width: 16px; height: 16px; border-radius: 50%;
-      background: #000; border: 2px solid rgba(255,255,255,0.4); cursor: crosshair;
-      transition: border-color 0.15s; flex-shrink: 0;
+      position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #000; border: 2px solid rgba(255,255,255,0.5); cursor: crosshair;
+      transition: border-color 0.15s; z-index: 20;
     }
-    .chords-wire-port:hover { border-color: #fff; background: #1a1a1a; }
+    .chords-wire-port:hover { border-color: #fff; background: #222; }
     .chords-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
     .chords-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
     .chords-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }

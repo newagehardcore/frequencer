@@ -1086,20 +1086,18 @@
 
       function bringToFront() { cardEl.style.zIndex = ++cardZTop; }
 
-      // Position near tile
-      const tileRect = tile ? tile.getBoundingClientRect() : { left: window.innerWidth / 2 - 140, top: 80 };
+      // Cards are position:absolute in #cv — use world coordinates so they scroll with the canvas
       const CW = 280, CH = 420;
-      const margin = 8;
-      let cx = tileRect.left + TW / 2 - CW / 2;
-      let cy = tileRect.top;
-      cx = Math.max(margin, Math.min(window.innerWidth - CW - margin, cx));
-      cy = Math.max(margin + 40, Math.min(window.innerHeight - CH - 60, cy));
-      cardEl.style.left = cx + 'px';
-      cardEl.style.top = cy + 'px';
+      const cvRect = cv.getBoundingClientRect();
+      const tileR = tile ? tile.getBoundingClientRect() : null;
+      const wx = tileR ? Math.max(0, Math.min(WORLD_W - CW, tileR.left - cvRect.left + cv.scrollLeft)) : (cv.scrollLeft + 20);
+      const wy = tileR ? Math.max(0, Math.min(WORLD_H - CH, tileR.top  - cvRect.top  + cv.scrollTop))  : (cv.scrollTop  + 60);
+      cardEl.style.left = wx + 'px';
+      cardEl.style.top  = wy + 'px';
       cardEl.style.zIndex = ++cardZTop;
 
       if (tile) tile.classList.add('active', 'expanded');
-      document.body.appendChild(cardEl);
+      cv.appendChild(cardEl);
       requestAnimationFrame(() => cardEl.classList.add('open'));
       requestAnimationFrame(() => { drawWave(); updateLoopReg(); updateGainHandle(); });
 
@@ -1115,20 +1113,20 @@
         const sx = e.clientX, sy = e.clientY;
         const cx0 = parseFloat(cardEl.style.left) || 0;
         const cy0 = parseFloat(cardEl.style.top) || 0;
-        const cvRect = cv.getBoundingClientRect();
         const tileEl = document.getElementById('t' + s.id);
         const mm = ev => {
           if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 3) _cardDragged = true;
-          const nx = cx0 + (ev.clientX - sx);
-          const ny = cy0 + (ev.clientY - sy);
+          const cw = cardEl.offsetWidth, ch = cardEl.offsetHeight;
+          const nx = Math.max(0, Math.min(WORLD_W - cw, cx0 + (ev.clientX - sx)));
+          const ny = Math.max(0, Math.min(WORLD_H - ch, cy0 + (ev.clientY - sy)));
           cardEl.style.left = nx + 'px';
-          cardEl.style.top = ny + 'px';
+          cardEl.style.top  = ny + 'px';
           if (tileEl) {
-            tileEl.style.left = (nx - cvRect.left + 72 + cv.scrollLeft) + 'px';
-            tileEl.style.top = (ny - cvRect.top + cv.scrollTop) + 'px';
+            tileEl.style.left = nx + 'px';
+            tileEl.style.top  = ny + 'px';
           }
-          s.x = nx - cvRect.left + 140 + cv.scrollLeft;
-          s.y = ny - cvRect.top + 28 + cv.scrollTop;
+          s.x = nx + TW / 2;
+          s.y = ny + TH / 2;
         };
         const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);

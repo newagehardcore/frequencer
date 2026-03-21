@@ -4,6 +4,7 @@
     // CONSTANTS & GLOBALS
     // ════════════════════════════════════════════════════
     const TW = 136, TH = 56;
+    const WORLD_W = 10000, WORLD_H = 8000;
     const cv = document.getElementById('cv');
 
     let audioReady = false;

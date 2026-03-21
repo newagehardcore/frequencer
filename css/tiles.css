@@ -6,8 +6,28 @@
       background: var(--surface);
       border: 1px solid #fff;
       cursor: grab;
-      overflow: hidden;
+      overflow: visible;
       z-index: 10;
+    }
+
+    .tile-in-port {
+      position: absolute;
+      left: -7px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #000;
+      border: 2px solid rgba(255,255,255,0.35);
+      cursor: crosshair;
+      z-index: 20;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .tile-in-port:hover {
+      border-color: #fff;
+      background: #222;
     }
 
     .tile:hover {
@@ -35,8 +55,13 @@
     .tile.expanded {
       z-index: 50;
       cursor: default;
-      opacity: 0;
+      visibility: hidden;
       pointer-events: none;
+    }
+
+    .tile.expanded .tile-in-port {
+      visibility: visible;
+      pointer-events: auto;
     }
 
     .tile.dragging {

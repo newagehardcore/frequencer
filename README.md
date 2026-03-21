@@ -1,6 +1,6 @@
 # FREQUENCER
 
-A browser-based multi-instrument spatial looper. Drag audio files onto a 2D canvas — vertical position controls volume, horizontal position controls stereo pan. Layer samples, synths, drum machines, chord progressions, and melodic riffs, all in sync with a global transport.
+A browser-based multi-instrument looper built on a scrollable 2D canvas. Layer samples, synths, drum machines, chord progressions, and melodic riffs, all in sync with a global transport. Connect modules with patch cables to route sequences and modulation between them.
 
 ---
 
@@ -54,7 +54,7 @@ frequencer/
     ├── lfo-nodes.js    ← LFO node UI creation
     ├── riff-nodes.js   ← Riff node UI creation
     ├── chords-nodes.js ← Chords node UI creation
-    ├── wiring.js       ← LFO wire drawing + modulation tick
+    ├── wiring.js       ← Wire drawing (LFO/Riff/Chords → tiles), modulation tick, port position calculation
     ├── events.js       ← Drag-drop + keyboard handlers
     └── main.js         ← Init
 
@@ -62,10 +62,11 @@ frequencer/
 
 ## Canvas
 
-- **Y axis → Volume.** Top = +6 dB, bottom = silence.
-- **X axis → Stereo pan.** Left edge = hard left, right edge = hard right.
+The canvas is a scrollable 10,000 × 8,000 px world. All tiles, edit cards, and module nodes are `position: absolute` within it — they all scroll together as one unified space.
 
-Drag any tile or node anywhere; audio updates in real time. The canvas is infinite and scrollable. A dot-grid background serves as visual reference.
+Volume and pan are controlled exclusively by the **MIXER** sliders on each module's edit card. Tile position on the canvas has no effect on audio routing.
+
+Drag any tile or node to reposition it freely within the world.
 
 ---
 
@@ -91,7 +92,7 @@ Each tile shows the sample's waveform in its assigned color, a white live playhe
 
 ## Edit Card
 
-Click a tile to open its floating edit card. Multiple cards can be open at once.
+Click a tile to open its floating edit card. Multiple cards can be open at once. Cards live inside the canvas world (not fixed to the viewport) and scroll with everything else. Dragging a card also moves its tile, keeping them co-located.
 
 **Playback modes** (row above the waveform):
 
@@ -208,7 +209,7 @@ Add step sequencers to the canvas via `+ Seq`. Connect them to samples via wires
 - **Gate** — controls how much of the sample plays each step. Curved scale for fine control at short durations.
 - **Subdivisions** — `1 Bar · ½ · ¼ · ⅛ · 1/16 · 1/32` and triplet variants.
 - **Grid Sync** — lock to BPM, or use the **Rate** slider for a free-running interval in seconds.
-- **Wires** — drag from the sequencer port onto a sample tile to connect. A sequencer can drive multiple samples simultaneously.
+- **Wires** — drag from the sequencer's output port onto any sample or synth tile to connect. A sequencer can drive multiple instruments simultaneously.
 - **LFO Targeting** — LFO wires can modulate the **Steps** or **Gate** sliders of a sequencer.
 - **Organization** — Minimize, Duplicate, or Delete from the sequencer header.
 
@@ -220,7 +221,7 @@ Add LFOs to the canvas via `+ LFO`. Modulate any sample parameter (Pitch, Stretc
 
 - **Presets** — Sine, Square, Triangle, Random, and Blank (flat line).
 - **Custom Shapes** — Click to add breakpoints, Shift + Click to remove. Drag to reshape.
-- **Modulation Wires** — Drag from the LFO port onto any parameter slider or the **EQ canvas** to create a link.
+- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Wire endpoints always track to the tile's input port regardless of whether the edit card is open or closed.
 - **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for filter sweeps.
 - **Range Control** — Set Min/Max boundaries per modulation target.
 - **Sync** — Free-running (seconds) or locked to the project grid (bars/subdivisions).

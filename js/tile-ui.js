@@ -71,6 +71,11 @@
       };
       t.appendChild(sbtn);
 
+      const inPort = document.createElement('div');
+      inPort.className = 'tile-in-port';
+      inPort.title = 'Drop LFO here to modulate volume';
+      t.appendChild(inPort);
+
       requestAnimationFrame(() => drawTileWave(wc, s));
 
       makeDraggable(t, s);
@@ -286,6 +291,11 @@
       };
       t.appendChild(sbtn);
 
+      const inPort = document.createElement('div');
+      inPort.className = 'tile-in-port';
+      inPort.title = 'Drop LFO here to modulate volume';
+      t.appendChild(inPort);
+
       requestAnimationFrame(() => drawSynthScope(wc, synth));
       makeDraggable(t, synth);
 
@@ -332,8 +342,8 @@
           const dx = ev.clientX - ox, dy = ev.clientY - oy;
           if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
           if (!moved) return;
-          const nl = oL + dx;
-          const nt = oT + dy;
+          const nl = Math.max(0, Math.min(WORLD_W - TW, oL + dx));
+          const nt = Math.max(0, Math.min(WORLD_H - TH, oT + dy));
           tile.style.left = nl + 'px';
           tile.style.top = nt + 'px';
           s.x = nl + TW / 2; s.y = nt + TH / 2;

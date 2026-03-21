@@ -87,7 +87,6 @@
     .lfo-node.collapsed .lfo-preset-row,
     .lfo-node.collapsed .lfo-controls,
     .lfo-node.collapsed .lfo-grid-row,
-    .lfo-node.collapsed .lfo-wire-port,
     .lfo-node.collapsed .lfo-dest-list {
       display: none;
     }
@@ -188,20 +187,23 @@
     }
 
     .lfo-wire-port {
-      display: block;
-      margin: 0 auto 6px;
-      width: 16px;
-      height: 16px;
+      position: absolute;
+      right: -7px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: #000;
-      border: 2px solid rgba(255,255,255,0.4);
+      border: 2px solid rgba(255,255,255,0.5);
       cursor: crosshair;
       transition: border-color 0.15s, background 0.15s;
+      z-index: 20;
     }
 
     .lfo-wire-port:hover {
       border-color: #fff;
-      background: #1a1a1a;
+      background: #222;
     }
 
     .lfo-dest-list {
@@ -283,21 +285,24 @@
       fill: none;
       stroke-width: 2;
       stroke-dasharray: 5 4;
-      opacity: 0.55;
+      stroke-linecap: square;
+      opacity: 0.75;
     }
 
     .lfo-wire-temp {
       fill: none;
       stroke: #fff;
       stroke-width: 2;
-      stroke-dasharray: 6 4;
-      opacity: 0.5;
+      stroke-dasharray: 5 4;
+      stroke-linecap: square;
+      opacity: 0.6;
     }
     .riff-wire-temp {
       fill: none;
       stroke-width: 2;
-      stroke-dasharray: 5 3;
-      opacity: 0.65;
+      stroke-dasharray: 5 4;
+      stroke-linecap: square;
+      opacity: 0.75;
     }
 
     /* slider override indicator */

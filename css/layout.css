@@ -161,8 +161,8 @@
     #cv::-webkit-scrollbar-corner { background: transparent; }
     #cv-world {
       position: absolute;
-      width: 5000px;
-      height: 4000px;
+      width: 10000px;
+      height: 8000px;
       pointer-events: none;
       top: 0; left: 0;
     }

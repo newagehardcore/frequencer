@@ -1,6 +1,6 @@
     /* ═══ FLOATING SAMPLE CARD ═══ */
     .sample-card {
-      position: fixed;
+      position: absolute;
       z-index: 400;
       width: 280px;
       background: #000;

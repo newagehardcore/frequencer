@@ -20,38 +20,39 @@
     }
 
     function _positionCard(el, tile, w, h) {
-      const tR = tile ? tile.getBoundingClientRect() : { left: window.innerWidth / 2 - w / 2, top: 80 };
-      const margin = 8;
-      let cx = tR.left + TW / 2 - w / 2;
-      let cy = tR.top;
-      cx = Math.max(margin, Math.min(window.innerWidth  - w - margin, cx));
-      cy = Math.max(margin + 40, Math.min(window.innerHeight - h - 60, cy));
-      el.style.left = cx + 'px';
-      el.style.top  = cy + 'px';
+      // Cards are position:absolute in #cv — use world coordinates so they scroll with the canvas
+      const cvRect = cv.getBoundingClientRect();
+      const r = tile ? tile.getBoundingClientRect() : null;
+      const x = r ? Math.max(0, Math.min(WORLD_W - w, r.left - cvRect.left + cv.scrollLeft)) : (cv.scrollLeft + 20);
+      const y = r ? Math.max(0, Math.min(WORLD_H - h, r.top  - cvRect.top  + cv.scrollTop))  : (cv.scrollTop  + 60);
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
       el.style.zIndex = ++cardZTop;
     }
 
     function _makeSynthCardDrag(el, synth) {
+      el._tbDragged = false;
       el.addEventListener('mousedown', () => el.style.zIndex = ++cardZTop);
       el.querySelector('.card-titlebar').addEventListener('mousedown', e => {
         if (e.button !== 0 || e.target.closest('button') || e.target.closest('select')) return;
         e.preventDefault();
+        el._tbDragged = false;
         const ox = e.clientX, oy = e.clientY;
         const oL = parseFloat(el.style.left) || 0, oT = parseFloat(el.style.top) || 0;
-        const cvRect = cv.getBoundingClientRect();
         const tileEl = document.getElementById('t' + synth.id);
         const mm = ev => {
-          const nx = oL + (ev.clientX - ox);
-          const ny = oT + (ev.clientY - oy);
+          if (Math.abs(ev.clientX - ox) + Math.abs(ev.clientY - oy) > 3) el._tbDragged = true;
+          const cw = el.offsetWidth, ch = el.offsetHeight;
+          const nx = Math.max(0, Math.min(WORLD_W - cw, oL + (ev.clientX - ox)));
+          const ny = Math.max(0, Math.min(WORLD_H - ch, oT + (ev.clientY - oy)));
           el.style.left = nx + 'px';
           el.style.top  = ny + 'px';
-          // Keep tile in sync (card is 300px wide, tile is 136px; center offset = 150, tile left offset = 82)
           if (tileEl) {
-            tileEl.style.left = (nx - cvRect.left + 82 + cv.scrollLeft) + 'px';
-            tileEl.style.top  = (ny - cvRect.top + cv.scrollTop) + 'px';
+            tileEl.style.left = nx + 'px';
+            tileEl.style.top  = ny + 'px';
           }
-          synth.x = nx - cvRect.left + 150 + cv.scrollLeft;
-          synth.y = ny - cvRect.top + 28 + cv.scrollTop;
+          synth.x = nx + TW / 2;
+          synth.y = ny + TH / 2;
           updateLfoWires();
         };
         const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
@@ -738,18 +739,15 @@
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSynth(synth.id); });
       q('.card-dup').addEventListener('click',    e => { e.stopPropagation(); duplicateSynth(synth); });
 
-      let _titlebarDragged = false;
-      q('.card-titlebar').addEventListener('mousedown', e => { _titlebarDragged = false; });
-      q('.card-titlebar').addEventListener('mousemove', e => { if (e.buttons) _titlebarDragged = true; });
       q('.card-titlebar').addEventListener('click', e => {
-        if (e.target.closest('button, select') || _titlebarDragged) return;
+        if (e.target.closest('button, select') || el._tbDragged) return;
         closeSynthCard(synth.id);
       });
 
       _populateSynthTypeBody(synth, el);
       _positionCard(el, tile, 300, 520);
       _makeSynthCardDrag(el, synth);
-      document.body.appendChild(el);
+      cv.appendChild(el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -898,7 +896,7 @@
 
       _positionCard(el, tile, 300, 500);
       _makeSynthCardDrag(el, synth);
-      document.body.appendChild(el);
+      cv.appendChild(el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -1138,7 +1136,7 @@
       renderPresetList();
       _positionCard(el, tile, 300, 540);
       _makeSynthCardDrag(el, synth);
-      document.body.appendChild(el);
+      cv.appendChild(el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -1362,11 +1360,8 @@
       q('.synth-pan').addEventListener('input', () => { drum._currentPan = parseFloat(q('.synth-pan').value); drum._applyPan(); });
 
       // Titlebar drag/close
-      let _tbDragged = false;
-      q('.card-titlebar').addEventListener('mousedown', () => { _tbDragged = false; });
-      q('.card-titlebar').addEventListener('mousemove', e => { if (e.buttons) _tbDragged = true; });
       q('.card-titlebar').addEventListener('click', e => {
-        if (e.target.closest('button, select') || _tbDragged) return;
+        if (e.target.closest('button, select') || el._tbDragged) return;
         closeSynthCard(drum.id);
       });
 
@@ -1376,7 +1371,7 @@
 
       _positionCard(el, tile, 500, 560);
       _makeSynthCardDrag(el, drum);
-      document.body.appendChild(el);
+      cv.appendChild(el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(drum.id, { el });
       if (tile) tile.classList.add('active', 'expanded');

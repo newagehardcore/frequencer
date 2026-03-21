@@ -1,4 +1,4 @@
-    function startWireDrag(lfo, startEvent) {
+function startWireDrag(lfo, startEvent) {
       const wiresSvg = document.getElementById('lfo-wires');
       const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       tempLine.classList.add('lfo-wire-temp');
@@ -15,10 +15,8 @@
       });
 
       const mm = ev => {
-        const ex = ev.clientX;
-        const ey = ev.clientY;
-        const cx1 = sx, cy1 = sy + 30;
-        const cx2 = ex, cy2 = ey - 30;
+        const ex = ev.clientX, ey = ev.clientY;
+        const cx1 = sx, cy1 = sy + 30, cx2 = ex, cy2 = ey - 30;
         tempLine.setAttribute('d', `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`);
       };
 
@@ -32,6 +30,30 @@
         // Check if dropped on a target
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
         if (!target) return;
+
+        // Check for tile input port or tile — connect to volume
+        const tileInPort = target.closest('.tile-in-port');
+        const tileEl = tileInPort ? tileInPort.closest('.tile') : target.closest('.tile');
+        if (tileEl && !target.closest('.cslider')) {
+          const instrId = parseInt(tileEl.id.slice(1));
+          if (!isNaN(instrId)) {
+            const paramClass = samples.has(instrId) ? 'card-vol' : 'synth-vol';
+            const pInfo = LFO_PARAM_MAP[paramClass];
+            if (pInfo) {
+              const existing = isParamModulated(instrId, paramClass, null);
+              if (existing) {
+                existing.removeDestination(instrId, paramClass, null);
+                lfoNodes.get(existing.id)?.updateDestList();
+              }
+              lfo.addDestination(instrId, paramClass, pInfo.min, pInfo.max, null);
+              applyParamOverride(instrId, paramClass, lfo, null);
+              lfoNodes.get(lfo.id)?.updateDestList();
+              updateLfoWires();
+            }
+          }
+          return;
+        }
+
         const sliderWrap = target.closest('.cslider');
         const eqCanvas = target.classList.contains('card-eq-canvas') ? target : target.closest('.card-eq-canvas');
         if (!sliderWrap && !eqCanvas) return;
@@ -105,6 +127,19 @@
       svg.appendChild(p);
     }
 
+    // Compute tile input-port center in viewport coords from world coordinates.
+    // Avoids getBoundingClientRect() on tiles inside the scrolling #cv container.
+    function _tilePortVP(tileEl) {
+      const cvRect = cv.getBoundingClientRect();
+      const wx = parseFloat(tileEl.style.left) || 0;
+      const wy = parseFloat(tileEl.style.top)  || 0;
+      // .tile-in-port: left:-7px + width:14px → center at tile-left+0; top:50% → tile-top+TH/2
+      return {
+        x: cvRect.left + wx - cv.scrollLeft,
+        y: cvRect.top  + wy - cv.scrollTop + TH / 2,
+      };
+    }
+
     function updateLfoWires() {
       const svg = document.getElementById('lfo-wires');
       svg.querySelectorAll('.lfo-wire-line').forEach(w => w.remove());
@@ -114,45 +149,14 @@
         const nodeInfo = lfoNodes.get(lfo.id);
         if (!nodeInfo) continue;
         const port = nodeInfo.el.querySelector('.lfo-wire-port');
-        let sx, sy;
-        if (nodeInfo.el.classList.contains('collapsed') || !port) {
-          const r = nodeInfo.el.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        } else {
-          const r = port.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        }
+        const portR = port ? port.getBoundingClientRect() : nodeInfo.el.getBoundingClientRect();
+        const sx = portR.left + portR.width / 2, sy = portR.top + portR.height / 2;
 
         for (const d of lfo.destinations) {
-          const cardInfo = openCards.get(d.sampleId);
-          let targetEl = null;
-
-          if (cardInfo) {
-            const pInfo = LFO_PARAM_MAP[d.param];
-            if (pInfo && pInfo.isEq && !d.fxUid) {
-              targetEl = cardInfo.el.querySelector('.card-eq-canvas');
-            } else if (d.fxUid) {
-              const panel = cardInfo.el.querySelector(`.fx-panel[data-fx-uid="${d.fxUid}"]`);
-              if (panel) {
-                if (pInfo && pInfo.isEq) targetEl = panel.querySelector('.card-eq-canvas');
-                else targetEl = panel.querySelector('.' + d.param)?.closest('.cslider');
-              }
-            } else {
-              const slider = cardInfo.el.querySelector('.' + d.param);
-              if (slider) targetEl = slider.closest('.cslider') || slider;
-            }
-            if (targetEl) {
-              const r = targetEl.getBoundingClientRect();
-              if (r.width === 0 && r.height === 0) targetEl = null;
-            }
-            if (!targetEl) targetEl = cardInfo.el;
-          } else {
-            targetEl = document.getElementById('t' + d.sampleId);
-          }
-
-          if (!targetEl) continue;
-          const tr = targetEl.getBoundingClientRect();
-          _wire(svg, 'lfo-wire-line', lfo.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
+          const tileEl = document.getElementById('t' + d.sampleId);
+          if (!tileEl) continue;
+          const { x: ex, y: ey } = _tilePortVP(tileEl);
+          _wire(svg, 'lfo-wire-line', lfo.color, sx, sy, ex, ey);
         }
       }
 
@@ -161,23 +165,14 @@
       for (const [, riff] of riffs) {
         const nodeInfo = riffNodes.get(riff.id);
         if (!nodeInfo || !riff.destinations.length) continue;
-        const port = nodeInfo.el.querySelector('.riff-wire-port');
-        let sx, sy;
-        if (nodeInfo.el.classList.contains('collapsed') || !port) {
-          const r = nodeInfo.el.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        } else {
-          const r = port.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        }
+        const riffPort = nodeInfo.el.querySelector('.riff-wire-port');
+        const riffPR = riffPort ? riffPort.getBoundingClientRect() : nodeInfo.el.getBoundingClientRect();
+        const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
         for (const instrId of riff.destinations) {
-          const cardInfo = openCards.get(instrId);
-          let targetEl = cardInfo
-            ? (() => { const c = cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas'); return (c && c.offsetParent !== null) ? c : cardInfo.el; })()
-            : document.getElementById('t' + instrId);
-          if (!targetEl) continue;
-          const tr = targetEl.getBoundingClientRect();
-          _wire(svg, 'riff-wire-line', riff.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
+          const tileEl = document.getElementById('t' + instrId);
+          if (!tileEl) continue;
+          const { x: ex, y: ey } = _tilePortVP(tileEl);
+          _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
         }
       }
 
@@ -186,23 +181,14 @@
       for (const [, ch] of chords) {
         const nodeInfo = chordsNodes.get(ch.id);
         if (!nodeInfo || !ch.destinations.length) continue;
-        const port = nodeInfo.el.querySelector('.chords-wire-port');
-        let sx, sy;
-        if (nodeInfo.el.classList.contains('collapsed') || !port) {
-          const r = nodeInfo.el.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        } else {
-          const r = port.getBoundingClientRect();
-          sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        }
+        const chordsPort = nodeInfo.el.querySelector('.chords-wire-port');
+        const chPR = chordsPort ? chordsPort.getBoundingClientRect() : nodeInfo.el.getBoundingClientRect();
+        const csx = chPR.left + chPR.width / 2, csy = chPR.top + chPR.height / 2;
         for (const instrId of ch.destinations) {
-          const cardInfo = openCards.get(instrId);
-          let targetEl = cardInfo
-            ? (() => { const c = cardInfo.el.querySelector('.card-wave-canvas, .synth-scope-canvas'); return (c && c.offsetParent !== null) ? c : cardInfo.el; })()
-            : document.getElementById('t' + instrId);
-          if (!targetEl) continue;
-          const tr = targetEl.getBoundingClientRect();
-          _wire(svg, 'chords-wire-line', ch.color, sx, sy, tr.left + tr.width / 2, tr.top + tr.height / 2);
+          const tileEl = document.getElementById('t' + instrId);
+          if (!tileEl) continue;
+          const { x: ex, y: ey } = _tilePortVP(tileEl);
+          _wire(svg, 'chords-wire-line', ch.color, csx, csy, ex, ey);
         }
       }
     }
@@ -434,7 +420,7 @@
     document.getElementById('btn-add-synth').addEventListener('click', async () => {
       await ensureAudio();
       const id = nextId++;
-      const pos = findFreePosition(TW, TH);
+      const pos = findFreePosition(300, 520);
       const x = pos.x + TW / 2, y = pos.y + TH / 2;
       const synth = new AnalogSynth(id, 'SYNTH ' + id, x, y);
       synths.set(id, synth);
@@ -445,7 +431,7 @@
     document.getElementById('btn-add-drums').addEventListener('click', async () => {
       await ensureAudio();
       const id = nextId++;
-      const pos = findFreePosition(TW, TH);
+      const pos = findFreePosition(500, 560);
       const x = pos.x + TW / 2, y = pos.y + TH / 2;
       const drum = new DrumMachine(id, 'DRUMS ' + id, x, y);
       drums.set(id, drum);
