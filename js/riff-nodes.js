@@ -194,6 +194,7 @@
           </div>
         </div>
         <div class="riff-wire-port" title="Drag to connect to a synth or sampler"></div>
+        <div class="riff-wire-port riff-wire-port-left" title="Drag to connect to a synth or sampler"></div>
       `;
 
       const q = sel => el.querySelector(sel);
@@ -526,9 +527,11 @@
       riffKbdProxies.set(riff.id, kbdProxy);
 
       // ── Wire port ──
-      q('.riff-wire-port').addEventListener('mousedown', e => {
-        e.stopPropagation(); e.preventDefault();
-        startRiffWireDrag(riff, e);
+      el.querySelectorAll('.riff-wire-port').forEach(port => {
+        port.addEventListener('mousedown', e => {
+          e.stopPropagation(); e.preventDefault();
+          startRiffWireDrag(riff, e, port);
+        });
       });
 
       // ── Dest list ──
@@ -720,14 +723,14 @@
       createRiffNode(riff);
     }
 
-    function startRiffWireDrag(riff, startEvent) {
+    function startRiffWireDrag(riff, startEvent, portEl) {
       const wiresSvg = document.getElementById('lfo-wires');
       const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       tempLine.classList.add('riff-wire-temp');
       tempLine.style.stroke = riff.color;
       wiresSvg.appendChild(tempLine);
 
-      const port = riffNodes.get(riff.id)?.el.querySelector('.riff-wire-port');
+      const port = portEl || riffNodes.get(riff.id)?.el.querySelector('.riff-wire-port');
       const portRect = port.getBoundingClientRect();
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;

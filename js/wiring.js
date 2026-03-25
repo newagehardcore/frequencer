@@ -1,10 +1,10 @@
-function startWireDrag(lfo, startEvent) {
+function startWireDrag(lfo, startEvent, portEl) {
       const wiresSvg = document.getElementById('lfo-wires');
       const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       tempLine.classList.add('lfo-wire-temp');
       wiresSvg.appendChild(tempLine);
 
-      const port = lfoNodes.get(lfo.id)?.el.querySelector('.lfo-wire-port');
+      const port = portEl || lfoNodes.get(lfo.id)?.el.querySelector('.lfo-wire-port');
       const portRect = port.getBoundingClientRect();
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;
@@ -127,17 +127,29 @@ function startWireDrag(lfo, startEvent) {
       svg.appendChild(p);
     }
 
-    // Compute tile input-port center in viewport coords from world coordinates.
-    // Avoids getBoundingClientRect() on tiles inside the scrolling #cv container.
-    function _tilePortVP(tileEl) {
+    // Compute tile port center in viewport coords.
+    // Reads the actual port element so position updates (card open/close) are reflected.
+    function _tilePortVP(tileEl, side = 'left') {
+      const port = tileEl.querySelector(side === 'right' ? '.tile-out-port' : '.tile-in-port');
+      if (port) {
+        const r = port.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
+      // fallback
       const cvRect = cv.getBoundingClientRect();
       const wx = parseFloat(tileEl.style.left) || 0;
       const wy = parseFloat(tileEl.style.top)  || 0;
-      // .tile-in-port: left:-7px + width:14px → center at tile-left+0; top:50% → tile-top+TH/2
-      return {
-        x: cvRect.left + wx - cv.scrollLeft,
-        y: cvRect.top  + wy - cv.scrollTop + TH / 2,
-      };
+      return { x: cvRect.left + wx - cv.scrollLeft, y: cvRect.top + wy - cv.scrollTop + TH / 2 };
+    }
+
+    // Choose which port side to use based on relative world positions.
+    // Returns { srcSide, tileSide } — 'left' or 'right'.
+    function _portSides(srcEl, srcW, tileEl) {
+      const srcCx = parseFloat(srcEl.style.left) + srcW / 2;
+      const tileCx = parseFloat(tileEl.style.left) + TW / 2;
+      return srcCx <= tileCx
+        ? { srcSide: 'right', tileSide: 'left' }
+        : { srcSide: 'left',  tileSide: 'right' };
     }
 
     function updateLfoWires() {
@@ -148,14 +160,16 @@ function startWireDrag(lfo, startEvent) {
       for (const [, lfo] of lfos) {
         const nodeInfo = lfoNodes.get(lfo.id);
         if (!nodeInfo) continue;
-        const port = nodeInfo.el.querySelector('.lfo-wire-port');
-        const portR = port ? port.getBoundingClientRect() : nodeInfo.el.getBoundingClientRect();
-        const sx = portR.left + portR.width / 2, sy = portR.top + portR.height / 2;
 
         for (const d of lfo.destinations) {
           const tileEl = document.getElementById('t' + d.sampleId);
           if (!tileEl) continue;
-          const { x: ex, y: ey } = _tilePortVP(tileEl);
+          const { srcSide, tileSide } = _portSides(nodeInfo.el, LFO_W, tileEl);
+          const portSel = srcSide === 'right' ? '.lfo-wire-port:not(.lfo-wire-port-left)' : '.lfo-wire-port-left';
+          const port = nodeInfo.el.querySelector(portSel) || nodeInfo.el.querySelector('.lfo-wire-port');
+          const portR = port.getBoundingClientRect();
+          const sx = portR.left + portR.width / 2, sy = portR.top + portR.height / 2;
+          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
           _wire(svg, 'lfo-wire-line', lfo.color, sx, sy, ex, ey);
         }
       }
@@ -165,13 +179,15 @@ function startWireDrag(lfo, startEvent) {
       for (const [, riff] of riffs) {
         const nodeInfo = riffNodes.get(riff.id);
         if (!nodeInfo || !riff.destinations.length) continue;
-        const riffPort = nodeInfo.el.querySelector('.riff-wire-port');
-        const riffPR = riffPort ? riffPort.getBoundingClientRect() : nodeInfo.el.getBoundingClientRect();
-        const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
         for (const instrId of riff.destinations) {
           const tileEl = document.getElementById('t' + instrId);
           if (!tileEl) continue;
-          const { x: ex, y: ey } = _tilePortVP(tileEl);
+          const { srcSide, tileSide } = _portSides(nodeInfo.el, RIFF_W, tileEl);
+          const portSel = srcSide === 'right' ? '.riff-wire-port:not(.riff-wire-port-left)' : '.riff-wire-port-left';
+          const riffPort = nodeInfo.el.querySelector(portSel) || nodeInfo.el.querySelector('.riff-wire-port');
+          const riffPR = riffPort.getBoundingClientRect();
+          const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
+          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
           _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
         }
       }
@@ -181,13 +197,15 @@ function startWireDrag(lfo, startEvent) {
       for (const [, ch] of chords) {
         const nodeInfo = chordsNodes.get(ch.id);
         if (!nodeInfo || !ch.destinations.length) continue;
-        const chordsPort = nodeInfo.el.querySelector('.chords-wire-port');
-        const chPR = chordsPort ? chordsPort.getBoundingClientRect() : nodeInfo.el.getBoundingClientRect();
-        const csx = chPR.left + chPR.width / 2, csy = chPR.top + chPR.height / 2;
         for (const instrId of ch.destinations) {
           const tileEl = document.getElementById('t' + instrId);
           if (!tileEl) continue;
-          const { x: ex, y: ey } = _tilePortVP(tileEl);
+          const { srcSide, tileSide } = _portSides(nodeInfo.el, CHORDS_NODE_W, tileEl);
+          const portSel = srcSide === 'right' ? '.chords-wire-port:not(.chords-wire-port-left)' : '.chords-wire-port-left';
+          const chordsPort = nodeInfo.el.querySelector(portSel) || nodeInfo.el.querySelector('.chords-wire-port');
+          const chPR = chordsPort.getBoundingClientRect();
+          const csx = chPR.left + chPR.width / 2, csy = chPR.top + chPR.height / 2;
+          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
           _wire(svg, 'chords-wire-line', ch.color, csx, csy, ex, ey);
         }
       }
@@ -331,11 +349,12 @@ function startWireDrag(lfo, startEvent) {
                 inst.eqData.applyBand(pInfo.bandIdx);
               } else {
                 inst.params[pInfo.prop] = modVal;
-                const nodeParam = inst.node[pInfo.prop];
+                const targetNode = inst.fxLfoNode || inst.node;
+                const nodeParam = targetNode[pInfo.prop];
                 if (nodeParam && typeof nodeParam === 'object' && 'value' in nodeParam) {
                   nodeParam.value = modVal;
                 } else {
-                  inst.node[pInfo.prop] = modVal;
+                  targetNode[pInfo.prop] = modVal;
                 }
               }
             }

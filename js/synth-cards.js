@@ -13,7 +13,13 @@
       info.el.remove();
       openCards.delete(id);
       const tile = document.getElementById('t' + id);
-      if (tile) tile.classList.remove('active', 'expanded');
+      if (tile) {
+        tile.classList.remove('active', 'expanded');
+        for (const cls of ['.tile-in-port', '.tile-out-port']) {
+          const p = tile.querySelector(cls);
+          if (p) { p.style.top = ''; p.style.left = ''; }
+        }
+      }
       const synth = synths.get(id) || drums.get(id);
       if (synth) synth._refreshSf2List = null;
       updateSampleList();
@@ -28,6 +34,18 @@
       el.style.left = x + 'px';
       el.style.top  = y + 'px';
       el.style.zIndex = ++cardZTop;
+    }
+
+    // Sync tile port positions to the actual rendered card dimensions (call after cv.appendChild)
+    function _syncTilePorts(tile, cardEl) {
+      if (!tile) return;
+      const w = cardEl.offsetWidth;
+      const h = cardEl.scrollHeight; // scrollHeight works even when max-height:0 clips offsetHeight
+      const midY = (h / 2) + 'px';
+      const inP  = tile.querySelector('.tile-in-port');
+      const outP = tile.querySelector('.tile-out-port');
+      if (inP)  inP.style.top  = midY;
+      if (outP) { outP.style.top = midY; outP.style.left = (w - 7) + 'px'; }
     }
 
     function _makeSynthCardDrag(el, synth) {
@@ -211,6 +229,12 @@
               <div class="crow"><span class="clbl">Sustain</span>${mkCsl('sc-sus','0','1','0.01',synth.sustain)}</div>
               <div class="crow"><span class="clbl">Release</span>${mkCsl('sc-rel','0.001','8','0.001',synth.release)}</div>
             </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">GLIDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Time</span>${mkCsl('sc-glide','0','1','0.001',synth.portamento)}</div>
+            </div></div>
           </div>`;
 
         const renderAnalogPresets = () => {
@@ -234,12 +258,14 @@
 
         const fmtFreq = v => v >= 1000 ? (v/1000).toFixed(1)+' kHz' : Math.round(v)+' Hz';
         const fmtPct  = v => Math.round(v*100)+'%';
+        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
         initCslider(qs('.sc-ffreq').closest('.cslider'), fmtFreq);
         initCslider(qs('.sc-fq').closest('.cslider'),    v => v.toFixed(2));
         initCslider(qs('.sc-atk').closest('.cslider'),   fmtFade);
         initCslider(qs('.sc-dec').closest('.cslider'),   fmtFade);
         initCslider(qs('.sc-sus').closest('.cslider'),   fmtPct);
         initCslider(qs('.sc-rel').closest('.cslider'),   fmtFade);
+        initCslider(qs('.sc-glide').closest('.cslider'), fmtGlide);
 
         qas('[data-osc]').forEach(btn => btn.addEventListener('click', () => {
           synth.oscType = btn.dataset.osc;
@@ -251,12 +277,13 @@
           qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
           synth.updateFilter();
         }));
-        qs('.sc-ffreq').addEventListener('input', () => { synth.filterFreq = parseFloat(qs('.sc-ffreq').value); synth.updateFilter(); });
-        qs('.sc-fq').addEventListener('input',    () => { synth.filterQ    = parseFloat(qs('.sc-fq').value);    synth.updateFilter(); });
-        qs('.sc-atk').addEventListener('input',   () => { synth.attack     = parseFloat(qs('.sc-atk').value);   synth.updateEnvelope(); });
-        qs('.sc-dec').addEventListener('input',   () => { synth.decay      = parseFloat(qs('.sc-dec').value);   synth.updateEnvelope(); });
-        qs('.sc-sus').addEventListener('input',   () => { synth.sustain    = parseFloat(qs('.sc-sus').value);   synth.updateEnvelope(); });
-        qs('.sc-rel').addEventListener('input',   () => { synth.release    = parseFloat(qs('.sc-rel').value);   synth.updateEnvelope(); });
+        qs('.sc-ffreq').addEventListener('input', () => { synth.filterFreq  = parseFloat(qs('.sc-ffreq').value);  synth.updateFilter(); });
+        qs('.sc-fq').addEventListener('input',    () => { synth.filterQ     = parseFloat(qs('.sc-fq').value);     synth.updateFilter(); });
+        qs('.sc-atk').addEventListener('input',   () => { synth.attack      = parseFloat(qs('.sc-atk').value);    synth.updateEnvelope(); });
+        qs('.sc-dec').addEventListener('input',   () => { synth.decay       = parseFloat(qs('.sc-dec').value);    synth.updateEnvelope(); });
+        qs('.sc-sus').addEventListener('input',   () => { synth.sustain     = parseFloat(qs('.sc-sus').value);    synth.updateEnvelope(); });
+        qs('.sc-rel').addEventListener('input',   () => { synth.release     = parseFloat(qs('.sc-rel').value);    synth.updateEnvelope(); });
+        qs('.sc-glide').addEventListener('input', () => { synth.portamento  = parseFloat(qs('.sc-glide').value); synth.updatePortamento(); });
 
       } else if (synth.synthType === 'fm') {
         typeBody.innerHTML = `
@@ -291,9 +318,16 @@
               <div class="crow"><span class="clbl">Sustain</span>${mkCsl('fm-msus','0','1','0.01',synth.modSustain)}</div>
               <div class="crow"><span class="clbl">Release</span>${mkCsl('fm-mrel','0.001','8','0.001',synth.modRelease)}</div>
             </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">GLIDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Time</span>${mkCsl('fm-glide','0','1','0.001',synth.portamento)}</div>
+            </div></div>
           </div>`;
 
         const fmtHarm = v => v.toFixed(2), fmtModI = v => v.toFixed(1), fmtPct = v => Math.round(v*100)+'%';
+        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
         initCslider(qs('.fm-harm').closest('.cslider'),  fmtHarm);
         initCslider(qs('.fm-modi').closest('.cslider'),  fmtModI);
         initCslider(qs('.fm-atk').closest('.cslider'),   fmtFade);
@@ -304,6 +338,7 @@
         initCslider(qs('.fm-mdec').closest('.cslider'),  fmtFade);
         initCslider(qs('.fm-msus').closest('.cslider'),  fmtPct);
         initCslider(qs('.fm-mrel').closest('.cslider'),  fmtFade);
+        initCslider(qs('.fm-glide').closest('.cslider'), fmtGlide);
 
         const syncFMSliders = () => {
           [['fm-harm','harmonicity'],['fm-modi','modulationIndex'],['fm-atk','attack'],['fm-dec','decay'],
@@ -336,7 +371,8 @@
         qs('.fm-matk').addEventListener('input',  () => { synth.modAttack       = parseFloat(qs('.fm-matk').value);  synth.updateModEnv(); });
         qs('.fm-mdec').addEventListener('input',  () => { synth.modDecay        = parseFloat(qs('.fm-mdec').value);  synth.updateModEnv(); });
         qs('.fm-msus').addEventListener('input',  () => { synth.modSustain      = parseFloat(qs('.fm-msus').value);  synth.updateModEnv(); });
-        qs('.fm-mrel').addEventListener('input',  () => { synth.modRelease      = parseFloat(qs('.fm-mrel').value);  synth.updateModEnv(); });
+        qs('.fm-mrel').addEventListener('input',   () => { synth.modRelease  = parseFloat(qs('.fm-mrel').value);   synth.updateModEnv(); });
+        qs('.fm-glide').addEventListener('input',  () => { synth.portamento  = parseFloat(qs('.fm-glide').value);  synth.updatePortamento(); });
 
         qs('.fm-sysx-btn').addEventListener('click', () => {
           const inp = document.getElementById('syx-input');
@@ -378,6 +414,12 @@
               <div class="crow"><span class="clbl">Sustain</span>${mkCsl('wt-sus','0','1','0.01',synth.sustain)}</div>
               <div class="crow"><span class="clbl">Release</span>${mkCsl('wt-rel','0.001','8','0.001',synth.release)}</div>
             </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">GLIDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Time</span>${mkCsl('wt-glide','0','1','0.001',synth.portamento)}</div>
+            </div></div>
           </div>`;
 
         // Wave preset list
@@ -416,6 +458,8 @@
         initCslider(qs('.wt-dec').closest('.cslider'),    fmtFade);
         initCslider(qs('.wt-sus').closest('.cslider'),    fmtPct);
         initCslider(qs('.wt-rel').closest('.cslider'),    fmtFade);
+        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
+        initCslider(qs('.wt-glide').closest('.cslider'), fmtGlide);
 
         qs('.wt-d1').addEventListener('input',     () => { synth.detune1      = parseFloat(qs('.wt-d1').value);     synth.updateDetune(); });
         qs('.wt-d2').addEventListener('input',     () => { synth.detune2      = parseFloat(qs('.wt-d2').value);     synth.updateDetune(); });
@@ -428,8 +472,9 @@
         qs('.wt-fdec').addEventListener('input',   () => { synth.filterDecay  = parseFloat(qs('.wt-fdec').value);   });
         qs('.wt-atk').addEventListener('input',    () => { synth.attack       = parseFloat(qs('.wt-atk').value);    });
         qs('.wt-dec').addEventListener('input',    () => { synth.decay        = parseFloat(qs('.wt-dec').value);    });
-        qs('.wt-sus').addEventListener('input',    () => { synth.sustain      = parseFloat(qs('.wt-sus').value);    });
-        qs('.wt-rel').addEventListener('input',    () => { synth.release      = parseFloat(qs('.wt-rel').value);    });
+        qs('.wt-sus').addEventListener('input',   () => { synth.sustain    = parseFloat(qs('.wt-sus').value);    });
+        qs('.wt-rel').addEventListener('input',   () => { synth.release    = parseFloat(qs('.wt-rel').value);    });
+        qs('.wt-glide').addEventListener('input', () => { synth.portamento = parseFloat(qs('.wt-glide').value); synth.updatePortamento(); });
 
       } else if (synth.synthType === 'karplus') {
         const fmtD2 = v => parseFloat(v).toFixed(2);
@@ -469,8 +514,15 @@
                 </div>
               </div>
             </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">GLIDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Time</span>${mkCsl('kp-glide','0','1','0.001',synth.portamento)}</div>
+            </div></div>
           </div>`;
 
+        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
         initCslider(qs('.kp-sdamp').closest('.cslider'),    fmtD2);
         initCslider(qs('.kp-sdampvar').closest('.cslider'), fmtD2);
         initCslider(qs('.kp-tension').closest('.cslider'),  fmtD2);
@@ -478,6 +530,7 @@
         initCslider(qs('.kp-pdampvar').closest('.cslider'), fmtD2);
         initCslider(qs('.kp-charvar').closest('.cslider'),  fmtD2);
         initCslider(qs('.kp-spread').closest('.cslider'),   fmtD2);
+        initCslider(qs('.kp-glide').closest('.cslider'),    fmtGlide);
 
         qas('[data-sdcalc]').forEach(btn => btn.addEventListener('click', () => {
           synth.stringDampingCalc = btn.dataset.sdcalc;
@@ -493,7 +546,8 @@
         qs('.kp-pdamp').addEventListener('input',    () => { synth.pluckDamping           = parseFloat(qs('.kp-pdamp').value); });
         qs('.kp-pdampvar').addEventListener('input', () => { synth.pluckDampingVariation  = parseFloat(qs('.kp-pdampvar').value); });
         qs('.kp-charvar').addEventListener('input',  () => { synth.characterVariation     = parseFloat(qs('.kp-charvar').value); });
-        qs('.kp-spread').addEventListener('input',   () => { synth.stereoSpread           = parseFloat(qs('.kp-spread').value); });
+        qs('.kp-spread').addEventListener('input',  () => { synth.stereoSpread = parseFloat(qs('.kp-spread').value); });
+        qs('.kp-glide').addEventListener('input',   () => { synth.portamento  = parseFloat(qs('.kp-glide').value);  synth.updatePortamento(); });
 
       } else if (synth.synthType === 'rompler') {
         const fmtFreq = v => parseFloat(v) >= 1000 ? (parseFloat(v)/1000).toFixed(1)+' kHz' : Math.round(parseFloat(v))+' Hz';
@@ -548,6 +602,12 @@
             <div class="card-acc-hdr">ENVELOPE</div>
             <div class="card-acc-body"><div class="csec">
               <div class="crow"><span class="clbl">Release</span>${mkCsl('rm-rel','0.01','10','0.01',synth.release)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">GLIDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Time</span>${mkCsl('rm-glide','0','1','0.001',synth.portamento)}</div>
             </div></div>
           </div>`;
 
@@ -644,18 +704,21 @@
           synth._romplerLoad();
         });
 
+        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
         initCslider(qs('.rm-ffreq').closest('.cslider'), fmtFreq);
         initCslider(qs('.rm-fq').closest('.cslider'),    v => parseFloat(v).toFixed(2));
         initCslider(qs('.rm-rel').closest('.cslider'),   fmtFade);
+        initCslider(qs('.rm-glide').closest('.cslider'), fmtGlide);
 
         qas('[data-rflt]').forEach(btn => btn.addEventListener('click', () => {
           synth.filterType = btn.dataset.rflt;
           qas('[data-rflt]').forEach(b => b.classList.toggle('act', b.dataset.rflt === synth.filterType));
           synth.updateFilter();
         }));
-        qs('.rm-ffreq').addEventListener('input', () => { synth.filterFreq = parseFloat(qs('.rm-ffreq').value); synth.updateFilter(); });
-        qs('.rm-fq').addEventListener('input',    () => { synth.filterQ    = parseFloat(qs('.rm-fq').value);    synth.updateFilter(); });
-        qs('.rm-rel').addEventListener('input',   () => { synth.release    = parseFloat(qs('.rm-rel').value); });
+        qs('.rm-ffreq').addEventListener('input',  () => { synth.filterFreq  = parseFloat(qs('.rm-ffreq').value);  synth.updateFilter(); });
+        qs('.rm-fq').addEventListener('input',     () => { synth.filterQ     = parseFloat(qs('.rm-fq').value);     synth.updateFilter(); });
+        qs('.rm-rel').addEventListener('input',    () => { synth.release     = parseFloat(qs('.rm-rel').value); });
+        qs('.rm-glide').addEventListener('input',  () => { synth.portamento  = parseFloat(qs('.rm-glide').value);  synth.updatePortamento(); });
       }
     }
 
@@ -740,6 +803,7 @@
       _makeSynthCardDrag(el, synth);
       cv.appendChild(el);
       initVpSliders(el);
+      _syncTilePorts(tile, el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -889,6 +953,7 @@
       _positionCard(el, tile, 300, 500);
       _makeSynthCardDrag(el, synth);
       cv.appendChild(el);
+      _syncTilePorts(tile, el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -1129,6 +1194,7 @@
       _positionCard(el, tile, 300, 540);
       _makeSynthCardDrag(el, synth);
       cv.appendChild(el);
+      _syncTilePorts(tile, el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -1359,6 +1425,7 @@
       _makeSynthCardDrag(el, drum);
       cv.appendChild(el);
       initVpSliders(el);
+      _syncTilePorts(tile, el);
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(drum.id, { el });
       if (tile) tile.classList.add('active', 'expanded');

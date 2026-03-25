@@ -172,6 +172,7 @@
           </div>
         </div>
         <div class="chords-wire-port" title="Drag to connect to a synth or sampler"></div>
+        <div class="chords-wire-port chords-wire-port-left" title="Drag to connect to a synth or sampler"></div>
       `;
 
       const q = sel => el.querySelector(sel);
@@ -576,9 +577,11 @@
       });
 
       // Wire port drag
-      q('.chords-wire-port').addEventListener('mousedown', e => {
-        e.stopPropagation(); e.preventDefault();
-        startChordsWireDrag(chordsInst, e, e.currentTarget);
+      el.querySelectorAll('.chords-wire-port').forEach(port => {
+        port.addEventListener('mousedown', e => {
+          e.stopPropagation(); e.preventDefault();
+          startChordsWireDrag(chordsInst, e, port);
+        });
       });
 
       // Dup / Remove / Min

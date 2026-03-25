@@ -206,6 +206,11 @@
       background: #222;
     }
 
+    .lfo-wire-port-left {
+      right: auto;
+      left: -7px;
+    }
+
     .lfo-dest-list {
       padding: 0 8px 6px;
       max-height: 140px;

@@ -36,7 +36,13 @@
       info.el.remove();
       openCards.delete(id);
       const tile = document.getElementById('t' + id);
-      if (tile) tile.classList.remove('active', 'expanded');
+      if (tile) {
+        tile.classList.remove('active', 'expanded');
+        for (const cls of ['.tile-in-port', '.tile-out-port']) {
+          const p = tile.querySelector(cls);
+          if (p) { p.style.top = ''; p.style.left = ''; }
+        }
+      }
       updateSampleList();
     }
 
@@ -1078,6 +1084,13 @@
 
       if (tile) tile.classList.add('active', 'expanded');
       cv.appendChild(cardEl);
+      if (tile) {
+        const midY = (cardEl.offsetHeight / 2) + 'px';
+        const inP  = tile.querySelector('.tile-in-port');
+        const outP = tile.querySelector('.tile-out-port');
+        if (inP)  inP.style.top  = midY;
+        if (outP) { outP.style.top = midY; outP.style.left = (cardEl.offsetWidth - 7) + 'px'; }
+      }
       initVpSliders(cardEl);
       requestAnimationFrame(() => cardEl.classList.add('open'));
       requestAnimationFrame(() => { drawWave(); updateLoopReg(); updateGainHandle(); });
@@ -1816,90 +1829,170 @@
 
       const FX_PANELS = {
         reverb: {
-          build(body, p, node) {
-            body.innerHTML =
-              sliderRow('Decay', 'fx-r-decay', 0.1, 30, p.decay, 0.1) +
-              sliderRow('Pre-Dly', 'fx-r-predly', 0, 0.5, p.preDelay, 0.001) +
-              sliderRow('Wet', 'fx-r-wet', 0, 1, p.wet, 0.01);
-            body.querySelector('.fx-r-decay').addEventListener('input', e => {
-              p.decay = parseFloat(e.target.value); node.decay = p.decay;
-            });
-            body.querySelector('.fx-r-predly').addEventListener('input', e => {
-              p.preDelay = parseFloat(e.target.value); node.preDelay = p.preDelay;
-            });
-            body.querySelector('.fx-r-wet').addEventListener('input', e => {
-              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
-            });
-            initFxSliders(body, { 'fx-r-decay': fmtSec, 'fx-r-predly': fmtMs, 'fx-r-wet': fmt2 });
+          build(body, p, node, inst, s) {
+            function buildHTML() {
+              let h = sliderRow('Decay', 'fx-r-decay', 0.1, 30, p.decay ?? 2.5, 0.1);
+              h += sliderRow('Pre-Dly', 'fx-r-predly', 0, 0.5, p.preDelay ?? 0.01, 0.001);
+              h += sliderRow('Wet', 'fx-r-wet', 0, 1, p.wet ?? 0.4, 0.01);
+              const tfTypes = ['none', 'lowpass', 'highpass'];
+              h += `<div class="crow" style="margin-top:3px;margin-bottom:2px"><span class="clbl" style="font-size:8px">Tail</span><div style="display:flex;gap:2px">` +
+                tfTypes.map(t => `<button class="cbtn fx-r-tf-btn" data-tf="${t}" style="font-size:8px;padding:2px 5px;${(p.tailFilterType || 'none') === t ? 'border-color:#888;color:#fff' : ''}">${t === 'none' ? 'FLAT' : t === 'lowpass' ? 'LP' : 'HP'}</button>`).join('') +
+                `</div></div>`;
+              if (p.tailFilterType && p.tailFilterType !== 'none') {
+                const tfMin = p.tailFilterType === 'highpass' ? 40 : 200;
+                const tfMax = p.tailFilterType === 'highpass' ? 4000 : 20000;
+                const tfDef = p.tailFilterType === 'highpass' ? 400 : 20000;
+                h += sliderRow('T.Freq', 'fx-r-tffreq', tfMin, tfMax, p.tailFilterFreq ?? tfDef, 1);
+              }
+              return h;
+            }
+
+            function wire() {
+              const qb = cls => body.querySelector('.' + cls);
+              qb('fx-r-decay')?.addEventListener('input', e => {
+                p.decay = parseFloat(e.target.value);
+                if (inst.reverbData?.reverbNode) inst.reverbData.reverbNode.decay = p.decay;
+              });
+              qb('fx-r-predly')?.addEventListener('input', e => {
+                p.preDelay = parseFloat(e.target.value);
+                if (inst.reverbData?.reverbNode) inst.reverbData.reverbNode.preDelay = p.preDelay;
+              });
+              qb('fx-r-wet')?.addEventListener('input', e => {
+                p.wet = parseFloat(e.target.value);
+                if (inst.reverbData?.reverbNode) inst.reverbData.reverbNode.wet.value = p.wet;
+              });
+              body.querySelectorAll('.fx-r-tf-btn').forEach(btn => {
+                btn.addEventListener('click', ev => {
+                  ev.stopPropagation();
+                  p.tailFilterType = btn.dataset.tf;
+                  const tf = inst.reverbData?.tailFilter;
+                  if (tf) {
+                    if (p.tailFilterType === 'none') { tf.type = 'lowpass'; tf.frequency.value = 20000; p.tailFilterFreq = 20000; }
+                    else { tf.type = p.tailFilterType; const df = p.tailFilterType === 'highpass' ? 400 : 8000; if (!p.tailFilterFreq || p.tailFilterFreq === 20000) p.tailFilterFreq = df; tf.frequency.value = p.tailFilterFreq; }
+                  }
+                  rebuild();
+                });
+              });
+              qb('fx-r-tffreq')?.addEventListener('input', e => {
+                p.tailFilterFreq = parseFloat(e.target.value);
+                if (inst.reverbData?.tailFilter) inst.reverbData.tailFilter.frequency.value = p.tailFilterFreq;
+              });
+              initFxSliders(body, { 'fx-r-decay': fmtSec, 'fx-r-predly': fmtMs, 'fx-r-wet': fmt2, 'fx-r-tffreq': fmtHz });
+            }
+
+            function rebuild() { body.innerHTML = buildHTML(); wire(); }
+            rebuild();
           }
         },
         delay: {
-          build(body, p, node) {
+          build(body, p, node, inst, s) {
             if (!p.syncMode) p.syncMode = false;
             if (!p.subdivision) p.subdivision = '4n';
+            if (!p.mode) p.mode = 'mono';
             const subdivBeats = {
               '2n': 2, '2n.': 3, '2t': 4 / 3,
               '4n': 1, '4n.': 1.5, '4t': 2 / 3,
               '8n': 0.5, '8n.': 0.75, '8t': 1 / 3,
               '16n': 0.25, '16n.': 0.375, '16t': 1 / 6,
             };
-            // Sorted longest → shortest by beat duration
             const subdivList = [
               ['2n.', '1/2·'], ['2n', '1/2'], ['4n.', '1/4·'], ['2t', '1/2T'],
               ['4n', '1/4'], ['8n.', '1/8·'], ['4t', '1/4T'], ['8n', '1/8'],
               ['16n.', '1/16·'], ['8t', '1/8T'], ['16n', '1/16'], ['16t', '1/16T'],
             ];
-            body.innerHTML =
-              sliderRow('Time', 'fx-d-time', 0, 2, p.delayTime, 0.01) +
-              `<div class="fx-d-subdiv-row" style="display:none;flex-wrap:wrap;gap:2px;margin:0 -10px 8px;padding:4px 8px;border-top:1px solid #161616;border-bottom:1px solid #161616">
-                ${subdivList.map(([k, lbl]) => `<button class="cbtn fx-subdiv-btn" data-sub="${k}" style="background:none;font-size:8px;padding:3px 2px;min-width:0">${lbl}</button>`).join('')}
-              </div>` +
-              sliderRow('Feedback', 'fx-d-fb', 0, 0.99, p.feedback, 0.01) +
-              sliderRow('Wet', 'fx-d-wet', 0, 1, p.wet, 0.01) +
-              `<div class="crow" style="margin-top:2px">
-                <span class="clbl" style="font-size:8px">Sync</span>
-                <button class="cbtn fx-sync-toggle" style="font-size:8px;padding:2px 8px">FREE</button>
-              </div>`;
 
-            const timeRow = body.querySelector('.fx-d-time').closest('.crow');
-            const subdivRow = body.querySelector('.fx-d-subdiv-row');
-            const syncBtn = body.querySelector('.fx-sync-toggle');
+            function buildHTML() {
+              const mode = p.mode || 'mono';
+              const modeLabels = { mono: 'MONO', pingpong: 'PING-PONG', filtered: 'TAPE' };
+              let h = `<div class="crow" style="margin-bottom:6px;gap:2px">` +
+                Object.entries(modeLabels).map(([m, lbl]) =>
+                  `<button class="cbtn fx-d-mode-btn" data-mode="${m}" style="font-size:8px;padding:2px 5px;${mode === m ? 'border-color:#888;color:#fff' : ''}">${lbl}</button>`
+                ).join('') + `</div>`;
+              h += sliderRow('Time', 'fx-d-time', 0, 2, p.delayTime ?? 0.25, 0.01);
+              h += `<div class="fx-d-subdiv-row" style="display:none;flex-wrap:wrap;gap:2px;margin:0 -10px 8px;padding:4px 8px;border-top:1px solid #161616;border-bottom:1px solid #161616">` +
+                subdivList.map(([k, lbl]) => `<button class="cbtn fx-subdiv-btn" data-sub="${k}" style="background:none;font-size:8px;padding:3px 2px;min-width:0">${lbl}</button>`).join('') +
+                `</div>`;
+              h += sliderRow('Feedback', 'fx-d-fb', 0, 0.99, p.feedback ?? 0.35, 0.01);
+              if (mode === 'filtered') {
+                h += `<div class="crow" style="margin-bottom:4px"><span class="clbl" style="font-size:8px">Filter</span><div style="display:flex;gap:2px">` +
+                  [['lowpass', 'LP'], ['highpass', 'HP'], ['bandpass', 'BP']].map(([t, l]) =>
+                    `<button class="cbtn fx-d-ft-btn" data-ft="${t}" style="font-size:8px;padding:2px 5px;${(p.filterType || 'lowpass') === t ? 'border-color:#888;color:#fff' : ''}">${l}</button>`
+                  ).join('') + `</div></div>`;
+                h += sliderRow('Filt Hz', 'fx-d-filtfreq', 100, 12000, p.filterFreq ?? 2000, 1);
+              }
+              h += sliderRow('Wet', 'fx-d-wet', 0, 1, p.wet ?? 0.4, 0.01);
+              h += `<div class="crow" style="margin-top:2px"><span class="clbl" style="font-size:8px">Sync</span><button class="cbtn fx-sync-toggle" style="font-size:8px;padding:2px 8px">FREE</button></div>`;
+              return h;
+            }
 
-            function applySubdiv(sub) {
-              p.subdivision = sub;
-              const sec = (60 / Tone.Transport.bpm.value) * (subdivBeats[sub] ?? 1);
-              node.delayTime.value = Math.min(sec, 2);
-              p.delayTime = node.delayTime.value;
-              body.querySelectorAll('.fx-subdiv-btn').forEach(b => {
-                const active = b.dataset.sub === sub;
-                b.style.color = active ? '#e0e0e0' : '';
-                b.style.borderColor = active ? '#686868' : '';
+            function wire() {
+              const timeRow  = body.querySelector('.fx-d-time')?.closest('.crow');
+              const subdivRow = body.querySelector('.fx-d-subdiv-row');
+              const syncBtn  = body.querySelector('.fx-sync-toggle');
+
+              function applyDelayTime(val) {
+                p.delayTime = val;
+                if (inst.delayData) { inst.delayData.delay.delayTime.linearRampTo(val, 0.05); }
+                else { inst.node.delayTime.linearRampTo(val, 0.05); }
+              }
+              function applySubdiv(sub) {
+                p.subdivision = sub;
+                const sec = (60 / Tone.Transport.bpm.value) * (subdivBeats[sub] ?? 1);
+                applyDelayTime(Math.min(sec, 2));
+                body.querySelectorAll('.fx-subdiv-btn').forEach(b => {
+                  b.style.color = b.dataset.sub === sub ? '#e0e0e0' : '';
+                  b.style.borderColor = b.dataset.sub === sub ? '#686868' : '';
+                });
+              }
+              function setSyncMode(on) {
+                p.syncMode = on;
+                if (syncBtn) syncBtn.textContent = on ? 'TEMPO' : 'FREE';
+                if (timeRow) timeRow.style.display = on ? 'none' : '';
+                if (subdivRow) subdivRow.style.display = on ? 'flex' : 'none';
+                if (on) applySubdiv(p.subdivision);
+              }
+
+              body.querySelectorAll('.fx-d-mode-btn').forEach(btn => {
+                btn.addEventListener('click', ev => {
+                  ev.stopPropagation();
+                  if (p.mode === btn.dataset.mode) return;
+                  _switchDelayMode(inst, btn.dataset.mode, s);
+                  rebuild();
+                });
               });
+              syncBtn?.addEventListener('click', e => { e.stopPropagation(); setSyncMode(!p.syncMode); });
+              body.querySelectorAll('.fx-subdiv-btn').forEach(btn => {
+                btn.addEventListener('click', e => { e.stopPropagation(); applySubdiv(btn.dataset.sub); });
+              });
+              body.querySelector('.fx-d-time')?.addEventListener('input', e => { applyDelayTime(parseFloat(e.target.value)); });
+              body.querySelector('.fx-d-fb')?.addEventListener('input', e => {
+                p.feedback = parseFloat(e.target.value);
+                if (inst.delayData) { inst.delayData.feedbackGain.gain.value = p.feedback; }
+                else { inst.node.feedback.value = p.feedback; }
+              });
+              body.querySelectorAll('.fx-d-ft-btn').forEach(btn => {
+                btn.addEventListener('click', ev => {
+                  ev.stopPropagation();
+                  p.filterType = btn.dataset.ft;
+                  if (inst.delayData?.feedbackFilter) inst.delayData.feedbackFilter.type = p.filterType;
+                  body.querySelectorAll('.fx-d-ft-btn').forEach(b => { b.style.color = b === btn ? '#fff' : ''; b.style.borderColor = b === btn ? '#888' : ''; });
+                });
+              });
+              body.querySelector('.fx-d-filtfreq')?.addEventListener('input', e => {
+                p.filterFreq = parseFloat(e.target.value);
+                if (inst.delayData?.feedbackFilter) inst.delayData.feedbackFilter.frequency.value = p.filterFreq;
+              });
+              body.querySelector('.fx-d-wet')?.addEventListener('input', e => {
+                p.wet = parseFloat(e.target.value);
+                if (inst.delayData) { inst.delayData.wetGain.gain.value = p.wet; inst.delayData.dryGain.gain.value = 1 - p.wet; }
+                else { inst.node.wet.value = p.wet; }
+              });
+              initFxSliders(body, { 'fx-d-time': fmtSec, 'fx-d-fb': fmt2, 'fx-d-filtfreq': fmtHz, 'fx-d-wet': fmt2 });
+              setSyncMode(p.syncMode);
             }
 
-            function setSyncMode(on) {
-              p.syncMode = on;
-              syncBtn.textContent = on ? 'TEMPO' : 'FREE';
-              timeRow.style.display = on ? 'none' : '';
-              subdivRow.style.display = on ? 'flex' : 'none';
-              if (on) applySubdiv(p.subdivision);
-            }
-
-            syncBtn.addEventListener('click', e => { e.stopPropagation(); setSyncMode(!p.syncMode); });
-            body.querySelectorAll('.fx-subdiv-btn').forEach(btn => {
-              btn.addEventListener('click', e => { e.stopPropagation(); applySubdiv(btn.dataset.sub); });
-            });
-            body.querySelector('.fx-d-time').addEventListener('input', e => {
-              p.delayTime = parseFloat(e.target.value); node.delayTime.value = p.delayTime;
-            });
-            body.querySelector('.fx-d-fb').addEventListener('input', e => {
-              p.feedback = parseFloat(e.target.value); node.feedback.value = p.feedback;
-            });
-            body.querySelector('.fx-d-wet').addEventListener('input', e => {
-              p.wet = parseFloat(e.target.value); node.wet.value = p.wet;
-            });
-            initFxSliders(body, { 'fx-d-time': fmtSec, 'fx-d-fb': fmt2, 'fx-d-wet': fmt2 });
-            setSyncMode(p.syncMode);
+            function rebuild() { body.innerHTML = buildHTML(); wire(); }
+            rebuild();
           }
         },
         tremolo: {
@@ -2051,7 +2144,7 @@
           const canvas = body.querySelector('.card-eq-canvas');
           requestAnimationFrame(() => initEqCanvas(canvas, inst.eqData.bands, i => inst.eqData.applyBand(i), s.color));
         } else {
-          FX_PANELS[fxType].build(body, inst.params, inst.node);
+          FX_PANELS[fxType].build(body, inst.params, inst.node, inst, s);
           panelsEl.appendChild(panelEl);
         }
       }

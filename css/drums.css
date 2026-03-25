@@ -392,6 +392,7 @@
       z-index: 20;
     }
     .riff-wire-port:hover { border-color: #fff; background: #222; }
+    .riff-wire-port-left { right: auto; left: -7px; }
     .riff-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
     .riff-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
     .riff-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
@@ -537,6 +538,7 @@
       transition: border-color 0.15s; z-index: 20;
     }
     .chords-wire-port:hover { border-color: #fff; background: #222; }
+    .chords-wire-port-left { right: auto; left: -7px; }
     .chords-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
     .chords-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
     .chords-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }

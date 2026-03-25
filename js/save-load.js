@@ -115,6 +115,7 @@
             harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex,
             attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
             modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease,
+            portamento: synth.portamento,
             currentPreset: synth.currentPreset, _usingCustom: synth._usingCustom,
             _customPresets: synth._usingCustom ? synth._customPresets.map(p => ({ ...p })) : [],
           });
@@ -125,6 +126,7 @@
             cutoff: synth.cutoff, resonance: synth.resonance, envAmount: synth.envAmount,
             filterAttack: synth.filterAttack, filterDecay: synth.filterDecay,
             attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
+            portamento: synth.portamento,
           });
         } else if (synth.synthType === 'karplus') {
           Object.assign(sd, {
@@ -133,6 +135,7 @@
             stringTension: synth.stringTension, pluckDamping: synth.pluckDamping,
             pluckDampingVariation: synth.pluckDampingVariation,
             stereoSpread: synth.stereoSpread, bodyResonation: synth.bodyResonation,
+            portamento: synth.portamento,
           });
         } else if (synth.synthType === 'rompler') {
           Object.assign(sd, {
@@ -140,6 +143,7 @@
             romplerInstrument: synth.romplerInstrument, romplerSf2Url: synth.romplerSf2Url,
             romplerSf2Instrument: synth.romplerSf2Instrument,
             release: synth.release, filterType: synth.filterType, filterFreq: synth.filterFreq, filterQ: synth.filterQ,
+            portamento: synth.portamento,
           });
         }
         projectData.synths.push(sd);
@@ -201,8 +205,35 @@
     function applyFxNodeParams(inst) {
       const { type, node, params: p } = inst;
       switch (type) {
-        case 'reverb': node.decay = p.decay; node.preDelay = p.preDelay; node.wet.value = p.wet; break;
-        case 'delay': node.delayTime.value = p.delayTime; node.feedback.value = p.feedback; node.wet.value = p.wet; break;
+        case 'reverb': {
+          const rd = inst.reverbData;
+          if (!rd) break;
+          if (rd.reverbNode) {
+            rd.reverbNode.decay = p.decay ?? 2.5;
+            rd.reverbNode.preDelay = p.preDelay ?? 0.01;
+            rd.reverbNode.wet.value = p.wet ?? 0.4;
+          }
+          if (rd.tailFilter) {
+            rd.tailFilter.type = p.tailFilterType === 'highpass' ? 'highpass' : 'lowpass';
+            rd.tailFilter.frequency.value = p.tailFilterFreq ?? 20000;
+          }
+          break;
+        }
+        case 'delay': {
+          if (inst.delayData) {
+            const dd = inst.delayData;
+            dd.delay.delayTime.value = p.delayTime ?? 0.25;
+            dd.feedbackGain.gain.value = p.feedback ?? 0.35;
+            if (dd.feedbackFilter) { dd.feedbackFilter.frequency.value = p.filterFreq ?? 2000; if (p.filterType) dd.feedbackFilter.type = p.filterType; }
+            dd.wetGain.gain.value = p.wet ?? 0.4;
+            dd.dryGain.gain.value = 1 - (p.wet ?? 0.4);
+          } else {
+            node.delayTime.value = p.delayTime ?? 0.25;
+            node.feedback.value = p.feedback ?? 0.35;
+            node.wet.value = p.wet ?? 0.4;
+          }
+          break;
+        }
         case 'tremolo': node.frequency.value = p.frequency; node.depth.value = p.depth; node.wet.value = p.wet; break;
         case 'dist': node.distortion = p.distortion; node.wet.value = p.wet; break;
         case 'chorus': node.frequency.value = p.frequency; node.delayTime = p.delayTime; node.depth = p.depth; node.wet.value = p.wet; break;
@@ -413,7 +444,7 @@
               if (sd.sustain != null) synth.sustain = sd.sustain;
               if (sd.release != null) synth.release = sd.release;
               synth.updateEnvelope();
-              if (sd.portamento != null) { synth.portamento = sd.portamento; if (synth._poly) synth._poly.set({ portamento: sd.portamento }); }
+              if (sd.portamento != null) { synth.portamento = sd.portamento; synth.updatePortamento(); }
               if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
             } else if (sd.synthType === 'fm') {
               synth = new FMSynthInstrument(id, sd.name || ('FM Synth ' + id), sd.x || 300, sd.y || 300);
@@ -430,6 +461,7 @@
               if (sd.modSustain  != null) synth.modSustain  = sd.modSustain;
               if (sd.modRelease  != null) synth.modRelease  = sd.modRelease;
               synth.updateModEnv();
+              if (sd.portamento != null) { synth.portamento = sd.portamento; synth.updatePortamento(); }
               if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
               if (sd._usingCustom && Array.isArray(sd._customPresets) && sd._customPresets.length) {
                 synth._customPresets = sd._customPresets.map(p => ({ ...p }));
@@ -451,6 +483,7 @@
               if (sd.decay        != null)   synth.decay        = sd.decay;
               if (sd.sustain      != null)   synth.sustain      = sd.sustain;
               if (sd.release      != null)   synth.release      = sd.release;
+              if (sd.portamento   != null)   synth.portamento   = sd.portamento;
             } else if (sd.synthType === 'karplus') {
               synth = new KarplusSynth(id, sd.name || ('Karplus ' + id), sd.x || 300, sd.y || 300);
               if (sd.characterVariation     != null) synth.characterVariation     = sd.characterVariation;
@@ -462,6 +495,7 @@
               if (sd.pluckDampingVariation  != null) synth.pluckDampingVariation  = sd.pluckDampingVariation;
               if (sd.stereoSpread           != null) synth.stereoSpread           = sd.stereoSpread;
               if (sd.bodyResonation)                 synth.bodyResonation         = sd.bodyResonation;
+              if (sd.portamento             != null) synth.portamento             = sd.portamento;
             } else if (sd.synthType === 'rompler') {
               synth = new RomplerInstrument(id, sd.name || ('Rompler ' + id), sd.x || 300, sd.y || 300);
               if (sd.romplerType)              synth.romplerType          = sd.romplerType;
@@ -469,11 +503,12 @@
               if (sd.romplerInstrument)        synth.romplerInstrument    = sd.romplerInstrument;
               if (sd.romplerSf2Url)            synth.romplerSf2Url        = sd.romplerSf2Url;
               if (sd.romplerSf2Instrument)     synth.romplerSf2Instrument = sd.romplerSf2Instrument;
-              if (sd.release   != null) synth.release   = sd.release;
+              if (sd.release    != null) synth.release    = sd.release;
               if (sd.filterType)         synth.filterType = sd.filterType;
               if (sd.filterFreq != null) synth.filterFreq = sd.filterFreq;
               if (sd.filterQ    != null) synth.filterQ    = sd.filterQ;
               synth.updateFilter();
+              if (sd.portamento != null) { synth.portamento = sd.portamento; synth.updatePortamento(); }
               synth._romplerLoad();
             } else {
               continue; // unknown type

@@ -10,9 +10,9 @@
       z-index: 10;
     }
 
-    .tile-in-port {
+    .tile-in-port,
+    .tile-out-port {
       position: absolute;
-      left: -7px;
       top: 50%;
       transform: translateY(-50%);
       width: 14px;
@@ -25,7 +25,11 @@
       transition: border-color 0.15s, background 0.15s;
     }
 
-    .tile-in-port:hover {
+    .tile-in-port  { left: -7px; }
+    .tile-out-port { left: calc(100% - 7px); }
+
+    .tile-in-port:hover,
+    .tile-out-port:hover {
       border-color: #fff;
       background: #222;
     }
@@ -59,7 +63,8 @@
       pointer-events: none;
     }
 
-    .tile.expanded .tile-in-port {
+    .tile.expanded .tile-in-port,
+    .tile.expanded .tile-out-port {
       visibility: visible;
       pointer-events: auto;
     }

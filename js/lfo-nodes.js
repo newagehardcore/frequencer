@@ -53,6 +53,7 @@
           </select>
         </div>
         <div class="lfo-wire-port" title="Drag to connect to a parameter"></div>
+        <div class="lfo-wire-port lfo-wire-port-left" title="Drag to connect to a parameter"></div>
         <div class="lfo-dest-list"></div>
       `;
 
@@ -231,10 +232,12 @@
       });
 
       // ── Wire port drag ──
-      q('.lfo-wire-port').addEventListener('mousedown', e => {
-        e.stopPropagation();
-        e.preventDefault();
-        startWireDrag(lfo, e);
+      el.querySelectorAll('.lfo-wire-port').forEach(port => {
+        port.addEventListener('mousedown', e => {
+          e.stopPropagation();
+          e.preventDefault();
+          startWireDrag(lfo, e, port);
+        });
       });
 
       // ── Header buttons ──

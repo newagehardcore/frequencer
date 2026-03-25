@@ -1,3 +1,77 @@
+    // ── Shared FX node helpers (used by Sample + SynthInstrument) ────────────
+
+    function _createReverbNodes(params) {
+      const tlType = params.tailFilterType === 'highpass' ? 'highpass' : 'lowpass';
+      const tlFreq = params.tailFilterFreq ?? (tlType === 'highpass' ? 400 : 20000);
+      const tailFilter = new Tone.Filter({ frequency: tlFreq, type: tlType, Q: 0.5 });
+      const reverbNode = new Tone.Reverb({ decay: params.decay ?? 2.5, preDelay: params.preDelay ?? 0.01, wet: params.wet ?? 0.4 });
+      reverbNode.connect(tailFilter);
+      return { node: reverbNode, outputNode: tailFilter, fxLfoNode: reverbNode, reverbData: { mode: 'algorithmic', reverbNode, tailFilter } };
+    }
+
+    function _disposeReverbData(rd) {
+      if (!rd) return;
+      for (const n of [rd.reverbNode, rd.tailFilter]) {
+        if (n) { try { n.disconnect(); } catch (e) {} try { n.dispose(); } catch (e) {} }
+      }
+    }
+
+    function _createDelayNodes(params) {
+      const mode = params.mode || 'mono';
+      if (mode === 'pingpong') {
+        const node = new Tone.PingPongDelay({ delayTime: params.delayTime ?? 0.25, feedback: params.feedback ?? 0.35, wet: params.wet ?? 0.4 });
+        return { node, fxLfoNode: node };
+      } else if (mode === 'filtered') {
+        return _createFilteredDelayNodes(params);
+      }
+      // mono (default)
+      const node = new Tone.FeedbackDelay({ delayTime: params.delayTime ?? 0.25, feedback: params.feedback ?? 0.35, wet: params.wet ?? 0.4 });
+      return { node, fxLfoNode: node };
+    }
+
+    function _createFilteredDelayNodes(params) {
+      const w = params.wet ?? 0.4;
+      const inputGain    = new Tone.Gain(1);
+      const delay        = new Tone.Delay({ delayTime: params.delayTime ?? 0.25, maxDelay: 2 });
+      const feedbackGain = new Tone.Gain(params.feedback ?? 0.35);
+      const feedbackFilter = new Tone.Filter({ frequency: params.filterFreq ?? 2000, type: params.filterType || 'lowpass', Q: 0.707 });
+      const wetGain      = new Tone.Gain(w);
+      const dryGain      = new Tone.Gain(1 - w);
+      const outputGain   = new Tone.Gain(1);
+      inputGain.connect(delay);
+      inputGain.connect(dryGain);
+      delay.connect(feedbackFilter);
+      feedbackFilter.connect(feedbackGain);
+      feedbackGain.connect(delay);
+      feedbackFilter.connect(wetGain);
+      wetGain.connect(outputGain);
+      dryGain.connect(outputGain);
+      const delayData = { inputGain, delay, feedbackGain, feedbackFilter, wetGain, dryGain, outputGain };
+      return { node: inputGain, outputNode: outputGain, fxLfoNode: feedbackFilter, delayData };
+    }
+
+    function _disposeDelayData(dd) {
+      if (!dd) return;
+      for (const n of [dd.inputGain, dd.delay, dd.feedbackGain, dd.feedbackFilter, dd.wetGain, dd.dryGain, dd.outputGain]) {
+        if (n) { try { n.disconnect(); } catch (e) {} try { n.dispose(); } catch (e) {} }
+      }
+    }
+
+function _switchDelayMode(inst, newMode, instrument) {
+      _disposeDelayData(inst.delayData);
+      try { if (inst.outputNode && inst.outputNode !== inst.node) inst.outputNode.disconnect(); } catch (e) {}
+      try { inst.node.disconnect(); } catch (e) {}
+      inst.params.mode = newMode;
+      const created = _createDelayNodes(inst.params);
+      inst.node = created.node;
+      inst.outputNode = created.outputNode ?? undefined;
+      inst.fxLfoNode = created.fxLfoNode;
+      inst.delayData = created.delayData ?? undefined;
+      instrument.rebuildFxChain();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     class Sample {
       constructor(id, name, rawBuf, x = 0, y = 0) {
         this.id = id;
@@ -1312,8 +1386,8 @@
 
       _fxDefaultParams(type) {
         const d = {
-          reverb: { decay: 2.5, preDelay: 0.01, wet: 0.4 },
-          delay: { delayTime: 0.25, feedback: 0.35, wet: 0.4 },
+          reverb: { mode: 'algorithmic', roomSize: 0.7, dampening: 3000, decay: 2.5, preDelay: 0.01, shimmerAmount: 0.35, shimmerPitch: 12, irType: 'hall', irDecay: 2.0, irPreDelay: 0.005, tailFilterType: 'none', tailFilterFreq: 20000, wet: 0.4 },
+          delay: { mode: 'mono', delayTime: 0.25, feedback: 0.35, wet: 0.4, filterFreq: 2000, filterType: 'lowpass', syncMode: false, subdivision: '4n' },
           tremolo: { frequency: 4, depth: 0.7, wet: 1 },
           dist: { distortion: 0.4, wet: 0.8 },
           chorus: { frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 },
@@ -1325,7 +1399,6 @@
 
       _createFxNode(type, params) {
         switch (type) {
-          case 'reverb': return new Tone.Reverb({ decay: params.decay, preDelay: params.preDelay, wet: params.wet });
           case 'delay': return new Tone.FeedbackDelay({ delayTime: params.delayTime, feedback: params.feedback, wet: params.wet });
           case 'tremolo': return new Tone.Tremolo({ frequency: params.frequency, depth: params.depth, wet: params.wet }).start();
           case 'dist': return new Tone.Distortion({ distortion: params.distortion, wet: params.wet });
@@ -1365,6 +1438,14 @@
         if (type === 'eq') {
           const eq = this._createEqInstance();
           inst = { uid: ++this._fxUidCounter, type: 'eq', node: eq.node, outputNode: eq.outputNode, eqData: eq, params: {}, postFader: true };
+        } else if (type === 'reverb') {
+          const params = this._fxDefaultParams(type);
+          const created = _createReverbNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, reverbData: created.reverbData, params, postFader: true };
+        } else if (type === 'delay') {
+          const params = this._fxDefaultParams(type);
+          const created = _createDelayNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, delayData: created.delayData, params, postFader: true };
         } else {
           const params = this._fxDefaultParams(type);
           const node = this._createFxNode(type, params);
@@ -1382,6 +1463,10 @@
         const inst = this.fxChain[idx];
         if (inst.eqData) {
           for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch (e) { } }
+        } else if (inst.reverbData) {
+          _disposeReverbData(inst.reverbData);
+        } else if (inst.delayData) {
+          _disposeDelayData(inst.delayData);
         } else {
           try { inst.node.disconnect(); } catch (e) { }
           try { inst.node.dispose(); } catch (e) { }

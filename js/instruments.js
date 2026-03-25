@@ -181,18 +181,26 @@
           this.oscType = 'sawtooth'; this.filterType = 'lowpass'; this.filterFreq = 2500;
           this.filterQ = 1.0; this.portamento = 0; this.currentPreset = 0;
           this.attack = 0.01; this.decay = 0.15; this.sustain = 0.6; this.release = 0.4;
+          this._glideSynth = null; this._glideLastFreq = null;
           this.synthType = 'analog';
           this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
           this._poly = new Tone.PolySynth(Tone.Synth, { oscillator: { type: this.oscType }, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }).connect(this._filter);
           this._poly.maxPolyphony = 16;
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','updatePortamento','updateEnvelope','updateOscType'].forEach(m => {
+            this[m] = AnalogSynth.prototype[m].bind(this);
+          });
         } else if (newType === 'fm') {
           this.harmonicity = 3.0; this.modulationIndex = 8.0;
           this.attack = 0.001; this.decay = 1.2; this.sustain = 0.15; this.release = 0.8;
           this.modAttack = 0.001; this.modDecay = 0.8; this.modSustain = 0.2; this.modRelease = 0.5;
           this.currentPreset = 0; this._customPresets = []; this._usingCustom = false;
+          this.portamento = 0; this._glideSynth = null; this._glideLastFreq = null;
           this.synthType = 'fm';
-          this._poly = new Tone.PolySynth(Tone.FMSynth, { harmonicity: this.harmonicity, modulationIndex: this.modulationIndex, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release }, modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }).connect(this.pan);
+          this._poly = new Tone.PolySynth(Tone.FMSynth, { harmonicity: this.harmonicity, modulationIndex: this.modulationIndex, portamento: 0, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release }, modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }).connect(this.pan);
           this._poly.maxPolyphony = 16;
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','updatePortamento','updateEnvelope','updateFMParams','updateModEnv'].forEach(m => {
+            this[m] = FMSynthInstrument.prototype[m].bind(this);
+          });
           if (typeof DX7_PRESETS !== 'undefined') this.loadFMPreset(DX7_PRESETS[0]);
         } else if (newType === 'wavetable') {
           this.synthType = 'wavetable';
@@ -201,11 +209,12 @@
           this.cutoff = 0.2; this.resonance = 4.0; this.envAmount = 0.4;
           this.filterAttack = 0.056; this.filterDecay = 0.991;
           this.attack = 0.056; this.decay = 0.5; this.sustain = 0.7; this.release = 0.3;
+          this.portamento = 0; this._glideLastFreq = null;
           this._wt = null; this._voices = [];
           this._wtBridge = new Tone.Gain(0.25).connect(this.pan);
           // Bind WavetableSynth voice methods onto this instance
           ['noteOn','noteOff','allNotesOff','_releaseVoice','_stopVoice','_makeVoice','_cutoffHz',
-           'updateWave','updateFilter','updateDetune','updateEnvelope','triggerAtTime'].forEach(m => {
+           'updateWave','updateFilter','updateDetune','updateEnvelope','updatePortamento','triggerAtTime'].forEach(m => {
             this[m] = WavetableSynth.prototype[m].bind(this);
           });
           this.updateWave();
@@ -216,9 +225,10 @@
           this.stringTension = 0.0; this.pluckDamping = 0.5;
           this.pluckDampingVariation = 0.25; this.stereoSpread = 0.2;
           this.bodyResonation = 'simple';
+          this.portamento = 0; this._glideLastFreq = null;
           this._kpVoices = [];
           this._kpBridge = new Tone.Gain(0.5).connect(this.pan);
-          ['noteOn','noteOff','allNotesOff','triggerAtTime',
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','updatePortamento',
            '_lp','_smoothingFactor','_pluckCoeff','_generateBuffer','_makeVoice'].forEach(m => {
             this[m] = KarplusSynth.prototype[m].bind(this);
           });
@@ -233,9 +243,10 @@
           this.release = 1.5;
           this.filterType = 'lowpass'; this.filterFreq = 20000; this.filterQ = 1.0;
           this._smplr = null; this._smplrLoading = false; this._refreshSf2List = null;
+          this.portamento = 0; this._glideShifter = null; this._glideRaf = null; this._glideLastMidi = null;
           this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
           this._romplerBridge = new Tone.Gain(1).connect(this._filter);
-          ['noteOn','noteOff','allNotesOff','triggerAtTime','updateFilter'].forEach(m => {
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','updateFilter','updatePortamento'].forEach(m => {
             this[m] = RomplerInstrument.prototype[m].bind(this);
           });
           this._romplerLoad();
@@ -263,8 +274,8 @@
 
       _fxDefaultParams(type) {
         const d = {
-          reverb:   { decay: 2.5, preDelay: 0.01, wet: 0.4 },
-          delay:    { delayTime: 0.25, feedback: 0.35, wet: 0.4 },
+          reverb:   { mode: 'algorithmic', roomSize: 0.7, dampening: 3000, decay: 2.5, preDelay: 0.01, shimmerAmount: 0.35, shimmerPitch: 12, irType: 'hall', irDecay: 2.0, irPreDelay: 0.005, tailFilterType: 'none', tailFilterFreq: 20000, wet: 0.4 },
+          delay:    { mode: 'mono', delayTime: 0.25, feedback: 0.35, wet: 0.4, filterFreq: 2000, filterType: 'lowpass', syncMode: false, subdivision: '4n' },
           tremolo:  { frequency: 4, depth: 0.7, wet: 1 },
           dist:     { distortion: 0.4, wet: 0.8 },
           chorus:   { frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 },
@@ -276,7 +287,6 @@
 
       _createFxNode(type, params) {
         switch (type) {
-          case 'reverb':   return new Tone.Reverb({ decay: params.decay, preDelay: params.preDelay, wet: params.wet });
           case 'delay':    return new Tone.FeedbackDelay({ delayTime: params.delayTime, feedback: params.feedback, wet: params.wet });
           case 'tremolo':  return new Tone.Tremolo({ frequency: params.frequency, depth: params.depth, wet: params.wet }).start();
           case 'dist':     return new Tone.Distortion({ distortion: params.distortion, wet: params.wet });
@@ -316,6 +326,14 @@
         if (type === 'eq') {
           const eq = this._createEqInstance();
           inst = { uid: ++this._fxUidCounter, type: 'eq', node: eq.node, outputNode: eq.outputNode, eqData: eq, params: {}, postFader: true };
+        } else if (type === 'reverb') {
+          const params = this._fxDefaultParams(type);
+          const created = _createReverbNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, reverbData: created.reverbData, params, postFader: true };
+        } else if (type === 'delay') {
+          const params = this._fxDefaultParams(type);
+          const created = _createDelayNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, delayData: created.delayData, params, postFader: true };
         } else {
           const params = this._fxDefaultParams(type);
           const node = this._createFxNode(type, params);
@@ -333,6 +351,10 @@
         const inst = this.fxChain[idx];
         if (inst.eqData) {
           for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch(e) {} }
+        } else if (inst.reverbData) {
+          _disposeReverbData(inst.reverbData);
+        } else if (inst.delayData) {
+          _disposeDelayData(inst.delayData);
         } else {
           try { inst.node.disconnect(); } catch(e) {}
           try { inst.node.dispose(); } catch(e) {}
@@ -369,12 +391,14 @@
         this.filterQ      = 1.0;
         this.portamento   = 0;
         this.currentPreset = 0;
+        this._glideSynth   = null;
+        this._glideLastFreq = null;
 
         this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
         this._poly = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: this.oscType },
           envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release },
-          portamento: this.portamento,
+          portamento: 0,
         }).connect(this._filter);
         this._poly.maxPolyphony = 16;
       }
@@ -383,14 +407,81 @@
         Object.assign(this, { oscType: p.oscType, filterType: p.filterType, filterFreq: p.filterFreq, filterQ: p.filterQ, attack: p.attack, decay: p.decay, sustain: p.sustain, release: p.release });
         this.updateOscType(); this.updateFilter(); this.updateEnvelope();
       }
-      noteOn(note, vel = 100) { if (this._poly) this._poly.triggerAttack(note, Tone.now(), vel / 127); }
-      noteOff(note) { if (this._poly) this._poly.triggerRelease(note, Tone.now()); }
-      allNotesOff() { if (this._poly) try { this._poly.releaseAll(); } catch(e) {} }
-      updateOscType()   { if (this._poly && this._filter) try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {} }
-      updateEnvelope()  { if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
-      updateFilter()    { if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
+      noteOn(note, vel = 100) {
+        const now = Tone.now();
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        if (this.portamento > 0 && this._glideSynth) {
+          // triggerAttack sets frequency.setValueAtTime(targetFreq, now) internally.
+          // We then override with setValueAtTime(lastFreq, now) — same-time last-write wins.
+          this._glideSynth.triggerAttack(note, now, vel / 127);
+          if (this._glideLastFreq != null) {
+            this._glideSynth.frequency.setValueAtTime(this._glideLastFreq, now);
+            this._glideSynth.frequency.exponentialRampToValueAtTime(Math.max(1e-6, targetFreq), now + this.portamento);
+          }
+          this._glideLastFreq = targetFreq;
+        } else {
+          if (this._poly) this._poly.triggerAttack(note, now, vel / 127);
+        }
+      }
+      noteOff(note) {
+        if (this.portamento > 0 && this._glideSynth) {
+          this._glideSynth.triggerRelease(Tone.now());
+        } else {
+          if (this._poly) this._poly.triggerRelease(note, Tone.now());
+        }
+      }
+      allNotesOff() {
+        if (this._poly) try { this._poly.releaseAll(); } catch(e) {}
+        if (this._glideSynth) try { this._glideSynth.triggerRelease(Tone.now()); } catch(e) {}
+      }
+      triggerAtTime(note, dur, time, vel) {
+        this._noteHighlight(note, true);
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        if (this.portamento > 0 && this._glideSynth) {
+          // Same-time override: triggerAttack sets freq=targetFreq at time, we overwrite with lastFreq.
+          this._glideSynth.triggerAttack(note, time, vel);
+          if (this._glideLastFreq != null) {
+            this._glideSynth.frequency.setValueAtTime(this._glideLastFreq, time);
+            this._glideSynth.frequency.exponentialRampToValueAtTime(Math.max(1e-6, targetFreq), time + this.portamento);
+          }
+          this._glideSynth.triggerRelease(time + dur);
+        } else {
+          try { if (this._poly) this._poly.triggerAttackRelease(note, dur, time, vel); } catch(e) {}
+        }
+        this._glideLastFreq = targetFreq;
+        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+      }
+      updateOscType() {
+        if (this._poly && this._filter) try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {}
+        if (this._glideSynth) try { this._glideSynth.set({ oscillator: { type: this.oscType } }); } catch(e) {}
+      }
+      updateEnvelope() {
+        if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
+        if (this._glideSynth) this._glideSynth.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
+      }
+      updateFilter() { if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
+      updatePortamento() {
+        if (!this._filter) return;
+        if (this.portamento > 0) {
+          if (!this._glideSynth) {
+            this._glideSynth = new Tone.Synth({
+              oscillator: { type: this.oscType },
+              envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release },
+              portamento: 0,
+            }).connect(this._filter);
+          }
+        } else {
+          if (this._glideSynth) {
+            try { this._glideSynth.triggerRelease(); } catch(e) {}
+            try { this._glideSynth.dispose(); } catch(e) {}
+            this._glideSynth = null;
+          }
+          this._glideLastFreq = null;
+        }
+      }
       dispose() {
         this.allNotesOff();
+        if (this._glideSynth) { try { this._glideSynth.dispose(); } catch(e) {} this._glideSynth = null; }
         try { this._poly.dispose(); } catch(e) {}
         try { this._filter.dispose(); } catch(e) {}
         super.dispose();
@@ -414,22 +505,97 @@
         this.currentPreset   = 0;
         this._customPresets  = [];
         this._usingCustom    = false;
+        this.portamento      = 0;
+        this._glideSynth     = null;
+        this._glideLastFreq  = null;
 
         this._poly = new Tone.PolySynth(Tone.FMSynth, {
           harmonicity: this.harmonicity,
           modulationIndex: this.modulationIndex,
+          portamento: 0,
           envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
           modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
         }).connect(this.pan);
         this._poly.maxPolyphony = 16;
         this.loadPreset(DX7_PRESETS[0]);
       }
-      noteOn(note, vel = 100) { if (this._poly) this._poly.triggerAttack(note, Tone.now(), vel / 127); }
-      noteOff(note) { if (this._poly) this._poly.triggerRelease(note, Tone.now()); }
-      allNotesOff() { if (this._poly) try { this._poly.releaseAll(); } catch(e) {} }
-      updateFMParams() { if (this._poly) this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); }
-      updateEnvelope() { if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
-      updateModEnv()   { if (this._poly) this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); }
+      noteOn(note, vel = 100) {
+        const now = Tone.now();
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        if (this.portamento > 0 && this._glideSynth) {
+          // FMSynth has no built-in portamento. triggerAttack sets frequency.setValueAtTime(targetFreq, now).
+          // We then override with setValueAtTime(lastFreq, now) — same-time last-write wins per Web Audio spec.
+          this._glideSynth.triggerAttack(note, now, vel / 127);
+          if (this._glideLastFreq != null) {
+            this._glideSynth.frequency.setValueAtTime(this._glideLastFreq, now);
+            this._glideSynth.frequency.exponentialRampToValueAtTime(Math.max(1e-6, targetFreq), now + this.portamento);
+          }
+          this._glideLastFreq = targetFreq;
+        } else {
+          if (this._poly) this._poly.triggerAttack(note, now, vel / 127);
+        }
+      }
+      noteOff(note) {
+        if (this.portamento > 0 && this._glideSynth) {
+          this._glideSynth.triggerRelease(Tone.now());
+        } else {
+          if (this._poly) this._poly.triggerRelease(note, Tone.now());
+        }
+      }
+      allNotesOff() {
+        if (this._poly) try { this._poly.releaseAll(); } catch(e) {}
+        if (this._glideSynth) try { this._glideSynth.triggerRelease(Tone.now()); } catch(e) {}
+      }
+      triggerAtTime(note, dur, time, vel) {
+        this._noteHighlight(note, true);
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        if (this.portamento > 0 && this._glideSynth) {
+          // Same-time override: triggerAttack sets freq=targetFreq at time, we overwrite with lastFreq
+          // then schedule exponential ramp. No cancelScheduledValues needed.
+          this._glideSynth.triggerAttack(note, time, vel);
+          if (this._glideLastFreq != null) {
+            this._glideSynth.frequency.setValueAtTime(this._glideLastFreq, time);
+            this._glideSynth.frequency.exponentialRampToValueAtTime(Math.max(1e-6, targetFreq), time + this.portamento);
+          }
+          this._glideSynth.triggerRelease(time + dur);
+        } else {
+          try { if (this._poly) this._poly.triggerAttackRelease(note, dur, time, vel); } catch(e) {}
+        }
+        this._glideLastFreq = targetFreq;
+        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+      }
+      updateFMParams() {
+        if (this._poly) this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex });
+        if (this._glideSynth) try { this._glideSynth.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); } catch(e) {}
+      }
+      updateEnvelope() {
+        if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
+        if (this._glideSynth) this._glideSynth.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
+      }
+      updateModEnv() {
+        if (this._poly) this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } });
+        if (this._glideSynth) try { this._glideSynth.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); } catch(e) {}
+      }
+      updatePortamento() {
+        if (this.portamento > 0) {
+          if (!this._glideSynth) {
+            this._glideSynth = new Tone.FMSynth({
+              harmonicity: this.harmonicity,
+              modulationIndex: this.modulationIndex,
+              envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
+              modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
+              portamento: 0,
+            }).connect(this.pan);
+          }
+        } else {
+          if (this._glideSynth) {
+            try { this._glideSynth.triggerRelease(); } catch(e) {}
+            try { this._glideSynth.dispose(); } catch(e) {}
+            this._glideSynth = null;
+          }
+          this._glideLastFreq = null;
+        }
+      }
       get presetList() { return this._usingCustom ? this._customPresets : DX7_PRESETS; }
       loadPreset(preset) {
         Object.assign(this, {
@@ -437,11 +603,13 @@
           attack: preset.attack, decay: preset.decay, sustain: preset.sustain, release: preset.release,
           modAttack: preset.modAttack, modDecay: preset.modDecay, modSustain: preset.modSustain, modRelease: preset.modRelease,
         });
-        this._poly.set({
+        const fmPresetParams = {
           harmonicity: this.harmonicity, modulationIndex: this.modulationIndex,
           envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
           modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
-        });
+        };
+        this._poly.set(fmPresetParams);
+        if (this._glideSynth) try { this._glideSynth.set(fmPresetParams); } catch(e) {}
       }
       loadSysEx(data) {
         const presets = parseDX7SysEx(data);
@@ -454,6 +622,7 @@
       }
       dispose() {
         this.allNotesOff();
+        if (this._glideSynth) { try { this._glideSynth.dispose(); } catch(e) {} this._glideSynth = null; }
         try { this._poly.dispose(); } catch(e) {}
         super.dispose();
       }
@@ -480,6 +649,9 @@
         this.decay         = 0.5;
         this.sustain       = 0.7;
         this.release       = 0.3;
+        // Glide
+        this.portamento    = 0;
+        this._glideLastFreq = null;
 
         this._voices       = [];
         this._wt           = null;
@@ -544,16 +716,74 @@
         if (!this._wt) return;
         this._noteHighlight(note, true);
         const ctx = Tone.context.rawContext;
-        const now = ctx.currentTime;
-        if (this._voices.length >= 16) this._stopVoice(this._voices.shift(), now);
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        const amp = (vel / 127) * 0.45;
 
-        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), now);
+        // LEGATO portamento: glide an existing sounding voice to the new pitch
+        if (this.portamento > 0 && this._voices.length > 0) {
+          const now = ctx.currentTime;
+          const v = this._voices[this._voices.length - 1];
+          const wt = this._wt;
+          const targetRate = targetFreq * wt.getRateScale();
+          const d1 = Math.pow(2, this.detune1 / 1200);
+          const d2 = Math.pow(2, this.detune2 / 1200);
+          const oc = Math.pow(2, this.osc2octave / 12);
+          const glideEnd = now + this.portamento;
+          const glide = (param, target) => {
+            const cur = Math.max(1e-6, param.value);
+            param.cancelScheduledValues(now);
+            param.setValueAtTime(cur, now);
+            param.exponentialRampToValueAtTime(Math.max(1e-6, target), glideEnd);
+          };
+          glide(v.srcA.playbackRate,    targetRate / d1);
+          glide(v.srcAoct.playbackRate, targetRate / d2 * oc);
+          glide(v.srcB.playbackRate,    targetRate * d1);
+          glide(v.srcBoct.playbackRate, targetRate * d2 * oc);
+          v.note = note; v.freq = targetFreq;
+          v.envGain.gain.cancelScheduledValues(now);
+          v.envGain.gain.setValueAtTime(Math.max(0, v.envGain.gain.value), now);
+          v.envGain.gain.setTargetAtTime(amp, now, Math.max(this.attack * 0.33, 0.003));
+          v.envGain.gain.setTargetAtTime(amp * this.sustain, now + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
+          this._glideLastFreq = targetFreq;
+          return;
+        }
+
+        // Create new voice (may be glided from previous freq in non-legato mode)
+        const now0 = ctx.currentTime;
+        if (this._voices.length >= 16) this._stopVoice(this._voices.shift(), now0);
+        const v = this._makeVoice(targetFreq, now0);
         v.note = note;
 
-        const amp = (vel / 127) * 0.45;
-        v.envGain.gain.setTargetAtTime(amp, now, Math.max(this.attack * 0.33, 0.003));
-        v.envGain.gain.setTargetAtTime(amp * this.sustain, now + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
+        // NON-LEGATO portamento: voice just spawned — ramp playbackRates from old freq to new
+        if (this.portamento > 0 && this._glideLastFreq != null && this._glideLastFreq !== targetFreq) {
+          const now2 = ctx.currentTime; // fresh after buffer creation
+          const wt = this._wt;
+          const oldRate = this._glideLastFreq * wt.getRateScale();
+          const newRate = targetFreq * wt.getRateScale();
+          const d1 = Math.pow(2, this.detune1 / 1200);
+          const d2 = Math.pow(2, this.detune2 / 1200);
+          const oc = Math.pow(2, this.osc2octave / 12);
+          const glideEnd = now2 + this.portamento;
+          const ramp = (param, oldVal, newVal) => {
+            param.cancelScheduledValues(now2);
+            param.setValueAtTime(Math.max(1e-6, oldVal), now2);
+            param.exponentialRampToValueAtTime(Math.max(1e-6, newVal), glideEnd);
+          };
+          ramp(v.srcA.playbackRate,    oldRate / d1,      newRate / d1);
+          ramp(v.srcAoct.playbackRate, oldRate / d2 * oc, newRate / d2 * oc);
+          ramp(v.srcB.playbackRate,    oldRate * d1,      newRate * d1);
+          ramp(v.srcBoct.playbackRate, oldRate * d2 * oc, newRate * d2 * oc);
+          // Start gain from silence at now2 so ramp begins before any audible output at wrong pitch
+          v.envGain.gain.cancelScheduledValues(now2);
+          v.envGain.gain.setValueAtTime(0, now2);
+          v.envGain.gain.setTargetAtTime(amp, now2, Math.max(this.attack * 0.33, 0.003));
+          v.envGain.gain.setTargetAtTime(amp * this.sustain, now2 + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
+        } else {
+          v.envGain.gain.setTargetAtTime(amp, now0, Math.max(this.attack * 0.33, 0.003));
+          v.envGain.gain.setTargetAtTime(amp * this.sustain, now0 + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
+        }
 
+        this._glideLastFreq = targetFreq;
         this._voices.push(v);
       }
 
@@ -586,10 +816,32 @@
       triggerAtTime(note, dur, time, vel) {
         if (!this._wt) return;
         this._noteHighlight(note, true);
-        const ctx = Tone.context.rawContext;
-        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), time);
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        const v = this._makeVoice(targetFreq, time);
         // vel from riff/seq is 0–1 normalized (unlike noteOn which receives 0–127)
         const amp = Math.min(vel, 1.0) * 0.45;
+
+        // NON-LEGATO portamento anchored at scheduled time
+        if (this.portamento > 0 && this._glideLastFreq != null && this._glideLastFreq !== targetFreq) {
+          const wt = this._wt;
+          const oldRate = this._glideLastFreq * wt.getRateScale();
+          const newRate = targetFreq * wt.getRateScale();
+          const d1 = Math.pow(2, this.detune1 / 1200);
+          const d2 = Math.pow(2, this.detune2 / 1200);
+          const oc = Math.pow(2, this.osc2octave / 12);
+          const glideEnd = time + this.portamento;
+          const ramp = (param, oldVal, newVal) => {
+            param.cancelScheduledValues(time);
+            param.setValueAtTime(Math.max(1e-6, oldVal), time);
+            param.exponentialRampToValueAtTime(Math.max(1e-6, newVal), glideEnd);
+          };
+          ramp(v.srcA.playbackRate,    oldRate / d1,      newRate / d1);
+          ramp(v.srcAoct.playbackRate, oldRate / d2 * oc, newRate / d2 * oc);
+          ramp(v.srcB.playbackRate,    oldRate * d1,      newRate * d1);
+          ramp(v.srcBoct.playbackRate, oldRate * d2 * oc, newRate * d2 * oc);
+        }
+
+        this._glideLastFreq = targetFreq;
         v.envGain.gain.setValueAtTime(0, time);
         v.envGain.gain.setTargetAtTime(amp, time, Math.max(this.attack * 0.33, 0.003));
         v.envGain.gain.setTargetAtTime(amp * this.sustain, time + this.attack * 1.5, Math.max(this.decay * 0.33, 0.01));
@@ -635,7 +887,8 @@
         }
       }
 
-      updateEnvelope() { /* applied on next noteOn */ }
+      updateEnvelope()   { /* applied on next noteOn */ }
+      updatePortamento() { /* portamento value is read directly in noteOn */ }
 
       dispose() {
         this.allNotesOff();
@@ -662,6 +915,9 @@
         // Output
         this.stereoSpread           = 0.2;   // L/R spread (0–1)
         this.bodyResonation         = 'simple'; // 'none' | 'simple'
+        // Glide
+        this.portamento             = 0;
+        this._glideLastFreq         = null;
         this._kpVoices              = [];
         this._kpBridge              = new Tone.Gain(0.5).connect(this.pan);
       }
@@ -800,10 +1056,23 @@
           const old = this._kpVoices.shift();
           try { old.envGain.gain.setValueAtTime(0, Tone.context.rawContext.currentTime); } catch(e) {}
         }
-        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), Tone.context.rawContext.currentTime, vel / 127 * 0.8);
+        const now = Tone.context.rawContext.currentTime;
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        const v = this._makeVoice(targetFreq, now, vel / 127 * 0.8);
+        // Portamento: buffer is at targetFreq pitch; start playbackRate at old/new ratio and ramp to 1.0.
+        // Use a FRESH timestamp after buffer generation to avoid past-time scheduling issues.
+        if (this.portamento > 0 && this._glideLastFreq != null) {
+          const now2 = Tone.context.rawContext.currentTime;
+          const startRate = Math.max(1e-6, this._glideLastFreq / targetFreq);
+          v.src.playbackRate.cancelScheduledValues(now2);
+          v.src.playbackRate.setValueAtTime(startRate, now2);
+          v.src.playbackRate.exponentialRampToValueAtTime(1.0, now2 + this.portamento);
+        }
+        this._glideLastFreq = targetFreq;
         v.note = note;
         this._kpVoices.push(v);
       }
+      updatePortamento() { /* portamento value is read directly in noteOn */ }
 
       noteOff(note) {
         // Plucked strings ring out naturally — just unhighlight the key
@@ -820,7 +1089,16 @@
 
       triggerAtTime(note, dur, time, vel) {
         this._noteHighlight(note, true);
-        const v = this._makeVoice(Tone.Frequency(note).toFrequency(), time, Math.min(vel, 1.0) * 0.8);
+        const targetFreq = Tone.Frequency(note).toFrequency();
+        const v = this._makeVoice(targetFreq, time, Math.min(vel, 1.0) * 0.8);
+        // Portamento anchored at scheduled time: ramp playbackRate from old/new ratio → 1.0
+        if (this.portamento > 0 && this._glideLastFreq != null) {
+          const startRate = Math.max(1e-6, this._glideLastFreq / targetFreq);
+          v.src.playbackRate.cancelScheduledValues(time);
+          v.src.playbackRate.setValueAtTime(startRate, time);
+          v.src.playbackRate.exponentialRampToValueAtTime(1.0, time + this.portamento);
+        }
+        this._glideLastFreq = targetFreq;
         v.note = note;
         this._kpVoices.push(v);
         setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
@@ -900,6 +1178,11 @@
         this._smplr               = null;
         this._smplrLoading        = false;
         this._refreshSf2List      = null;
+        // Glide
+        this.portamento           = 0;
+        this._glideShifter        = null;
+        this._glideRaf            = null;
+        this._glideLastMidi       = null;
 
         this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
         this._romplerBridge = new Tone.Gain(1).connect(this._filter);
@@ -909,7 +1192,43 @@
       noteOn(note, vel = 100) {
         if (!this._smplr || this._smplrLoading) return;
         this._noteHighlight(note, true);
+        const newMidi = Tone.Frequency(note).toMidi();
+        if (this.portamento > 0 && this._glideLastMidi != null && this._glideShifter) {
+          const startSemitones = this._glideLastMidi - newMidi;
+          this._glideShifter.pitch = startSemitones;
+          const startTime = performance.now();
+          const duration = this.portamento * 1000;
+          if (this._glideRaf) cancelAnimationFrame(this._glideRaf);
+          const animate = () => {
+            const progress = Math.min((performance.now() - startTime) / duration, 1);
+            if (this._glideShifter) this._glideShifter.pitch = startSemitones * (1 - progress);
+            if (progress < 1) this._glideRaf = requestAnimationFrame(animate);
+            else { this._glideRaf = null; if (this._glideShifter) this._glideShifter.pitch = 0; }
+          };
+          this._glideRaf = requestAnimationFrame(animate);
+        }
+        this._glideLastMidi = newMidi;
         try { this._smplr.start({ note, velocity: vel, stopId: note }); } catch(e) {}
+      }
+
+      updatePortamento() {
+        if (this.portamento > 0) {
+          if (!this._glideShifter && this._romplerBridge && this._filter) {
+            this._glideShifter = new Tone.PitchShift(0);
+            try { this._romplerBridge.disconnect(); } catch(e) {}
+            this._romplerBridge.connect(this._glideShifter);
+            this._glideShifter.connect(this._filter);
+          }
+        } else {
+          if (this._glideRaf) { cancelAnimationFrame(this._glideRaf); this._glideRaf = null; }
+          if (this._glideShifter) {
+            try { this._romplerBridge.disconnect(); } catch(e) {}
+            try { this._glideShifter.disconnect(); } catch(e) {}
+            try { this._glideShifter.dispose(); } catch(e) {}
+            this._glideShifter = null;
+            try { this._romplerBridge.connect(this._filter); } catch(e) {}
+          }
+        }
       }
 
       noteOff(note) {
@@ -926,6 +1245,29 @@
       triggerAtTime(note, dur, time, vel) {
         if (!this._smplr || this._smplrLoading) return;
         this._noteHighlight(note, true);
+        const newMidi = Tone.Frequency(note).toMidi();
+        if (this.portamento > 0 && this._glideLastMidi != null && this._glideShifter) {
+          const startSemitones = this._glideLastMidi - newMidi;
+          // Delay the rAF animation to start when the note actually plays
+          const delayMs = Math.max(0, (time - Tone.context.currentTime) * 1000);
+          const portamento = this.portamento;
+          const shifter = this._glideShifter;
+          setTimeout(() => {
+            if (!shifter) return;
+            shifter.pitch = startSemitones;
+            const t0 = performance.now();
+            const glideDur = portamento * 1000;
+            if (this._glideRaf) cancelAnimationFrame(this._glideRaf);
+            const animate = () => {
+              const progress = Math.min((performance.now() - t0) / glideDur, 1);
+              if (shifter) shifter.pitch = startSemitones * (1 - progress);
+              if (progress < 1) this._glideRaf = requestAnimationFrame(animate);
+              else { this._glideRaf = null; if (shifter) shifter.pitch = 0; }
+            };
+            this._glideRaf = requestAnimationFrame(animate);
+          }, delayMs);
+        }
+        this._glideLastMidi = newMidi;
         const velocity = Math.round(Math.min(vel, 1.0) * 127);
         try {
           this._smplr.start({ note, velocity, time, duration: dur, ampRelease: this.release });
@@ -938,6 +1280,8 @@
       }
 
       dispose() {
+        if (this._glideRaf) { cancelAnimationFrame(this._glideRaf); this._glideRaf = null; }
+        if (this._glideShifter) { try { this._glideShifter.dispose(); } catch(e) {} this._glideShifter = null; }
         if (this._smplr) { try { this._smplr.stop(); } catch(e) {} this._smplr = null; }
         if (this._romplerBridge) { try { this._romplerBridge.dispose(); } catch(e) {} this._romplerBridge = null; }
         if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }

@@ -740,12 +740,17 @@
       'card-vol': { prop: '_currentDb', min: -60, max: 6, label: 'Volume', setter: 'setVolPos', fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
       'card-pan': { prop: '_currentPan', min: -1, max: 1, label: 'Pan', setter: 'setPanPos', fmtVal: v => v < -0.01 ? 'L' + Math.round(-v * 100) : v > 0.01 ? 'R' + Math.round(v * 100) : 'C' },
       // FX & EQ
-      'fx-r-decay': { prop: 'decay', min: 0.1, max: 30, label: 'Decay', isFx: true },
-      'fx-r-predly': { prop: 'preDelay', min: 0, max: 0.5, label: 'Pre-Dly', isFx: true },
-      'fx-r-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
-      'fx-d-time': { prop: 'delayTime', min: 0, max: 2, label: 'Time', isFx: true },
-      'fx-d-fb': { prop: 'feedback', min: 0, max: 0.99, label: 'Feedback', isFx: true },
-      'fx-d-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      // Reverb (multi-mode) — targets fxLfoNode (the actual reverb node, not shimmerInput)
+      'fx-r-roomsize': { prop: 'roomSize',  min: 0,   max: 1,     label: 'Room Size', isFx: true },
+      'fx-r-damping':  { prop: 'dampening', min: 200, max: 10000, label: 'Damping',   isFx: true },
+      'fx-r-wet':      { prop: 'wet',       min: 0,   max: 1,     label: 'Rev Wet',   isFx: true },
+      'fx-r-decay':    { prop: 'decay',     min: 0.1, max: 30,    label: 'Decay',     isFx: true },  // algorithmic mode
+      'fx-r-shimamt':  { prop: 'shimmerAmount', min: 0, max: 0.95, label: 'Shimmer',  isFx: true },
+      // Delay (multi-mode)
+      'fx-d-time':     { prop: 'delayTime', min: 0, max: 2,    label: 'Dly Time',  isFx: true },
+      'fx-d-fb':       { prop: 'feedback',  min: 0, max: 0.99, label: 'Feedback',  isFx: true },
+      'fx-d-wet':      { prop: 'wet',       min: 0, max: 1,    label: 'Dly Wet',   isFx: true },
+      'fx-d-filtfreq': { prop: 'frequency', min: 100, max: 12000, label: 'Filt Hz', isFx: true }, // filtered mode — targets feedbackFilter via fxLfoNode
       'fx-tr-rate': { prop: 'frequency', min: 0.1, max: 20, label: 'Rate', isFx: true },
       'fx-tr-depth': { prop: 'depth', min: 0, max: 1, label: 'Depth', isFx: true },
       'fx-tr-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
@@ -816,6 +821,12 @@
       'rm-ffreq': { prop: 'filterFreq', min: 20, max: 20000, label: 'Cutoff',  isSynth: true, updater: 'updateFilter', fmtVal: v => v >= 1000 ? (v/1000).toFixed(1)+' kHz' : Math.round(v)+' Hz' },
       'rm-fq':    { prop: 'filterQ',   min: 0.01, max: 20,  label: 'Reso',    isSynth: true, updater: 'updateFilter', fmtVal: v => parseFloat(v).toFixed(2) },
       'rm-rel':   { prop: 'release',   min: 0.01, max: 10,  label: 'Release', isSynth: true, fmtVal: v => fmtFade(v) },
+      // Glide / portamento (all synth types)
+      'sc-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
+      'fm-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
+      'wt-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
+      'kp-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
+      'rm-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       // Drum machine pitch params
       'dm-pitch-Kick':  { prop: 'pitches', subProp: 'Kick',  min: -12, max: 12, label: 'Kick Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
       'dm-pitch-Snare': { prop: 'pitches', subProp: 'Snare', min: -12, max: 12, label: 'Snare Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },

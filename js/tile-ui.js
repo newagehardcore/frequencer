@@ -76,6 +76,11 @@
       inPort.title = 'Drop LFO here to modulate volume';
       t.appendChild(inPort);
 
+      const outPort = document.createElement('div');
+      outPort.className = 'tile-out-port';
+      outPort.title = 'Drop LFO here to modulate volume';
+      t.appendChild(outPort);
+
       requestAnimationFrame(() => drawTileWave(wc, s));
 
       makeDraggable(t, s);
@@ -295,6 +300,11 @@
       inPort.className = 'tile-in-port';
       inPort.title = 'Drop LFO here to modulate volume';
       t.appendChild(inPort);
+
+      const outPort = document.createElement('div');
+      outPort.className = 'tile-out-port';
+      outPort.title = 'Drop LFO here to modulate volume';
+      t.appendChild(outPort);
 
       requestAnimationFrame(() => drawSynthScope(wc, synth));
       makeDraggable(t, synth);
