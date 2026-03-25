@@ -84,7 +84,7 @@ Each tile shows the sample's waveform in its assigned color, a white live playhe
 |-------------|--------|
 | Click | Open edit card |
 | Double-click | Toggle play / stop |
-| Drag | Move — volume and pan update live |
+| Drag | Reposition tile on the canvas |
 
 **Tile buttons** — each tile has `M` (mute) and `S` (solo) buttons for quick mixing without opening a card.
 
@@ -225,37 +225,62 @@ Add LFOs to the canvas via `+ LFO`. Modulate any sample parameter (Pitch, Stretc
 - **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for filter sweeps.
 - **Range Control** — Set Min/Max boundaries per modulation target.
 - **Sync** — Free-running (seconds) or locked to the project grid (bars/subdivisions).
-- **Visual Feedback** — Tiles physically move across the canvas when Volume or Pan are modulated. Animated EQ curves and handles show active modulation in real time.
+- **Visual Feedback** — Animated EQ curves and handles show active modulation in real time. Slider values update live during LFO playback.
 - **Organization** — Minimize, Duplicate, or Delete.
 
 ---
 
 ## Synth Instruments
 
-Add synthesizers to the canvas via the `+ Synth` footer button.
+Add synthesizers to the canvas via the `+ Synth` footer button. Click the type dropdown in the card titlebar to switch between the five synth types at any time.
 
-### Analog Synth
+All synth types share: **MIXER** (volume, pan), **GLIDE** (portamento 0–1 s), **EFFECTS** rack, a 2-octave mouse-playable keyboard (C3–B4), and mute/solo controls consistent with sample tiles. Synth cards are draggable and support Duplicate and Remove.
 
-A polyphonic subtractive synthesizer built on Tone.PolySynth.
+**Glide** works in both the keyboard and the Riff step sequencer, and is LFO-targetable.
+
+### Analog
+
+Polyphonic subtractive synthesizer.
 
 - **Oscillator** — Sine, Triangle, Sawtooth, Square, Pulse
 - **ADSR envelope** — Attack, Decay, Sustain, Release
 - **Filter** — LP / HP / BP with Frequency and Q controls
-- **Portamento** — glide between notes
-- **FX rack** — same effects as sample cards
-- **Keyboard** — 2-octave mouse-playable keyboard (C3–B4); octave shift buttons
+- **Presets** — built-in preset library; load/save custom patches
 
-### FM Synth
+### FM
 
-A frequency-modulation synthesizer with a built-in library of 32 DX7-style presets.
+Frequency-modulation synthesizer with a built-in library of 32 DX7-style presets.
 
 - **FM Parameters** — Harmonicity (carrier:modulator ratio), Modulation Index
-- **Carrier & Modulation envelopes** — independent ADSR for carrier and modulator
+- **Carrier & Modulation envelopes** — independent ADSR for each
 - **Preset library** — 32 classic DX7 patches; load custom banks via SysEx `.syx` files
-- **FX rack** — same effects as sample cards
-- **Keyboard** — same 2-octave playable keyboard as Analog
 
-Both synth types share volume, pan, and mute/solo controls consistent with sample tiles. Synth cards are draggable and support Duplicate and Remove.
+### Wavetable
+
+Dual-oscillator wavetable synthesizer using looped audio buffers.
+
+- **Wave select** — choose from the built-in wavetable bank
+- **Detune** — two independent detune amounts across osc pairs
+- **Stereo Width** — spread between oscillator pairs
+- **Filter** — cutoff, resonance, and filter envelope (Amount, Attack, Decay)
+- **ADSR envelope**
+
+### Karplus-Strong
+
+Physical-modeling string synthesis.
+
+- **String Damping / Variation** — controls decay and timbre randomness
+- **Pluck Damping / Variation** — shapes the attack transient
+- **Tension** — string stiffness
+- **Stereo Spread** — width of the pluck
+
+### Rompler
+
+Sample-based synthesizer using the Soundfont library format.
+
+- **Soundfont** — choose from built-in GM instruments, or load a custom `.sf2` file via URL
+- **Filter** — LP filter with cutoff and resonance
+- **Release** — note release time
 
 ---
 
