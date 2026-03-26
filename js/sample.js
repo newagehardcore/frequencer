@@ -857,18 +857,22 @@ function _switchDelayMode(inst, newMode, instrument) {
         const transportPos = Tone.Transport.seconds;
         const nudgeSec = (this._nudgeMs || 0) * 0.001;
         const psLatencySec = this.ps.windowSize || 0.1;
-        const secsSinceBeat = transportPos % quantizeSec;
-        const prevBoundary = transportPos - secsSinceBeat;
-        // Snap to current boundary if within 10ms, otherwise next boundary.
-        const nextBoundary = (secsSinceBeat < 0.01 ? prevBoundary : prevBoundary + quantizeSec) + nudgeSec;
+        // Always snap first fire to the next bar boundary (beat 1) — at most 3 beats away.
+        // Using barSec for all modes means every loop start lands on a "1" regardless of
+        // how many bars the loop spans. scheduleRepeat then fires every gridPeriod after
+        // that, which is always a whole number of bars, so every repeat also hits a "1".
+        const secsSinceBar = transportPos % barSec;
+        const prevBar = transportPos - secsSinceBar;
+        let nextBoundary = (secsSinceBar < 0.01 ? prevBar : prevBar + barSec) + nudgeSec;
         // Apply PS latency compensation: schedule the player psLatencySec early so
         // audio emerges from the PitchShift chain exactly on the beat.
-        // If compensation puts us in the past (e.g. transport just started, or triggered
-        // within psLatencySec of a boundary), fire immediately — the first fire's audio
-        // will emerge up to psLatencySec late, but every subsequent fire is bar-locked.
+        // If the upcoming boundary is within psLatencySec, compensating would push
+        // firstFireAt into the past → skip to the next bar so we always fire cleanly
+        // psLatencySec before a bar boundary, never off-beat.
         let firstFireAt = nextBoundary - psLatencySec;
-        if (firstFireAt <= transportPos) {
-          firstFireAt = transportPos + 0.001;
+        if (firstFireAt <= transportPos + 0.01) {
+          nextBoundary += barSec;
+          firstFireAt = nextBoundary - psLatencySec;
         }
 
         if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
@@ -1275,9 +1279,9 @@ function _switchDelayMode(inst, newMode, instrument) {
         }
 
         if (this.gridSync) {
-          this._cancelGrid();
-          this._stopPlayer();
-          this.playGrid();
+          // Keep playing current audio until the next bar boundary, then restart
+          // with the new loop region — no gap or immediate cut.
+          this.playGrid(true);
         } else {
           this.play();
         }

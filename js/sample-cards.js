@@ -157,6 +157,107 @@
       return Math.round(bestBpm * 10) / 10;
     }
 
+    // ── Detect first significant transient onset (seconds from buffer start) ──
+    // Used for auto-nudge: shifts the sample so its downbeat lands on the grid.
+    // Strategy: find the STRONGEST onset peak in the first beat window — this is
+    // almost always the kick/downbeat rather than a soft hi-hat pickup before it.
+    function _detectFirstOnset(audioBuffer, beatPeriodSec) {
+      const sr = audioBuffer.sampleRate;
+      // Search window: one beat period, capped at 750ms (avoids picking beat 2 over beat 1)
+      const searchSec = beatPeriodSec ? Math.min(beatPeriodSec, 0.75) : 0.5;
+      // Analyze a bit beyond the search window so adaptive mean subtraction has context
+      const maxLen = Math.min(audioBuffer.length, Math.round(Math.max(searchSec * 2, 1) * sr));
+
+      // Mix to mono
+      const mono = new Float32Array(maxLen);
+      for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
+        const d = audioBuffer.getChannelData(c);
+        for (let i = 0; i < maxLen; i++) mono[i] += d[i] / audioBuffer.numberOfChannels;
+      }
+
+      // 2ms hop → ~1ms resolution after interpolation
+      const hopSec = 0.002;
+      const hop = Math.round(hopSec * sr);
+      // N=512: smaller window improves time resolution (~6ms → ~3ms Hann center offset)
+      // and makes the algorithm faster on longer samples.
+      const N = 512;
+      const numFrames = Math.max(4, Math.floor((maxLen - N) / hop) + 1);
+      // Number of frames within the search window
+      const searchFrames = Math.min(numFrames - 1, Math.ceil(searchSec / hopSec));
+
+      const hann = new Float32Array(N);
+      for (let i = 0; i < N; i++) hann[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (N - 1)));
+
+      const flux = new Float32Array(numFrames);
+      const prevMag = new Float32Array(N >> 1);
+
+      // Warm-up frame: prime prevMag from the very first window so frame 0
+      // doesn't get an artificial spike from comparing against an all-zero spectrum.
+      {
+        const re = new Float32Array(N), im = new Float32Array(N);
+        for (let i = 0; i < N; i++) re[i] = mono[i] * hann[i];
+        _fft(re, im, false);
+        for (let k = 1; k < N >> 1; k++) prevMag[k] = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
+      }
+
+      for (let f = 0; f < numFrames; f++) {
+        const s0 = f * hop;
+        const re = new Float32Array(N), im = new Float32Array(N);
+        for (let i = 0; i < N && s0 + i < maxLen; i++) re[i] = mono[s0 + i] * hann[i];
+        _fft(re, im, false);
+        let sf = 0;
+        for (let k = 1; k < N >> 1; k++) {
+          const mag = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
+          const diff = mag - prevMag[k];
+          if (diff > 0) {
+            // Weight lower bins more heavily — kick/bass transients dominate
+            // over hi-hat clicks, giving more accurate downbeat alignment.
+            sf += diff / k;
+          }
+          prevMag[k] = mag;
+        }
+        flux[f] = Math.log1p(sf * 20);
+      }
+
+      // Adaptive mean subtraction
+      const avgW = Math.round(0.4 / hopSec);
+      const onset = new Float32Array(numFrames);
+      for (let f = 0; f < numFrames; f++) {
+        let sum = 0, cnt = 0;
+        for (let j = Math.max(0, f - avgW); j <= Math.min(numFrames - 1, f + avgW); j++) { sum += flux[j]; cnt++; }
+        onset[f] = Math.max(0, flux[f] - (sum / cnt) * 0.88);
+      }
+
+      // Collect all local peaks in the search window
+      const peaks = [];
+      for (let f = 1; f < searchFrames; f++) {
+        if (onset[f] > onset[f - 1] && onset[f] >= onset[f + 1] && onset[f] > 0) {
+          peaks.push({ f, v: onset[f] });
+        }
+      }
+      if (peaks.length === 0) return 0;
+
+      // Use the STRONGEST peak — most likely the downbeat kick, not a soft pickup
+      let best = peaks[0];
+      for (const p of peaks) if (p.v > best.v) best = p;
+
+      const f = best.f;
+      // Parabolic sub-frame interpolation for sub-millisecond accuracy
+      let subOffset = 0;
+      if (f > 0 && f < numFrames - 1) {
+        const alpha = onset[f - 1], beta = onset[f], gamma = onset[f + 1];
+        const denom = alpha - 2 * beta + gamma;
+        if (denom !== 0) subOffset = 0.5 * (alpha - gamma) / denom;
+      }
+
+      // Hann window center correction: spectral flux peaks ~N/4 samples before the true
+      // transient because the rising edge of the Hann window is at N/4, not N/2.
+      // With N=512 this is ~2.9ms (was ~5.8ms with N=1024).
+      const hannCorrection = N / (4.0 * sr);
+
+      return Math.max(0, (f + subOffset) * hopSec + hannCorrection);
+    }
+
     // ── Inline radix-2 FFT (in-place, real + imaginary Float32Arrays) ──
     function _fft(re, im, inverse) {
       const n = re.length;
@@ -334,8 +435,13 @@
               <button class="cbtn card-sync-btn" style="flex:0 0 auto;padding:4px 10px">SYNC</button>
               <input class="card-sync-bpm" type="number" min="20" max="400" step="0.1" placeholder="BPM" style="width:52px;flex:0 0 auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:3px;padding:2px 4px;font-size:10px;text-align:center;-moz-appearance:textfield" title="Sample BPM — edit to override auto-detection">
               <button class="cbtn card-sync-mode-btn" style="flex:1">Analog</button>
-              <button class="cbtn card-sync-x2" title="Double tempo">×2</button>
-              <button class="cbtn card-sync-d2" title="Half tempo">÷2</button>
+            </div>
+            <div class="crow" style="padding-top:0;padding-bottom:2px;gap:3px">
+              <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px;flex:0 0 auto">Speed:</span>
+              <button class="cbtn card-sync-d2" title="Half tempo (÷2)">÷2</button>
+              <button class="cbtn card-sync-d32" title="Slow down by 3:2 — fixes triplet overcount or dotted undercount (×2/3)">÷1.5</button>
+              <button class="cbtn card-sync-x32" title="Speed up by 3:2 — fixes triplet undercount or dotted overcount (×3/2)">×1.5</button>
+              <button class="cbtn card-sync-x2" title="Double tempo (×2)">×2</button>
             </div>
             <div class="card-sync-dig-ctrls crow" style="display:none;padding-top:0;padding-bottom:4px;gap:3px">
               <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px">Quality:</span>
@@ -371,7 +477,7 @@
             </div>
             <div class="crow" style="padding-top:4px;gap:5px">
               <span class="clbl" style="flex:0 0 36px;font-size:8px">Nudge</span>
-              <input type="range" class="card-nudge" min="-150" max="150" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
+              <input type="range" class="card-nudge" min="-500" max="500" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
               <span class="card-nudge-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:38px;text-align:right;flex:0 0 38px">0 ms</span>
             </div>
           </div>
@@ -537,8 +643,9 @@
       q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
       q('.card-skip2-btn').classList.toggle('act', s.gridMulti === 2);
       q('.card-skip3-btn').classList.toggle('act', s.gridMulti === 3);
-      q('.card-nudge').value = s._nudgeMs || 0;
-      q('.card-nudge-val').textContent = (s._nudgeMs || 0) + ' ms';
+      const _nudgeMs0 = s._nudgeMs || 0;
+      q('.card-nudge').value = _nudgeMs0;
+      q('.card-nudge-val').textContent = (_nudgeMs0 === 0 ? '0' : (_nudgeMs0 > 0 ? '+' + _nudgeMs0 : _nudgeMs0)) + ' ms';
       q('.card-mute-btn').classList.toggle('mute-on', s.muted);
       q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
       q('.card-grid').classList.toggle('act', s.gridSync);
@@ -851,6 +958,7 @@
       }
 
       async function applySync() {
+        const isFirstSync = !s._syncActive;
         const mode = s._syncMode;
         const src = s._syncSrcBuf || s.raw;   // always stretch from original
         const sr = src.sampleRate, ch = src.numberOfChannels;
@@ -892,6 +1000,20 @@
 
         const projectBpm = Tone.Transport.bpm.value;
 
+        // Auto-nudge: on first sync, detect first transient and set nudge so it lands on the beat.
+        // User can still adjust the nudge slider afterward.
+        if (isFirstSync) {
+          const onsetSec = _detectFirstOnset(regionBuf, 60 / detectedBpm);
+          if (onsetSec > 0.005) { // skip if essentially at time zero (< 5ms)
+            const nudgeMs = Math.max(-500, Math.min(500, Math.round(-onsetSec * 1000)));
+            s._nudgeMs = nudgeMs;
+            const nudgeEl = q('.card-nudge');
+            const nudgeValEl = q('.card-nudge-val');
+            if (nudgeEl) nudgeEl.value = nudgeMs;
+            if (nudgeValEl) nudgeValEl.textContent = (nudgeMs > 0 ? '+' + nudgeMs : nudgeMs) + ' ms';
+          }
+        }
+
         // Save state (idempotent — safe to call on re-sync)
         s._syncBpm = detectedBpm;   // always update in case user changed manual BPM
         if (!s._syncActive) {
@@ -917,7 +1039,7 @@
           s._renderTile();
         }
 
-        const multLabel = rateMult === 2 ? ' ×2' : rateMult === 0.5 ? ' ÷2' : '';
+        const multLabel = rateMult === 2 ? ' ×2' : rateMult === 0.5 ? ' ÷2' : rateMult === 1.5 ? ' ×1.5' : rateMult < 0.68 ? ' ÷1.5' : '';
         const isUnity = Math.abs(effectiveRatio - 1.0) < 0.002; // < 0.2% — transparent, skip processing
 
         if (mode === 'analog') {
@@ -1011,6 +1133,13 @@
         s._syncResyncTimer = null;
         s._onBpmChange = null;
         setSync('');
+
+        // Reset auto-nudge that was applied on sync activation
+        s._nudgeMs = 0;
+        const nudgeEl = q('.card-nudge');
+        const nudgeValEl = q('.card-nudge-val');
+        if (nudgeEl) nudgeEl.value = 0;
+        if (nudgeValEl) nudgeValEl.textContent = '0 ms';
 
         if (wasPlaying) {
           if (s.gridSync) s.playGrid();
@@ -1422,11 +1551,13 @@
         if (digEl) digEl.style.display = mode === 'digital' ? 'flex' : 'none';
         q('.card-sync-x2').classList.toggle('act', s._syncRateMult === 2);
         q('.card-sync-d2').classList.toggle('act', s._syncRateMult === 0.5);
+        q('.card-sync-x32').classList.toggle('act', s._syncRateMult === 1.5);
+        q('.card-sync-d32').classList.toggle('act', s._syncRateMult < 0.68 && s._syncRateMult !== 0.5);
         const fftQ = String(s._syncFftSize || 2048);
         q('.card-body').querySelectorAll('.card-sync-quality').forEach(b => b.classList.toggle('act', b.dataset.q === fftQ));
         const bpmInputEl = q('.card-sync-bpm');
         if (active && s._syncBpm) {
-          const ml = s._syncRateMult === 2 ? ' ×2' : s._syncRateMult === 0.5 ? ' ÷2' : '';
+          const ml = s._syncRateMult === 2 ? ' ×2' : s._syncRateMult === 0.5 ? ' ÷2' : s._syncRateMult === 1.5 ? ' ×1.5' : s._syncRateMult < 0.68 ? ' ÷1.5' : '';
           setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ${mode === 'digital' ? 'DIG' : 'ANA'}`);
           if (bpmInputEl && !bpmInputEl.value) bpmInputEl.value = s._syncBpm.toFixed(1);
         } else if (!active && bpmInputEl) {
@@ -1475,7 +1606,7 @@
         syncRefreshUI();
       });
 
-      // ×2 / ÷2 rate multiplier
+      // Tempo rate multiplier buttons (toggle: click active button to reset to ×1)
       q('.card-sync-x2').addEventListener('click', async e => {
         e.stopPropagation();
         s._syncRateMult = s._syncRateMult === 2 ? 1 : 2;
@@ -1485,6 +1616,19 @@
       q('.card-sync-d2').addEventListener('click', async e => {
         e.stopPropagation();
         s._syncRateMult = s._syncRateMult === 0.5 ? 1 : 0.5;
+        if (s._syncActive) await applySync();
+        syncRefreshUI();
+      });
+      q('.card-sync-x32').addEventListener('click', async e => {
+        e.stopPropagation();
+        s._syncRateMult = s._syncRateMult === 1.5 ? 1 : 1.5;
+        if (s._syncActive) await applySync();
+        syncRefreshUI();
+      });
+      q('.card-sync-d32').addEventListener('click', async e => {
+        e.stopPropagation();
+        const d32 = 2 / 3;
+        s._syncRateMult = s._syncRateMult < 0.68 && s._syncRateMult !== 0.5 ? 1 : d32;
         if (s._syncActive) await applySync();
         syncRefreshUI();
       });
@@ -1537,8 +1681,8 @@
         const val = e.target.value;
         s.subdiv = val === 'sample' ? 'sample' : parseFloat(val);
         if (s.gridSync) { snapEndToSubdiv(); setGridUI(true); }
-        // Full restart: loop region changed, need fresh buffer/scheduling
-        if (s.playing && s.gridSync) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+        // Keep playing until the next bar boundary, then restart with new subdivision
+        if (s.playing && s.gridSync) s.playGrid(true);
       });
       function setSubdivMod(factor) {
         s.subdivFactor = (s.subdivFactor === factor) ? 1 : factor;
@@ -1560,21 +1704,35 @@
       q('.card-skip2-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(2); });
       q('.card-skip3-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(3); });
 
-      // Nudge slider — shift sample timing forward/back up to ±150ms
+      // Nudge slider — space key: forward to global play/stop, not page scroll
+      q('.card-nudge').addEventListener('keydown', e => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          e.stopPropagation();
+          document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ' }));
+        }
+      });
+
+      // Nudge slider — shift sample timing forward/back up to ±500ms
+      // Debounced: update value immediately but only restart playback after drag settles
+      // (calling playGrid on every input event stacks multiple player instances)
+      let _nudgeRestartTimer = null;
       q('.card-nudge').addEventListener('input', e => {
         e.stopPropagation();
         s._nudgeMs = parseInt(e.target.value);
         const ms = s._nudgeMs;
         q('.card-nudge-val').textContent = (ms === 0 ? '0' : (ms > 0 ? '+' + ms : ms)) + ' ms';
-        // continuePlayer=true: sample keeps playing; new alignment fires at next bar boundary
-        if (s.playing && s.gridSync) s.playGrid(true);
+        if (s.playing && s.gridSync) {
+          clearTimeout(_nudgeRestartTimer);
+          _nudgeRestartTimer = setTimeout(() => s.playGrid(), 250);
+        }
       });
       q('.card-nudge').addEventListener('dblclick', e => {
         e.stopPropagation();
         s._nudgeMs = 0;
         q('.card-nudge').value = 0;
         q('.card-nudge-val').textContent = '0 ms';
-        if (s.playing && s.gridSync) s.playGrid(true);
+        if (s.playing && s.gridSync) s.playGrid();
       });
 
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSample(s.id); });
