@@ -373,7 +373,8 @@
 
           samples.set(id, s);
           createTile(s);
-          startSample(s);
+          // Do NOT call startSample() here — playAll() at the end of loadProject
+          // starts everything together so all instruments sync from the same t=0.
         } catch (err) {
           console.error('Failed to restore sample:', sd.name, err);
         }
@@ -422,7 +423,7 @@
             drums.set(id, drum);
             createSynthTile(drum);
             drum.loadKit(drum.kitId);
-            drum.startSequencer();
+            // Do NOT call startSequencer() here — playAll() starts all instruments together.
           } catch(e) { console.error('Failed to restore drum machine:', e); }
         }
       }

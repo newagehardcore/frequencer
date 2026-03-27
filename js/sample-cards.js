@@ -1129,7 +1129,7 @@
           if (s.playing) {
             s.player.playbackRate = s._pbRate;
             s.xfPlayer.playbackRate = s._pbRate;
-            s._cancelGrid(); s._stopPlayer(); s.playGrid();
+            s._reschedule();
           }
         } else {
           // Digital: pitch-preserving time stretch — bake into buffer
@@ -1139,7 +1139,7 @@
             _setSyncBuf(src, loopStartSec, loopEndSec);
             setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  DIG`);
             if (s.gridSync) { snapEndToSubdiv(); }
-            if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+            s._reschedule();
           } else {
             setSync('Stretching…');
             await new Promise(r => setTimeout(r, 0));
@@ -1161,7 +1161,7 @@
             _setSyncBuf(newBuf, loopStartSec, loopStartSec + stretchedBuf.length / sr);
             setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  DIG`);
             if (s.gridSync) { snapEndToSubdiv(); }
-            if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.playGrid(); }
+            s._reschedule();
           }
         }
 
@@ -1176,7 +1176,8 @@
             if (s.playing) {
               s.player.playbackRate = s._pbRate;
               s.xfPlayer.playbackRate = s._pbRate;
-              s._cancelGrid(); s._stopPlayer(); s.playGrid();
+              // Debounced reschedule: BPM drags fire on every mouse pixel
+              s._reschedule(100);
             }
           } else {
             // Debounced re-bake for digital mode
@@ -1220,7 +1221,7 @@
         if (nudgeValEl) nudgeValEl.textContent = '0 ms';
 
         if (wasPlaying) {
-          if (s.gridSync) s.playGrid();
+          if (s.gridSync) s._reschedule();
           else s.play();
         }
       }
@@ -1752,23 +1753,22 @@
         q('.card-grid').classList.toggle('act', s.gridSync);
         if (s.gridSync) snapEndToSubdiv();
         setGridUI(s.gridSync); s._renderTile();
-        if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.player.loop = false; if (s.gridSync) s.playGrid(); else s.play(); }
+        if (s.playing) { s._cancelGrid(); s._stopPlayer(); s.player.loop = false; if (s.gridSync) s._reschedule(); else s.play(); }
       });
       q('.card-subdiv').addEventListener('change', e => {
         e.stopPropagation();
         const val = e.target.value;
         s.subdiv = val === 'sample' ? 'sample' : parseFloat(val);
         if (s.gridSync) { snapEndToSubdiv(); setGridUI(true); }
-        // Keep playing until the next bar boundary, then restart with new subdivision
-        if (s.playing && s.gridSync) s.playGrid(true);
+        // continuePlayer=true: keep audio running until the new schedule's first fire
+        s._reschedule(0, true);
       });
       function setSubdivMod(factor) {
         s.subdivFactor = (s.subdivFactor === factor) ? 1 : factor;
         q('.card-dot-btn').classList.toggle('act', s.subdivFactor === 1.5);
         q('.card-tri-btn').classList.toggle('act', s.subdivFactor < 1);
         if (s.gridSync) snapEndToSubdiv();
-        // continuePlayer=true: keep audio going, new schedule takes over at next bar
-        if (s.playing && s.gridSync) s.playGrid(true);
+        s._reschedule(0, true);
       }
       q('.card-dot-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(1.5); });
       q('.card-tri-btn').addEventListener('click', e => { e.stopPropagation(); setSubdivMod(2 / 3); });
@@ -1776,8 +1776,7 @@
         s.gridMulti = (s.gridMulti === n) ? 1 : n;
         q('.card-skip2-btn').classList.toggle('act', s.gridMulti === 2);
         q('.card-skip3-btn').classList.toggle('act', s.gridMulti === 3);
-        // continuePlayer=true: keep audio going, new repeat period takes effect at next bar
-        if (s.playing && s.gridSync) s.playGrid(true);
+        s._reschedule(0, true);
       }
       q('.card-skip2-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(2); });
       q('.card-skip3-btn').addEventListener('click', e => { e.stopPropagation(); setGridMulti(3); });
@@ -1791,36 +1790,30 @@
         }
       });
 
-      // Nudge slider — shift sample timing forward/back up to ±300ms
-      // Debounced: update value immediately but only restart playback after drag settles
-      // (calling playGrid on every input event stacks multiple player instances)
-      let _nudgeRestartTimer = null;
+      // Nudge slider — debounced 250ms so rapid drags don't stack reschedules
       q('.card-nudge').addEventListener('input', e => {
         e.stopPropagation();
         s._nudgeMs = parseInt(e.target.value);
         const ms = s._nudgeMs;
         q('.card-nudge-val').textContent = (ms === 0 ? '0' : (ms > 0 ? '+' + ms : ms)) + ' ms';
-        if (s.playing && s.gridSync) {
-          clearTimeout(_nudgeRestartTimer);
-          _nudgeRestartTimer = setTimeout(() => s.playGrid(), 250);
-        }
+        s._reschedule(250);
       });
       q('.card-nudge').addEventListener('dblclick', e => {
         e.stopPropagation();
         s._nudgeMs = 0;
         q('.card-nudge').value = 0;
         q('.card-nudge-val').textContent = '0 ms';
-        if (s.playing && s.gridSync) s.playGrid();
+        s._reschedule();
       });
 
-      // Beat shift: ◀/▶ step by one subdivision, stored separately from nudge slider.
+      // Beat shift: ◀/▶ step by one subdivision, debounced 150ms
       function _applyBeatShift(dir) {
         const subdiv = parseInt(q('.card-beat-subdiv').value);
         const stepMs = Math.round((4 / subdiv) * (60000 / Tone.Transport.bpm.value));
         s._beatShiftMs = (s._beatShiftMs || 0) + dir * stepMs;
         const ms = s._beatShiftMs;
         q('.card-beat-val').textContent = ms === 0 ? '0' : (ms > 0 ? '+' + ms : ms);
-        if (s.playing && s.gridSync) s.playGrid();
+        s._reschedule(150);
       }
       q('.card-beat-dn').addEventListener('click', e => { e.stopPropagation(); _applyBeatShift(-1); });
       q('.card-beat-up').addEventListener('click', e => { e.stopPropagation(); _applyBeatShift(+1); });
@@ -1828,7 +1821,7 @@
         e.stopPropagation();
         s._beatShiftMs = 0;
         q('.card-beat-val').textContent = '0';
-        if (s.playing && s.gridSync) s.playGrid();
+        s._reschedule();
       });
 
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSample(s.id); });
