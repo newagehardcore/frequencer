@@ -131,7 +131,7 @@
             const chord = CHORD_VOCAB[step.tokenId];
             if (chord) {
               const lbl = cell.querySelector('.chords-step-label');
-              if (lbl) lbl.textContent = transposeRoot(chord.root, globalTranspose) + chord.suffix;
+              if (lbl) lbl.textContent = transposeRoot(chord.rootName, globalTranspose) + chord.suffix;
             }
           }
         });

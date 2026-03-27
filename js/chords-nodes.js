@@ -198,7 +198,7 @@
           const lbl = document.createElement('div');
           lbl.className = 'chords-step-label';
           lbl.textContent = sd.tokenId !== null
-            ? (CHORD_VOCAB[sd.tokenId] ? transposeRoot(CHORD_VOCAB[sd.tokenId].root, globalTranspose) + CHORD_VOCAB[sd.tokenId].suffix : '—')
+            ? (CHORD_VOCAB[sd.tokenId] ? transposeRoot(CHORD_VOCAB[sd.tokenId].rootName, globalTranspose) + CHORD_VOCAB[sd.tokenId].suffix : '—')
             : '—';
           cell.appendChild(lbl);
 
@@ -295,7 +295,7 @@
             // Update step cell
             const cell = q(`.chords-step[data-idx="${stepIdx}"]`);
             if (cell) {
-              cell.querySelector('.chords-step-label').textContent = transposeRoot(token.root, globalTranspose) + token.suffix;
+              cell.querySelector('.chords-step-label').textContent = transposeRoot(token.rootName, globalTranspose) + token.suffix;
               cell.classList.add('enabled');
             }
             updateMiniGrid();

@@ -436,7 +436,7 @@
         const id = ri * CHORD_TYPE_DEFS.length + ti;
         // notes: root at C3 = MIDI 48
         const notes = def.intervals.map(iv => 48 + ri + iv);
-        CHORD_VOCAB.push({ id, name: root + def.suffix, root: ri, typeIdx: ti, intervals: def.intervals, notes });
+        CHORD_VOCAB.push({ id, name: root + def.suffix, root: ri, rootName: root, suffix: def.suffix, typeIdx: ti, intervals: def.intervals, notes });
       }
     }
 
