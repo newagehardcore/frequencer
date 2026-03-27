@@ -371,8 +371,9 @@ Add melodic step sequencers to the canvas via `+ Riff`. Each riff connects to sy
 
 Up to 64 steps in an 8-column grid. Each step shows its note name and a velocity bar (drag up/down to adjust velocity).
 
-- **● Rec** — step-entry mode; keys/mouse pressed on the keyboard fill the cursor step and advance automatically
-- **Rest** — skip the cursor step and advance
+- **Rec Pattern** — pattern record mode; requires transport to be playing. Notes played on the keyboard are written to whichever step is currently playing (quantized to the selected subdivision). Existing notes are overwritten.
+- **Rec Step** — step-entry mode; each note played on the keyboard writes to the cursor step and advances automatically. Use `← →` to move the cursor, `R` to skip a step without writing a note.
+- **Shift ◀ ▶** — rotate the entire pattern left or right by one step
 - **Clear** — erase all steps
 - **Steps +/−** — 1–64 steps
 
@@ -402,8 +403,8 @@ A 2-octave mouse-playable keyboard with octave shift buttons. QWERTY mapping (wh
 | `A W S E D F T G Y H U J` | C C# D D# E F F# G G# A A# B |
 | `K O L P` | C C# D D# (next octave) |
 | `Z` / `X` | Octave down / up |
-| `R` or `Space` | Rest |
-| `← →` | Move step selection |
+| `R` | Skip (rest) — advance cursor without writing a note (Rec Step mode) |
+| `← →` | Move step cursor / selection |
 | `↑ ↓` | Transpose selected step (scale-snapped) |
 | `Delete` / `Backspace` | Clear selected step |
 

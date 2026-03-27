@@ -24,12 +24,17 @@
     function playAll() {
       isPlaying = true;
       document.getElementById('btn-play').classList.add('playing');
-      Tone.Transport.start();
+      // Register sample grids FIRST while transport is still at position 0.
+      // playGrid() detects Transport.state !== 'started' and schedules
+      // the first fire at transport time 0.001 (bar 1, cold-start path).
+      // Starting transport after ensures drums/riffs/metro start with the
+      // clock already running.
       for (const [, s] of samples) {
         if (s instanceof Sample && !s.playing) {
           try { startSample(s); } catch (e) { console.warn('startSample failed:', s.id, e); }
         }
       }
+      Tone.Transport.start();
       for (const [, riff] of riffs) riff.reschedule();
       for (const [, ch] of chords) if (ch instanceof ChordsSequencer) ch.reschedule();
       for (const [, drum] of drums) {

@@ -142,14 +142,20 @@
       candidates.push(60 / (gMax * hopSec));
 
       // For each candidate, test the BPM itself plus common octave multiples.
-      // Score each via harmonic consistency and pick the best in the musical range 58–210 BPM.
+      // Score each via harmonic consistency, then apply a soft preference for
+      // the 90–140 BPM range — this resolves ×2/÷2 ambiguity toward musically
+      // common tempos without overriding a clearly stronger score outside the range.
       const octaveMults = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
       let bestBpm = 120, bestScore = -Infinity;
       for (const c of candidates) {
         for (const m of octaveMults) {
           const b = c * m;
           if (b < 58 || b > 210) continue;
-          const s = scoreBpm(b);
+          const rawScore = scoreBpm(b);
+          // Soft range preference: 15% boost inside 90–140, 8% boost for 70–90 / 140–180
+          const rangeBoost = (b >= 90 && b <= 140) ? 1.15
+                           : (b >= 70 && b <= 180) ? 1.08 : 1.0;
+          const s = rawScore * rangeBoost;
           if (s > bestScore) { bestScore = s; bestBpm = b; }
         }
       }
@@ -159,13 +165,18 @@
 
     // ── Detect first significant transient onset (seconds from buffer start) ──
     // Used for auto-nudge: shifts the sample so its downbeat lands on the grid.
-    // Strategy: find the STRONGEST onset peak in the first beat window — this is
-    // almost always the kick/downbeat rather than a soft hi-hat pickup before it.
+    //
+    // Two-stage approach:
+    //   Stage 1 — Spectral flux (N=256, 1/k low-freq weighting): finds the STRONGEST
+    //     onset in the search window — kick/downbeat wins over hi-hat pickup.
+    //   Stage 2 — Backward amplitude refinement: starting from the spectral-flux
+    //     estimate, walks backward to the first sample where amplitude rises above
+    //     the noise floor. This corrects the ~5-15ms late-detection bias of spectral
+    //     flux (which measures when energy is rising most, not when it first appeared).
     function _detectFirstOnset(audioBuffer, beatPeriodSec) {
       const sr = audioBuffer.sampleRate;
-      // Search window: one beat period, capped at 750ms (avoids picking beat 2 over beat 1)
+      // Search window: one beat period, capped at 750ms
       const searchSec = beatPeriodSec ? Math.min(beatPeriodSec, 0.75) : 0.5;
-      // Analyze a bit beyond the search window so adaptive mean subtraction has context
       const maxLen = Math.min(audioBuffer.length, Math.round(Math.max(searchSec * 2, 1) * sr));
 
       // Mix to mono
@@ -175,14 +186,13 @@
         for (let i = 0; i < maxLen; i++) mono[i] += d[i] / audioBuffer.numberOfChannels;
       }
 
-      // 2ms hop → ~1ms resolution after interpolation
+      // ── Stage 1: Spectral flux ──
+      // N=256 gives ~5.8ms window (vs 11.6ms with N=512) — better temporal localisation
+      // with the same 2ms hop, at the cost of frequency resolution (fine for onset detection).
       const hopSec = 0.002;
       const hop = Math.round(hopSec * sr);
-      // N=512: smaller window improves time resolution (~6ms → ~3ms Hann center offset)
-      // and makes the algorithm faster on longer samples.
-      const N = 512;
+      const N = 256;
       const numFrames = Math.max(4, Math.floor((maxLen - N) / hop) + 1);
-      // Number of frames within the search window
       const searchFrames = Math.min(numFrames - 1, Math.ceil(searchSec / hopSec));
 
       const hann = new Float32Array(N);
@@ -191,8 +201,8 @@
       const flux = new Float32Array(numFrames);
       const prevMag = new Float32Array(N >> 1);
 
-      // Warm-up frame: prime prevMag from the very first window so frame 0
-      // doesn't get an artificial spike from comparing against an all-zero spectrum.
+      // Warm-up: prime prevMag from frame 0 so frame 0 doesn't get an artificial spike
+      // (prevents false onset detection at t=0 for samples that start mid-phrase).
       {
         const re = new Float32Array(N), im = new Float32Array(N);
         for (let i = 0; i < N; i++) re[i] = mono[i] * hann[i];
@@ -209,11 +219,7 @@
         for (let k = 1; k < N >> 1; k++) {
           const mag = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
           const diff = mag - prevMag[k];
-          if (diff > 0) {
-            // Weight lower bins more heavily — kick/bass transients dominate
-            // over hi-hat clicks, giving more accurate downbeat alignment.
-            sf += diff / k;
-          }
+          if (diff > 0) sf += diff / k; // 1/k: heavy low-freq weighting (kick >> hi-hat)
           prevMag[k] = mag;
         }
         flux[f] = Math.log1p(sf * 20);
@@ -228,34 +234,86 @@
         onset[f] = Math.max(0, flux[f] - (sum / cnt) * 0.88);
       }
 
-      // Collect all local peaks in the search window
+      // Collect local peaks in search window
       const peaks = [];
       for (let f = 1; f < searchFrames; f++) {
-        if (onset[f] > onset[f - 1] && onset[f] >= onset[f + 1] && onset[f] > 0) {
+        if (onset[f] > onset[f - 1] && onset[f] >= onset[f + 1] && onset[f] > 0)
           peaks.push({ f, v: onset[f] });
-        }
       }
       if (peaks.length === 0) return 0;
 
-      // Use the STRONGEST peak — most likely the downbeat kick, not a soft pickup
+      // Strongest peak — most likely the downbeat, not a soft pickup
       let best = peaks[0];
       for (const p of peaks) if (p.v > best.v) best = p;
 
-      const f = best.f;
-      // Parabolic sub-frame interpolation for sub-millisecond accuracy
+      // Parabolic sub-frame interpolation
+      const fi = best.f;
       let subOffset = 0;
-      if (f > 0 && f < numFrames - 1) {
-        const alpha = onset[f - 1], beta = onset[f], gamma = onset[f + 1];
+      if (fi > 0 && fi < numFrames - 1) {
+        const alpha = onset[fi - 1], beta = onset[fi], gamma = onset[fi + 1];
         const denom = alpha - 2 * beta + gamma;
         if (denom !== 0) subOffset = 0.5 * (alpha - gamma) / denom;
       }
 
-      // Hann window center correction: spectral flux peaks ~N/4 samples before the true
-      // transient because the rising edge of the Hann window is at N/4, not N/2.
-      // With N=512 this is ~2.9ms (was ~5.8ms with N=1024).
-      const hannCorrection = N / (4.0 * sr);
+      // Spectral flux peaks when transient is ~N/4 into the Hann window.
+      // The Hann correction converts frame index → true onset position.
+      const hannCorrSec = N / (4.0 * sr);
+      const roughSec = Math.max(0, (fi + subOffset) * hopSec + hannCorrSec);
+      const roughSample = Math.round(roughSec * sr);
 
-      return Math.max(0, (f + subOffset) * hopSec + hannCorrection);
+      // ── Stage 2: Backward amplitude refinement ──
+      // Spectral flux detects when energy is rising most rapidly — slightly AFTER the
+      // true attack onset. Walk backward from roughSample in 3ms steps to find the
+      // exact sample where amplitude first rose above the noise floor.
+      //
+      // Threshold = max(3× noise floor, 8% of local peak).
+      // If no sub-threshold window is found (very dense/noisy signal), fall back to
+      // the spectral flux estimate.
+      if (roughSample < 3) return roughSec;
+
+      const refWin = Math.max(1, Math.round(0.003 * sr)); // 3ms windows
+      const searchBack = Math.round(0.050 * sr);           // look up to 50ms before peak
+      const refStart = Math.max(0, roughSample - searchBack);
+
+      // Noise floor: RMS of first 20ms of the search zone (presumed pre-onset silence)
+      const noiseLen = Math.min(refStart, Math.round(0.020 * sr));
+      let noiseRms = 0;
+      if (noiseLen > 0) {
+        let nsum = 0;
+        for (let i = refStart - noiseLen; i < refStart; i++) nsum += mono[i] * mono[i];
+        noiseRms = Math.sqrt(nsum / noiseLen);
+      }
+
+      // Peak RMS in the ±50ms window around roughSample
+      let peakRms = 1e-6;
+      for (let s = refStart; s + refWin <= roughSample + refWin && s + refWin <= mono.length; s += refWin) {
+        let psum = 0;
+        for (let i = 0; i < refWin; i++) psum += mono[s + i] * mono[s + i];
+        peakRms = Math.max(peakRms, Math.sqrt(psum / refWin));
+      }
+
+      const threshold = Math.max(noiseRms * 3, peakRms * 0.08);
+
+      // Walk backward from roughSample: stop when a 3ms window drops below threshold
+      let refinedSample = roughSample;
+      let found = false;
+      for (let s = roughSample; s > refStart; s -= refWin) {
+        const from = Math.max(0, s - refWin);
+        let rsum = 0;
+        for (let i = 0; i < refWin; i++) {
+          const idx = from + i;
+          if (idx < mono.length) rsum += mono[idx] * mono[idx];
+        }
+        if (Math.sqrt(rsum / refWin) < threshold) {
+          refinedSample = s; // s is the first window above threshold going forward
+          found = true;
+          break;
+        }
+        refinedSample = from;
+      }
+      if (!found) refinedSample = roughSample; // fallback: spectral flux estimate
+
+      return Math.max(0, refinedSample / sr);
     }
 
     // ── Inline radix-2 FFT (in-place, real + imaginary Float32Arrays) ──
@@ -437,11 +495,11 @@
               <button class="cbtn card-sync-mode-btn" style="flex:1">Analog</button>
             </div>
             <div class="crow" style="padding-top:0;padding-bottom:2px;gap:3px">
-              <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px;flex:0 0 auto">Speed:</span>
-              <button class="cbtn card-sync-d2" title="Half tempo (÷2)">÷2</button>
-              <button class="cbtn card-sync-d32" title="Slow down by 3:2 — fixes triplet overcount or dotted undercount (×2/3)">÷1.5</button>
-              <button class="cbtn card-sync-x32" title="Speed up by 3:2 — fixes triplet undercount or dotted overcount (×3/2)">×1.5</button>
-              <button class="cbtn card-sync-x2" title="Double tempo (×2)">×2</button>
+              <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px;flex:0 0 auto">BPM:</span>
+              <button class="cbtn card-sync-d2" title="Detected BPM is too slow — treat as 2× faster (×2 BPM)">×2</button>
+              <button class="cbtn card-sync-d32" title="Detected BPM is too slow — treat as 1.5× faster (×1.5 BPM)">×1.5</button>
+              <button class="cbtn card-sync-x32" title="Detected BPM is too fast — treat as 1.5× slower (÷1.5 BPM)">÷1.5</button>
+              <button class="cbtn card-sync-x2" title="Detected BPM is too fast — treat as 2× slower (÷2 BPM)">÷2</button>
             </div>
             <div class="card-sync-dig-ctrls crow" style="display:none;padding-top:0;padding-bottom:4px;gap:3px">
               <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px">Quality:</span>
@@ -477,8 +535,20 @@
             </div>
             <div class="crow" style="padding-top:4px;gap:5px">
               <span class="clbl" style="flex:0 0 36px;font-size:8px">Nudge</span>
-              <input type="range" class="card-nudge" min="-500" max="500" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
+              <input type="range" class="card-nudge" min="-300" max="300" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
               <span class="card-nudge-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:38px;text-align:right;flex:0 0 38px">0 ms</span>
+            </div>
+            <div class="crow" style="padding-top:3px;gap:4px;align-items:center">
+              <span class="clbl" style="flex:0 0 36px;font-size:8px">Shift</span>
+              <button class="cbtn card-beat-dn" style="padding:0 6px;font-size:11px;line-height:16px">◀</button>
+              <select class="card-beat-subdiv" style="flex:1;font-size:8px;background:#1a1a1a;color:#ccc;border:1px solid #444;border-radius:3px;padding:1px 3px">
+                <option value="4">1/4</option>
+                <option value="8">1/8</option>
+                <option value="16">1/16</option>
+              </select>
+              <button class="cbtn card-beat-up" style="padding:0 6px;font-size:11px;line-height:16px">▶</button>
+              <span class="card-beat-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:34px;text-align:right;flex:0 0 34px">0</span>
+              <button class="cbtn card-beat-clr" style="padding:0 5px;font-size:9px;line-height:16px;opacity:0.6" title="Reset shift">✕</button>
             </div>
           </div>
           <div class="card-accordion">
@@ -646,6 +716,8 @@
       const _nudgeMs0 = s._nudgeMs || 0;
       q('.card-nudge').value = _nudgeMs0;
       q('.card-nudge-val').textContent = (_nudgeMs0 === 0 ? '0' : (_nudgeMs0 > 0 ? '+' + _nudgeMs0 : _nudgeMs0)) + ' ms';
+      const _beatShiftMs0 = s._beatShiftMs || 0;
+      q('.card-beat-val').textContent = _beatShiftMs0 === 0 ? '0' : (_beatShiftMs0 > 0 ? '+' + _beatShiftMs0 : _beatShiftMs0);
       q('.card-mute-btn').classList.toggle('mute-on', s.muted);
       q('.card-solo-btn').classList.toggle('solo-on', soloId === s.id);
       q('.card-grid').classList.toggle('act', s.gridSync);
@@ -1000,20 +1072,6 @@
 
         const projectBpm = Tone.Transport.bpm.value;
 
-        // Auto-nudge: on first sync, detect first transient and set nudge so it lands on the beat.
-        // User can still adjust the nudge slider afterward.
-        if (isFirstSync) {
-          const onsetSec = _detectFirstOnset(regionBuf, 60 / detectedBpm);
-          if (onsetSec > 0.005) { // skip if essentially at time zero (< 5ms)
-            const nudgeMs = Math.max(-500, Math.min(500, Math.round(-onsetSec * 1000)));
-            s._nudgeMs = nudgeMs;
-            const nudgeEl = q('.card-nudge');
-            const nudgeValEl = q('.card-nudge-val');
-            if (nudgeEl) nudgeEl.value = nudgeMs;
-            if (nudgeValEl) nudgeValEl.textContent = (nudgeMs > 0 ? '+' + nudgeMs : nudgeMs) + ' ms';
-          }
-        }
-
         // Save state (idempotent — safe to call on re-sync)
         s._syncBpm = detectedBpm;   // always update in case user changed manual BPM
         if (!s._syncActive) {
@@ -1030,6 +1088,26 @@
         const rateMult = s._syncRateMult || 1;
         const effectiveRatio = (projectBpm / detectedBpm) * rateMult;
 
+        // Auto-nudge: detect first transient and shift sample so its downbeat lands on beat 1.
+        // Applied every time SYNC is pressed (not on BPM-change re-syncs).
+        // The onset is detected from the original regionBuf; the real-time offset differs by mode:
+        //   Analog: buffer plays at effectiveRatio speed   → realTime = bufTime / effectiveRatio
+        //   Digital: buffer is stretched by effectiveRatio → realTime = bufTime * effectiveRatio
+        {
+          const onsetBuf = _detectFirstOnset(regionBuf, 60 / detectedBpm);
+          if (onsetBuf > 0.010) { // < 10ms → already on beat 1, skip
+            const realOnsetSec = mode === 'analog'
+              ? onsetBuf / effectiveRatio
+              : onsetBuf * effectiveRatio;
+            const nudgeMs = Math.max(-300, Math.round(-realOnsetSec * 1000));
+            s._nudgeMs = nudgeMs;
+            const nudgeEl = q('.card-nudge');
+            const nudgeValEl = q('.card-nudge-val');
+            if (nudgeEl) nudgeEl.value = nudgeMs;
+            if (nudgeValEl) nudgeValEl.textContent = nudgeMs + ' ms';
+          }
+        }
+
         // Auto-enable grid sync so loop stays locked to transport
         if (!s.gridSync) {
           s.gridSync = true;
@@ -1039,7 +1117,7 @@
           s._renderTile();
         }
 
-        const multLabel = rateMult === 2 ? ' ×2' : rateMult === 0.5 ? ' ÷2' : rateMult === 1.5 ? ' ×1.5' : rateMult < 0.68 ? ' ÷1.5' : '';
+        const multLabel = rateMult === 2 ? ' ÷2' : rateMult === 0.5 ? ' ×2' : rateMult === 1.5 ? ' ÷1.5' : rateMult < 0.68 ? ' ×1.5' : '';
         const isUnity = Math.abs(effectiveRatio - 1.0) < 0.002; // < 0.2% — transparent, skip processing
 
         if (mode === 'analog') {
@@ -1092,7 +1170,7 @@
           if (!s._syncActive) return;
           if (s._syncMode === 'analog') {
             s._syncRate = (newBpm / s._syncBpm) * (s._syncRateMult || 1);
-            const ml = s._syncRateMult === 2 ? ' ×2' : s._syncRateMult === 0.5 ? ' ÷2' : '';
+            const ml = s._syncRateMult === 2 ? ' ÷2' : s._syncRateMult === 0.5 ? ' ×2' : '';
             setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ANA`);
             if (s.gridSync) { snapEndToSubdiv(); }
             if (s.playing) {
@@ -1557,7 +1635,7 @@
         q('.card-body').querySelectorAll('.card-sync-quality').forEach(b => b.classList.toggle('act', b.dataset.q === fftQ));
         const bpmInputEl = q('.card-sync-bpm');
         if (active && s._syncBpm) {
-          const ml = s._syncRateMult === 2 ? ' ×2' : s._syncRateMult === 0.5 ? ' ÷2' : s._syncRateMult === 1.5 ? ' ×1.5' : s._syncRateMult < 0.68 ? ' ÷1.5' : '';
+          const ml = s._syncRateMult === 2 ? ' ÷2' : s._syncRateMult === 0.5 ? ' ×2' : s._syncRateMult === 1.5 ? ' ÷1.5' : s._syncRateMult < 0.68 ? ' ×1.5' : '';
           setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ${mode === 'digital' ? 'DIG' : 'ANA'}`);
           if (bpmInputEl && !bpmInputEl.value) bpmInputEl.value = s._syncBpm.toFixed(1);
         } else if (!active && bpmInputEl) {
@@ -1713,7 +1791,7 @@
         }
       });
 
-      // Nudge slider — shift sample timing forward/back up to ±500ms
+      // Nudge slider — shift sample timing forward/back up to ±300ms
       // Debounced: update value immediately but only restart playback after drag settles
       // (calling playGrid on every input event stacks multiple player instances)
       let _nudgeRestartTimer = null;
@@ -1732,6 +1810,24 @@
         s._nudgeMs = 0;
         q('.card-nudge').value = 0;
         q('.card-nudge-val').textContent = '0 ms';
+        if (s.playing && s.gridSync) s.playGrid();
+      });
+
+      // Beat shift: ◀/▶ step by one subdivision, stored separately from nudge slider.
+      function _applyBeatShift(dir) {
+        const subdiv = parseInt(q('.card-beat-subdiv').value);
+        const stepMs = Math.round((4 / subdiv) * (60000 / Tone.Transport.bpm.value));
+        s._beatShiftMs = (s._beatShiftMs || 0) + dir * stepMs;
+        const ms = s._beatShiftMs;
+        q('.card-beat-val').textContent = ms === 0 ? '0' : (ms > 0 ? '+' + ms : ms);
+        if (s.playing && s.gridSync) s.playGrid();
+      }
+      q('.card-beat-dn').addEventListener('click', e => { e.stopPropagation(); _applyBeatShift(-1); });
+      q('.card-beat-up').addEventListener('click', e => { e.stopPropagation(); _applyBeatShift(+1); });
+      q('.card-beat-clr').addEventListener('click', e => {
+        e.stopPropagation();
+        s._beatShiftMs = 0;
+        q('.card-beat-val').textContent = '0';
         if (s.playing && s.gridSync) s.playGrid();
       });
 

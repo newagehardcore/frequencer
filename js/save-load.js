@@ -49,7 +49,7 @@
           pitchST: s.pitchST, stretchST: s.stretchST, psStretch: s.psStretch, reversed: s.reversed,
           loopStart: s.loopStart, loopEnd: s.loopEnd, _origLoopEnd: s._origLoopEnd, filePosition: s.filePosition,
           muted: s.muted, gridSync: s.gridSync, subdiv: s.subdiv,
-          subdivFactor: s.subdivFactor, gridMulti: s.gridMulti, nudgeMs: s._nudgeMs || 0,
+          subdivFactor: s.subdivFactor, gridMulti: s.gridMulti, nudgeMs: s._nudgeMs || 0, beatShiftMs: s._beatShiftMs || 0,
           attackTime: s.attackTime, releaseTime: s.releaseTime,
           crossfadeTime: s.crossfadeTime, clipGainDb: s.clipGainDb,
           triggerMode: s.triggerMode,
@@ -294,6 +294,7 @@
           s.subdivFactor = sd.subdivFactor || 1;
           s.gridMulti = sd.gridMulti || 1;
           s._nudgeMs = sd.nudgeMs || 0;
+          s._beatShiftMs = sd.beatShiftMs || 0;
           s.attackTime = sd.attackTime || 0;
           s.releaseTime = sd.releaseTime || 0;
           s.crossfadeTime = sd.crossfadeTime || 0;

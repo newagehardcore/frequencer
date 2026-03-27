@@ -114,19 +114,16 @@
         <div class="riff-body">
           <!-- STEP GRID -->
           <div class="riff-step-grid"></div>
-          <!-- STEP ACTION ROW: REC + REST -->
+          <!-- STEP ACTION ROW: REC PATTERN + REC STEP + SHIFT + CLEAR -->
           <div class="riff-row" style="gap:4px;padding-top:4px">
-            <button class="riff-step-btn riff-stepentry-btn">● Rec</button>
-            <button class="riff-step-btn riff-rest-btn">Rest</button>
+            <button class="riff-step-btn riff-patrec-btn">Rec Pattern</button>
+            <button class="riff-step-btn riff-stepentry-btn">Rec Step</button>
             <button class="riff-step-btn riff-clear-btn">Clear</button>
-            <span class="riff-lbl" style="margin-left:4px">Steps</span>
-            <div class="riff-steps-ctrl">
-              <button class="riff-steps-dec">−</button>
-              <span class="riff-steps-val">${riff.numSteps}</span>
-              <button class="riff-steps-inc">+</button>
-            </div>
+            <span class="riff-lbl" style="margin-left:4px">Shift</span>
+            <button class="riff-xfm-btn riff-shift-left">◀</button>
+            <button class="riff-xfm-btn riff-shift-right">▶</button>
           </div>
-          <!-- GRID + SUBDIVISION ROW -->
+          <!-- GRID + SUBDIVISION/RATE + STEPS ROW -->
           <div class="riff-row" style="padding-bottom:2px">
             <button class="cbtn riff-grid-btn" style="flex:0 0 auto;padding:4px 8px;font-size:9px">Grid</button>
             <select class="riff-subdiv-sel riff-sel" style="flex:1">
@@ -148,13 +145,16 @@
               <option value="32n.">1/32 .</option>
               <option value="32t">1/32 T</option>
             </select>
-          </div>
-          <!-- RATE ROW (free mode) -->
-          <div class="riff-row riff-rate-row">
-            <span class="riff-lbl">Rate</span>
-            <div class="cslider riff-rate-slider">
+            <span class="riff-lbl riff-rate-lbl">Rate</span>
+            <div class="cslider riff-rate-slider" style="flex:1">
               <input type="range" class="riff-rate-input" min="0.04" max="2" step="0.01" value="${riff.rate}">
               <div class="cslider-thumb"><span class="cslider-lbl">${riff.rate.toFixed(2)}s</span><input class="cslider-edit" type="text"></div>
+            </div>
+            <span class="riff-lbl" style="margin-left:4px">Steps</span>
+            <div class="riff-steps-ctrl">
+              <button class="riff-steps-dec">−</button>
+              <span class="riff-steps-val">${riff.numSteps}</span>
+              <button class="riff-steps-inc">+</button>
             </div>
           </div>
           <!-- TRANSFORM ROW -->
@@ -202,6 +202,7 @@
       // ── Step-entry state ──
       let selectedStep = -1;
       let stepEntryActive = false;
+      let patternRecActive = false;
       let entryCursor = 0; // position during step entry
 
       // ── Step grid ──
@@ -335,6 +336,11 @@
         stepEntryActive = !stepEntryActive;
         stepEntryBtn.classList.toggle('rec-act', stepEntryActive);
         if (stepEntryActive) {
+          // Deactivate pattern rec if it was on
+          if (patternRecActive) {
+            patternRecActive = false;
+            q('.riff-patrec-btn').classList.remove('rec-act');
+          }
           // Deselect manual selection, start at step 0 (or selectedStep)
           entryCursor = selectedStep >= 0 ? selectedStep : 0;
           selectedStep = -1;
@@ -346,18 +352,20 @@
         setRiffFocus(riff.id);
       });
 
-      // ── Rest button ──
-      q('.riff-rest-btn').addEventListener('click', e => {
+      // ── Pattern REC button ──
+      const patRecBtn = q('.riff-patrec-btn');
+      patRecBtn.addEventListener('click', e => {
         e.stopPropagation();
-        if (stepEntryActive) {
-          advanceEntry();
-        } else if (selectedStep >= 0) {
-          clearStep(selectedStep);
-          // advance manual selection
-          const next = (selectedStep + 1) % riff.numSteps;
-          q(`.riff-step[data-idx="${selectedStep}"]`)?.classList.remove('selected');
-          selectedStep = next;
-          q(`.riff-step[data-idx="${next}"]`)?.classList.add('selected');
+        patternRecActive = !patternRecActive;
+        patRecBtn.classList.toggle('rec-act', patternRecActive);
+        if (patternRecActive) {
+          // Deactivate step rec if it was on
+          if (stepEntryActive) {
+            stepEntryActive = false;
+            stepEntryBtn.classList.remove('rec-act');
+            el.querySelectorAll('.riff-step.entry-cursor').forEach(c => c.classList.remove('entry-cursor'));
+            buildStepGrid();
+          }
         }
         setRiffFocus(riff.id);
       });
@@ -389,22 +397,37 @@
         }
       });
 
+      // ── Pattern shift ──
+      function shiftPattern(dir) {
+        // dir: +1 = shift right (delay by one step), -1 = shift left (advance by one step)
+        const n = riff.numSteps;
+        const notes = riff.steps.slice(0, n).map(s => ({ note: s.note, vel: s.vel ?? 1.0 }));
+        for (let i = 0; i < n; i++) {
+          const src = notes[((i - dir) % n + n) % n];
+          riff.steps[i].note = src.note;
+          riff.steps[i].vel = src.vel;
+        }
+        buildStepGrid();
+        if (isPlaying) riff.reschedule();
+      }
+      q('.riff-shift-left').addEventListener('click', e => { e.stopPropagation(); shiftPattern(-1); setRiffFocus(riff.id); });
+      q('.riff-shift-right').addEventListener('click', e => { e.stopPropagation(); shiftPattern(1); setRiffFocus(riff.id); });
+
       // ── Grid sync ──
       const gridBtn = q('.riff-grid-btn');
       const subdivSel = q('.riff-subdiv-sel');
-      const rateRow = q('.riff-rate-row');
       subdivSel.value = riff.subdiv;
       gridBtn.classList.toggle('act', riff.gridSync);
       const rateSlider = q('.riff-rate-slider');
+      const rateLbl = q('.riff-rate-lbl');
       const rateInput = q('.riff-rate-input');
       initCslider(rateSlider, v => parseFloat(v).toFixed(2) + 's');
 
       function updateGridUI() {
         const on = riff.gridSync;
-        subdivSel.style.opacity = on ? '1' : '0.4';
-        subdivSel.style.pointerEvents = on ? 'all' : 'none';
-        rateRow.style.opacity = on ? '0.3' : '1';
-        rateRow.style.pointerEvents = on ? 'none' : 'all';
+        subdivSel.style.display = on ? '' : 'none';
+        rateSlider.style.display = on ? 'none' : '';
+        rateLbl.style.display = on ? 'none' : '';
       }
       updateGridUI();
 
@@ -493,6 +516,12 @@
           if (stepEntryActive) {
             assignNoteToStep(entryCursor, snapped);
             advanceEntry();
+          } else if (patternRecActive && isPlaying) {
+            const subdivSec = riff.gridSync
+              ? Tone.Time(riff.subdiv).toSeconds()
+              : riff.rate;
+            const step = Math.floor(Tone.Transport.seconds / subdivSec) % riff.numSteps;
+            assignNoteToStep(step, snapped);
           } else if (selectedStep >= 0) {
             assignNoteToStep(selectedStep, snapped);
             const next = (selectedStep + 1) % riff.numSteps;

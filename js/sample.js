@@ -95,7 +95,8 @@ function _switchDelayMode(inst, newMode, instrument) {
         this.subdiv = 'sample';
         this.subdivFactor = 1; // 1 = normal, 1.5 = dotted, 0.667 = triplet
         this.gridMulti = 1;   // 1 = every, 2 = every other, 3 = every 3rd
-        this._nudgeMs = 0;    // timing offset in ms, applied to every grid fire (±150ms)
+        this._nudgeMs = 0;      // fine timing offset in ms (±300ms), aligns to grid feel
+        this._beatShiftMs = 0;  // beat-shift offset in ms, shifts by whole subdivisions
 
         this.attackTime = 0;    // seconds
         this.releaseTime = 0;   // seconds
@@ -122,6 +123,7 @@ function _switchDelayMode(inst, newMode, instrument) {
         this._gridLoopBufDur = 0; // buffer-seconds per grid loop period (set by playGrid)
         this._gridNativeLoop = false; // true when player.loop=true is active (no envelope)
         this._gridEv = null;
+        this._gridFirstEv = null;
         this._filePosTimer = null;
         this._pendingRestart = false; // set to restart on the next loop wrap boundary
         this._seqTrigVer = 0; // incremented on each seq trigger/stop to guard stale Draw callbacks
@@ -630,8 +632,12 @@ function _switchDelayMode(inst, newMode, instrument) {
 
       // ── Internal: cancel any pending grid schedule event ──
       _cancelGrid() {
+        if (this._gridFirstEv !== null) {
+          try { Tone.Transport.clear(this._gridFirstEv); } catch (e) {}
+          this._gridFirstEv = null;
+        }
         if (this._gridEv !== null) {
-          try { Tone.Transport.clear(this._gridEv); } catch (e) { }
+          try { Tone.Transport.clear(this._gridEv); } catch (e) {}
           this._gridEv = null;
         }
       }
@@ -831,11 +837,13 @@ function _switchDelayMode(inst, newMode, instrument) {
         const barSec = (60 / bpm) * 4;
         let subdivSec, quantizeSec, gridPeriod;
         if (this.subdiv === 'sample') {
-          // Sample mode: snap gridPeriod to the nearest whole number of bars.
-          // This keeps every repeat phase-locked to the bar grid (no drift).
-          // The sample plays its natural length; any gap before the next bar is silence.
+          // Sample mode: round to the NEAREST whole number of bars.
+          // Rounding down → sample is trimmed by up to 0.5 bar (native loop, no gap).
+          // Rounding up  → sample plays its full length, short gap ≤ 0.5 bar.
+          // Previously ceil caused up to a full bar of silence for samples just
+          // slightly over a boundary (e.g. 1.01 bars → waited 2 bars).
           const rawDur = Math.max(0.01, this.lenSec / this._pbRate);
-          const nBars = Math.max(1, Math.ceil(rawDur / barSec));
+          const nBars = Math.max(1, Math.round(rawDur / barSec));
           subdivSec = nBars * barSec;
           gridPeriod = subdivSec;
           quantizeSec = barSec;
@@ -855,25 +863,24 @@ function _switchDelayMode(inst, newMode, instrument) {
         // Tone.Sequence events (drum machine, metronome) which also fire at
         // absolute transport positions 0, period, 2*period, ...
         const transportPos = Tone.Transport.seconds;
-        const nudgeSec = (this._nudgeMs || 0) * 0.001;
-        const psLatencySec = this.ps.windowSize || 0.1;
-        // Always snap first fire to the next bar boundary (beat 1) — at most 3 beats away.
-        // Using barSec for all modes means every loop start lands on a "1" regardless of
-        // how many bars the loop spans. scheduleRepeat then fires every gridPeriod after
-        // that, which is always a whole number of bars, so every repeat also hits a "1".
-        const secsSinceBar = transportPos % barSec;
-        const prevBar = transportPos - secsSinceBar;
-        let nextBoundary = (secsSinceBar < 0.01 ? prevBar : prevBar + barSec) + nudgeSec;
-        // Apply PS latency compensation: schedule the player psLatencySec early so
-        // audio emerges from the PitchShift chain exactly on the beat.
-        // If the upcoming boundary is within psLatencySec, compensating would push
-        // firstFireAt into the past → skip to the next bar so we always fire cleanly
-        // psLatencySec before a bar boundary, never off-beat.
-        let firstFireAt = nextBoundary - psLatencySec;
-        if (firstFireAt <= transportPos + 0.01) {
-          nextBoundary += barSec;
-          firstFireAt = nextBoundary - psLatencySec;
+        const nudgeSec = ((this._nudgeMs || 0) + (this._beatShiftMs || 0)) * 0.001;
+
+        // Snap to the next QUANTIZE boundary, not just the next bar.
+        // For subdivisions (1/4, 1/8, etc.) quantizeSec < barSec, so we fire at the
+        // next beat/subdivision rather than waiting up to a full bar.
+        // For 'sample' mode quantizeSec == barSec, so bar-snapping is preserved.
+        const secsSinceQuant = transportPos % quantizeSec;
+        const secsUntilNextQuant = quantizeSec - secsSinceQuant;
+
+        // firstFireAt: used only by the crossfade path below.
+        let firstFireAt;
+        if (secsSinceQuant < 0.005) {
+          firstFireAt = transportPos + 0.010;
+        } else {
+          firstFireAt = transportPos + secsUntilNextQuant;
         }
+        firstFireAt += nudgeSec;
+        if (firstFireAt <= transportPos + 0.001) firstFireAt += quantizeSec;
 
         if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
           // Convert absolute transport position → audio context time for the crossfade path
@@ -883,11 +890,6 @@ function _switchDelayMode(inst, newMode, instrument) {
         }
 
         // ── Non-crossfade grid mode (original scheduleRepeat approach) ──
-        // Ensure Transport is running — play() is Transport-independent but
-        // scheduleRepeat requires it. If the user stopped the transport while a
-        // free-running sample was still playing, grid mode would register the
-        // event but it would never fire.
-        if (Tone.Transport.state !== 'started') Tone.Transport.start();
 
         // Buffer seconds that exactly fills one grid period at the current playback rate.
         // Tone.js Player.start duration = buffer seconds; real-time = bufSec / _pbRate.
@@ -897,15 +899,30 @@ function _switchDelayMode(inst, newMode, instrument) {
 
         // Store for playheadPos() wrapping logic (set before fire() runs).
         this._gridLoopBufDur = loopBufDur;
-        this._gridNativeLoop = !(this.attackTime > 0 || this.releaseTime > 0);
+        // Native loop (player.loop=true) is only drift-free when the sample fills the
+        // entire grid period. If shorter, the buffer loops faster than the bar clock
+        // and drifts audibly. Use one-shot (restart each grid fire) when sample < 99%
+        // of the period — silence gap is gridPeriod-loopBufDur but there is no drift.
+        this._gridNativeLoop = !(this.attackTime > 0 || this.releaseTime > 0)
+                             && (loopBufDur >= periodBufDur * 0.99);
 
         // After the first fire the player runs via its own native loop (or one-shot repeat).
         // 'firstFirePending' tells fire() whether to set everything up or just refresh anchors.
         let firstFirePending = true;
 
+        // Cold-start pre-roll skip: when nudge is negative and transport starts at 0 we
+        // can't schedule before position 0. Instead we fire at 0.001 but start the buffer
+        // at the downbeat position, skipping the pre-roll on the first iteration only.
+        // Subsequent fires (via scheduleRepeat) use _revStart normally.
+        let coldStartBufOffset = 0; // buffer-seconds to skip on first fire; 0 = no skip
+
         const fire = (time) => {
           const isFirst = firstFirePending;
           firstFirePending = false;
+
+          // Apply pre-roll skip for cold start — only on the first fire.
+          const firstBufStart = this._revStart + coldStartBufOffset;
+          coldStartBufOffset = 0; // clear immediately after reading
 
           const hasEnvelope = this.attackTime > 0 || this.releaseTime > 0;
           const fg = this.fadeGain.gain;
@@ -925,21 +942,32 @@ function _switchDelayMode(inst, newMode, instrument) {
             fg.cancelScheduledValues(time);
 
             if (!hasEnvelope) {
-              // Native loop: WebAudio handles the loop splice at the sample level —
-              // no ABSN stop/start at loop boundaries, no amplitude gap.
-              this.player.loopStart = this._revStart;
-              this.player.loopEnd   = this._revStart + loopBufDur;
-              this.player.loop = true;
-              // Brief declick only on first entry (cutting into audio from silence).
-              fg.setValueAtTime(0, time);
-              fg.linearRampToValueAtTime(1, time + DECLICK_S);
-              try { this.player.start(time, this._revStart); } catch (e) { console.warn('Grid start failed', e); }
+              if (this._gridNativeLoop) {
+                // Native loop: WebAudio handles the loop splice at the sample level —
+                // no ABSN stop/start at loop boundaries, no amplitude gap.
+                // loopStart/loopEnd always anchored to _revStart so subsequent
+                // iterations play the full buffer (pre-roll included) correctly.
+                this.player.loopStart = this._revStart;
+                this.player.loopEnd   = this._revStart + loopBufDur;
+                this.player.loop = true;
+                // Brief declick only on first entry (cutting into audio from silence).
+                fg.setValueAtTime(0, time);
+                fg.linearRampToValueAtTime(1, time + DECLICK_S);
+                try { this.player.start(time, firstBufStart); } catch (e) { console.warn('Grid start failed', e); }
+              } else {
+                // One-shot mode: sample is shorter than grid period, so native loop would
+                // drift. Play the sample once per grid period; silence fills the gap.
+                fg.setValueAtTime(0, time);
+                fg.linearRampToValueAtTime(1, time + DECLICK_S);
+                this.player.loop = false;
+                try { this.player.start(time, firstBufStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
+              }
             } else {
               // Envelope mode: one-shot per grid period, full fade applied.
               const dur = Math.max(0.01, loopBufDur / this._pbRate);
               this._applyFadeGain(time, dur);
               this.player.loop = false;
-              try { this.player.start(time, this._revStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
+              try { this.player.start(time, firstBufStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
             }
           } else if (hasEnvelope) {
             // ── Loop-back, envelope mode: stop/restart without the declick ramp ──
@@ -962,8 +990,17 @@ function _switchDelayMode(inst, newMode, instrument) {
             }
             this.player.loop = false;
             try { this.player.start(time, this._revStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
+          } else if (!this._gridNativeLoop) {
+            // ── Loop-back, one-shot mode (no envelope, sample shorter than grid period) ──
+            // Restart from the beginning so every bar locks to beat 1 — no drift.
+            // No stop() call: the player already auto-stopped when its duration elapsed.
+            // Calling stop() here can corrupt Tone.js state and prevent the new start.
+            fg.cancelScheduledValues(time);
+            fg.setValueAtTime(1, time);
+            this.player.loop = false;
+            try { this.player.start(time, this._revStart, loopBufDur); } catch (e) { console.warn('Grid start failed', e); }
           }
-          // else: no-envelope loop-back — native loop is running, nothing to do for audio.
+          // else: native loop is running, nothing to do for audio.
 
           // Always update the visual playhead anchor so the waveform display resets.
           Tone.Draw.schedule(() => {
@@ -972,7 +1009,36 @@ function _switchDelayMode(inst, newMode, instrument) {
           }, time);
         };
 
-        this._gridEv = Tone.Transport.scheduleRepeat(fire, gridPeriod, firstFireAt);
+        // Two-event scheduling:
+        //   _gridFirstEv: exact Transport.schedule() at the computed boundary.
+        //   _gridEv: scheduleRepeat from the second cycle onward.
+        //
+        // Cold start (transport stopped, position = 0):
+        //   firstFireT = 0.001 → fires 1ms after Transport.start() — bar 1, no silence.
+        //
+        // Mid-play SYNC (transport running at T):
+        //   firstFireT = next quantize boundary (subdivision or bar) + nudge.
+        const isRunning = Tone.Transport.state === 'started';
+        let firstFireT, repeatStartT;
+        if (!isRunning) {
+          if (nudgeSec < 0) {
+            // Negative nudge on cold start: can't schedule before t=0.
+            // Skip |nudge| worth of buffer pre-roll on the first fire so the
+            // downbeat lands on bar 1. Subsequent fires use the corrected phase.
+            coldStartBufOffset = Math.abs(nudgeSec) * this._pbRate;
+            firstFireT = 0.001;
+            repeatStartT = gridPeriod + nudgeSec; // e.g. 2.0s - 0.08s = 1.92s
+          } else {
+            firstFireT = Math.max(0.001, nudgeSec);
+            repeatStartT = firstFireT + gridPeriod;
+          }
+        } else {
+          firstFireT = transportPos + secsUntilNextQuant + nudgeSec;
+          if (firstFireT <= transportPos + 0.002) firstFireT += quantizeSec;
+          repeatStartT = firstFireT + gridPeriod;
+        }
+        this._gridFirstEv = Tone.Transport.schedule(fire, firstFireT);
+        this._gridEv = Tone.Transport.scheduleRepeat(fire, gridPeriod, repeatStartT);
         this.playing = true;
         this._renderTile();
       }

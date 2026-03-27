@@ -46,6 +46,19 @@ document.getElementById('file-input').addEventListener('change', async e => {
     // ════════════════════════════════════════════════════
     // KEYBOARD
     // ════════════════════════════════════════════════════
+    // Intercept Space on selects/buttons before the browser consumes it.
+    // Space must always mean global play/stop, nothing else.
+    document.addEventListener('keydown', e => {
+      if (e.code !== 'Space') return;
+      const tag = e.target.tagName;
+      if (tag === 'SELECT' || tag === 'BUTTON') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.blur();
+        if (audioReady) isPlaying ? stopAll() : playAll();
+      }
+    }, { capture: true });
+
     // Track held QWERTY notes so we don't re-trigger on keydown repeat
     const _riffHeldKeys = new Set();
 
@@ -89,12 +102,6 @@ document.getElementById('file-input').addEventListener('change', async e => {
           }
           // R → rest (advance without assigning a note)
           if (e.code === 'KeyR' && !e.repeat) {
-            e.preventDefault();
-            nodeInfo.advanceRest?.();
-            return;
-          }
-          // Space → rest on selected/cursor step (without advancing playback)
-          if (e.code === 'Space' && !e.repeat) {
             e.preventDefault();
             nodeInfo.advanceRest?.();
             return;
