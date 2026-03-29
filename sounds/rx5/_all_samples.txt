@@ -1,0 +1,63 @@
+Agogo H.wav
+Agogo L.wav
+BassDrum 1.wav
+BassDrum 2.wav
+BassDrum 3.wav
+Bongo H.wav
+Bongo L.wav
+Castinet.wav
+China.wav
+Clap.wav
+Claps.wav
+Conga H1.wav
+Conga H2.wav
+Conga L.wav
+Cowbell.wav
+Cowbell2.wav
+Crash 2.wav
+Crash.wav
+Cuica.wav
+Cup.wav
+Edge.wav
+Etom1.wav
+Etom2.wav
+Etom3.wav
+Etom4.wav
+Fmperc1.wav
+Fwperc2.wav
+Glass.wav
+Heavy K1.wav
+Heavy K2.wav
+Heavy K3.wav
+Heavy S1.wav
+Heavy S2.wav
+Heavy S3.wav
+Heavy T1.wav
+Heavy T2.wav
+Heavy T3.wav
+Heavy T4.wav
+Hh Cl.wav
+Hh Op 1.wav
+Hh Pedal.wav
+Kick1.wav
+Kick2.wav
+Kick3.wav
+Mallet Crash.wav
+Rim 1.wav
+Rim 2.wav
+Shaker.wav
+Snare1.wav
+Snare2.wav
+Snare3.wav
+SnareDrum 1.wav
+SnareDrum 2.wav
+SnareDrum 3.wav
+Tamburin.wav
+Timbale H.wav
+Timbale L.wav
+Timpani.wav
+Tom1.wav
+Tom2.wav
+Tom3.wav
+Tom4.wav
+Whistle.wav

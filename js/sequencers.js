@@ -224,9 +224,9 @@
         this.name = 'Chords ' + id;
         this.x = x; this.y = y;
         this.color = nextChordsColor();
-        this.numSteps = 8;
-        this.steps = Array.from({length: 16}, () => ({ tokenId: null, enabled: false }));
-        this.subdiv = '4n';
+        this.numSteps = 16;
+        this.steps = Array.from({length: 64}, () => ({ tokenId: null, enabled: false }));
+        this.subdiv = '8n';
         this.gridSync = true;
         this.rate = 0.5;
         this.voicingMode = 0;     // -2=Drop2 -1=Drop1 0=Root +1=Inv1 +2=Inv2
@@ -244,7 +244,7 @@
         this.arpMode = 'up';
         this.arpRate = '8n';
         this.arpOctaves = 1;
-        this.arpHold = false;
+        this.arpHold = true;
         this.stepArp = false;
         this.stepArpSteps = 8;
         this.stepArpPattern = Array.from({length: 8}, () => Array(6).fill(false));
@@ -827,13 +827,28 @@
       'wt-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'kp-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'rm-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
-      // Drum machine pitch params
-      'dm-pitch-Kick':  { prop: 'pitches', subProp: 'Kick',  min: -12, max: 12, label: 'Kick Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
-      'dm-pitch-Snare': { prop: 'pitches', subProp: 'Snare', min: -12, max: 12, label: 'Snare Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
-      'dm-pitch-HiHat': { prop: 'pitches', subProp: 'HiHat', min: -12, max: 12, label: 'HiHat Pitch',  isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
-      'dm-pitch-Tom1':  { prop: 'pitches', subProp: 'Tom1',  min: -12, max: 12, label: 'Tom1 Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
-      'dm-pitch-Tom2':  { prop: 'pitches', subProp: 'Tom2',  min: -12, max: 12, label: 'Tom2 Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
-      'dm-pitch-Tom3':  { prop: 'pitches', subProp: 'Tom3',  min: -12, max: 12, label: 'Tom3 Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      // Drum machine pitch params (10 lanes)
+      'dm-pitch-kick':      { prop: 'pitches', subProp: 'kick',      min: -12, max: 12, label: 'Kick Pitch',    isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-snare':     { prop: 'pitches', subProp: 'snare',     min: -12, max: 12, label: 'Snare Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-clap':      { prop: 'pitches', subProp: 'clap',      min: -12, max: 12, label: 'Clap Pitch',    isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-rim':       { prop: 'pitches', subProp: 'rim',       min: -12, max: 12, label: 'Rim Pitch',     isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-hh_closed': { prop: 'pitches', subProp: 'hh_closed', min: -12, max: 12, label: 'CH Pitch',      isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-hh_open':   { prop: 'pitches', subProp: 'hh_open',   min: -12, max: 12, label: 'OH Pitch',      isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-tom_hi':    { prop: 'pitches', subProp: 'tom_hi',    min: -12, max: 12, label: 'Tom H Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-tom_low':   { prop: 'pitches', subProp: 'tom_low',   min: -12, max: 12, label: 'Tom L Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-cowbell':   { prop: 'pitches', subProp: 'cowbell',   min: -12, max: 12, label: 'Cowbell Pitch', isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'dm-pitch-ride':      { prop: 'pitches', subProp: 'ride',      min: -12, max: 12, label: 'Ride Pitch',    isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      // Drum machine lane volume params (10 lanes)
+      'dm-lvol-kick':      { prop: 'laneVols', subProp: 'kick',      min: -40, max: 6, label: 'Kick Vol',    isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-snare':     { prop: 'laneVols', subProp: 'snare',     min: -40, max: 6, label: 'Snare Vol',   isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-clap':      { prop: 'laneVols', subProp: 'clap',      min: -40, max: 6, label: 'Clap Vol',    isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-rim':       { prop: 'laneVols', subProp: 'rim',       min: -40, max: 6, label: 'Rim Vol',     isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-hh_closed': { prop: 'laneVols', subProp: 'hh_closed', min: -40, max: 6, label: 'CH Vol',      isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-hh_open':   { prop: 'laneVols', subProp: 'hh_open',   min: -40, max: 6, label: 'OH Vol',      isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-tom_hi':    { prop: 'laneVols', subProp: 'tom_hi',    min: -40, max: 6, label: 'Tom H Vol',   isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-tom_low':   { prop: 'laneVols', subProp: 'tom_low',   min: -40, max: 6, label: 'Tom L Vol',   isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-cowbell':   { prop: 'laneVols', subProp: 'cowbell',   min: -40, max: 6, label: 'Cowbell Vol', isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
+      'dm-lvol-ride':      { prop: 'laneVols', subProp: 'ride',      min: -40, max: 6, label: 'Ride Vol',    isDrum: true, fmtVal: v => parseFloat(v).toFixed(1) + ' dB' },
     };
 
     // LFO preset shape generators (return breakpoint arrays [{x:0..1, y:0..1}])

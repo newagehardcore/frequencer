@@ -1,0 +1,10 @@
+Clap.wav
+Crash.wav
+HHC.wav
+HHO.wav
+Kick.wav
+Snare1.wav
+Snare2.wav
+Tom 1.wav
+Tom 2.wav
+Tom 3.wav

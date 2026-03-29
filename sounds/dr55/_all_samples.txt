@@ -1,0 +1,7 @@
+Chh.wav
+Hat.wav
+Kick.wav
+Kik.wav
+Rim.wav
+Rim1.wav
+Snar.wav

@@ -1,0 +1,79 @@
+BassDrumrum1.wav
+BassDrumrum1kai.wav
+BassDrumrum2.wav
+BassDrumrum3.wav
+BassDrumrum4.wav
+Cabasa.wav
+Cabasa2.wav
+Clap 1.wav
+Clap 2.wav
+Clap.wav
+Clhh 2.wav
+Clhh.wav
+Clhh_1.wav
+Conga 1.wav
+Conga 2.wav
+Cowbell.wav
+Cowbell1.wav
+Cowbell2.wav
+Crash 2.wav
+Crash 3.wav
+Crash.wav
+Crash1.wav
+Crash2.wav
+Crash3.wav
+Crsh.wav
+Etom.wav
+Hhclose1.wav
+Hhclose2.wav
+Hhopen1.wav
+Hhopen2.wav
+Hi-Cong.wav
+Hiconga.wav
+Kick 2.wav
+Kick.wav
+Kick_1.wav
+Lo-Cong.wav
+Lowconga.wav
+Midconga.wav
+Oph2.wav
+Ophh 2.wav
+Ophh 3.wav
+Ophh.wav
+Ophh_1.wav
+Pec1.wav
+Pec2.wav
+Pec3.wav
+Ping.wav
+Ride.wav
+Ride1.wav
+Ride2.wav
+Ride3.wav
+Rim 2.wav
+Rim.wav
+Rim1.wav
+Rim2.wav
+Snare 2.wav
+Snare.wav
+Snare1.wav
+Snare2.wav
+Snare3.wav
+Snare4.wav
+Snare5.wav
+Snare6.wav
+Snr.wav
+Stick.wav
+Tamb 2.wav
+Tamb.wav
+Tamb1.wav
+Tamb2.wav
+Tom 1.wav
+Tom 2.wav
+Tom 3.wav
+Tom 4.wav
+Tom.wav
+Tom1.wav
+Tom2.wav
+Tom3.wav
+Tom4.wav
+Tom5.wav

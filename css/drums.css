@@ -1,6 +1,6 @@
     /* ═══ DRUM MACHINE CARD ═══ */
-    .synth-card.drum-card { width: 500px; }
-    .synth-card.drum-card.open { max-height: 1400px; }
+    .synth-card.drum-card { width: 460px; }
+    .synth-card.drum-card.open { max-height: 1600px; }
 
     .dm-controls {
       display: flex;
@@ -115,37 +115,84 @@
       font-style: italic;
     }
 
-    /* Step sequencer grid — 3-column layout: labels | scrollable steps | pitch */
+    /* Step sequencer grid — 3-column layout: labels | scrollable steps | pitch+vol */
     .dm-grid {
       display: flex;
       align-items: flex-start;
-      padding: 7px 0 8px;
+      padding: 5px 0 5px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
-      overflow: hidden;
+      overflow-x: hidden;
+      /* 10 rows × 20px + 9 gaps × 2px + 10px padding = 228px */
+      max-height: 228px;
+      overflow-y: auto;
     }
+    .dm-grid::-webkit-scrollbar { width: 3px; }
+    .dm-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    .dm-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
     .dm-lbls-col {
       flex-shrink: 0;
-      width: 44px;
-      padding-left: 10px;
+      width: 66px;
+      padding-left: 8px;
     }
     .dm-lane-lbl {
-      height: 18px;
-      margin-bottom: 5px;
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.45);
+      height: 20px;
+      margin-bottom: 2px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      padding-right: 6px;
+      padding-right: 5px;
+      overflow: hidden;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      white-space: nowrap;
     }
     .dm-lane-lbl:last-child { margin-bottom: 0; }
+    /* Lane label with dropdown */
+    .dm-lane-lbl-sel {
+      padding-right: 0;
+      position: relative;
+    }
+    .dm-lane-sel {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.65);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      padding: 0 12px 0 2px;
+      cursor: pointer;
+      outline: none;
+      -webkit-appearance: none;
+      text-align-last: right;
+    }
+    .dm-lane-sel:hover { color: rgba(255,255,255,0.9); border-bottom-color: rgba(255,255,255,0.45); }
+    .dm-lane-sel:focus { color: #fff; border-bottom-color: rgba(255,255,255,0.7); }
+    .dm-lane-sel option { background: #111; color: #fff; font-weight: 400; text-transform: none; letter-spacing: 0; }
+    /* Arrow indicator */
+    .dm-lane-arrow {
+      position: absolute;
+      right: 1px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 7px;
+      color: rgba(255,255,255,0.3);
+      pointer-events: none;
+      line-height: 1;
+    }
+    .dm-lane-lbl-sel:hover .dm-lane-arrow { color: rgba(255,255,255,0.7); }
     .dm-steps-scroll {
       overflow-x: auto;
       flex: 1;
-      padding-bottom: 4px;
+      min-width: 0;
+      padding-bottom: 3px;
     }
     .dm-steps-scroll::-webkit-scrollbar { height: 3px; }
     .dm-steps-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
@@ -153,12 +200,14 @@
     .dm-lane-steps {
       display: flex;
       gap: 2px;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
+      height: 20px;
+      align-items: center;
     }
     .dm-lane-steps:last-child { margin-bottom: 0; }
     .dm-step {
-      width: 19px;
-      height: 18px;
+      width: 17px;
+      height: 16px;
       border: 1px solid rgba(255,255,255,0.1);
       background: rgba(255,255,255,0.03);
       cursor: pointer;
@@ -184,19 +233,59 @@
       outline-offset: 1px;
       z-index: 1;
     }
-    .dm-pitch-col {
+    /* Pitch + Volume column */
+    .dm-pv-col {
       flex-shrink: 0;
-      width: 81px;
-      padding: 0 10px 0 5px;
+      width: 62px;
+      padding: 0 8px 0 4px;
     }
-    .dm-pitch-wrap {
-      height: 18px;
-      margin-bottom: 5px;
+    .dm-pv-wrap {
+      height: 20px;
+      margin-bottom: 2px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
     }
-    .dm-pitch-wrap:last-child { margin-bottom: 0; }
-    .dm-pitch-wrap .cslider {
-      height: 18px;
+    .dm-pv-wrap:last-child { margin-bottom: 0; }
+    /* Each lfo-slot wrapper fills half the row and centers its slider */
+    .dm-pv-wrap .lfo-slot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-height: 0;
+      overflow: hidden;
     }
+    .dm-pv-wrap input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 2px;
+      outline: none;
+      cursor: ew-resize;
+      margin: 0;
+    }
+    .dm-pv-wrap input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 6px;
+      height: 10px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 1px;
+      cursor: ew-resize;
+    }
+    .dm-pv-wrap input[type="range"]:hover { background: rgba(255,255,255,0.22); }
+    .dm-pv-wrap input[type="range"]:hover::-webkit-slider-thumb { background: #fff; }
+    /* Alternating row highlight */
+    .dm-lbls-col .dm-lane-lbl:nth-child(even),
+    .dm-steps-scroll .dm-lane-steps:nth-child(even),
+    .dm-pv-col .dm-pv-wrap:nth-child(even) {
+      background: rgba(255,255,255,0.035);
+    }
+    .dm-vol-input { background: rgba(120,180,255,0.15) !important; }
+    .dm-vol-input:hover { background: rgba(120,180,255,0.3) !important; }
+    .dm-vol-input::-webkit-slider-thumb { background: rgba(160,200,255,0.8) !important; }
     .synth-scope-canvas {
       display: block;
       width: 100%;
@@ -444,10 +533,10 @@
     .chords-body { display: flex; flex-direction: column; }
     /* Step grid */
     .chords-step-row {
-      display: grid; gap: 3px; padding: 8px 8px 4px;
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; padding: 8px 8px 4px;
     }
     .chords-step {
-      height: 52px; background: rgba(255,255,255,0.03);
+      aspect-ratio: 1; min-height: 22px; background: rgba(255,255,255,0.03);
       border: 1px dashed rgba(255,255,255,0.15);
       cursor: pointer; position: relative; overflow: hidden;
       display: flex; flex-direction: column; align-items: center; justify-content: center;

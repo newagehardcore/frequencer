@@ -1,0 +1,15 @@
+Bd0.wav
+Bd1.wav
+Cow.wav
+Crs.wav
+HH_c.wav
+HH_o.wav
+Hcp.wav
+Ht.wav
+Lt.wav
+Mt.wav
+Rid.wav
+Rim.wav
+Sd0.wav
+Sd1.wav
+Tam.wav

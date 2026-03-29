@@ -76,16 +76,18 @@
           if (inst.type === 'eq') return { type: 'eq', bands: inst.eqData.bands.map(b => ({ ...b })) };
           return { type: inst.type, params: { ...inst.params }, postFader: !!inst.postFader };
         });
-        const patternsData = {};
-        const pitchesData  = {};
-        for (const n of drum.INSTRUMENTS) {
-          patternsData[n] = [...drum.patterns[n]];
-          pitchesData[n]  = drum.pitches[n];
+        const patternsData = {}, pitchesData = {}, laneVolsData = {}, laneSelectionsData = {};
+        for (const lane of drum.lanes) {
+          patternsData[lane.id]    = [...(drum.patterns[lane.id] || Array(64).fill(0))];
+          pitchesData[lane.id]     = drum.pitches[lane.id] || 0;
+          laneVolsData[lane.id]    = drum.laneVols[lane.id] || 0;
+          if (lane.options.length > 1) laneSelectionsData[lane.id] = lane.selectedSlot;
         }
         projectData.drums.push({
           id: drum.id, name: drum.name, x: drum.x, y: drum.y, color: drum.color,
           kitId: drum.kitId, kitName: drum.kitName,
           patterns: patternsData, pitches: pitchesData,
+          laneVols: laneVolsData, laneSelections: laneSelectionsData,
           gridSync: drum.gridSync, subdiv: drum.subdiv, rate: drum.rate, numSteps: drum.numSteps,
           volDb: drum._currentDb, panPos: drum._currentPan,
           fxChain: fxChainData,
@@ -391,15 +393,17 @@
             if (dd.color) drum.color = dd.color;
             if (dd.kitId) { drum.kitId = dd.kitId; drum.kitName = dd.kitName || dd.kitId; }
             drum.numSteps = dd.numSteps || 16;
-            for (const n of drum.INSTRUMENTS) {
-              if (dd.patterns?.[n]) {
-                const loaded = dd.patterns[n].slice(0, 64);
-                // Pad to 64 if needed
+            // Restore all patterns/pitches/laneVols by key (supports old saves with slot keys)
+            if (dd.patterns) {
+              for (const [n, p] of Object.entries(dd.patterns)) {
+                const loaded = p.slice(0, 64);
                 while (loaded.length < 64) loaded.push(0);
                 drum.patterns[n] = loaded;
               }
-              if (dd.pitches?.[n] !== undefined) drum.pitches[n] = dd.pitches[n];
             }
+            if (dd.pitches)   for (const [n, v] of Object.entries(dd.pitches))   drum.pitches[n]  = v;
+            if (dd.laneVols)  for (const [n, v] of Object.entries(dd.laneVols))  drum.laneVols[n] = v;
+            if (dd.laneSelections) drum._pendingLaneSelections = { ...dd.laneSelections };
             drum.gridSync = dd.gridSync !== undefined ? dd.gridSync : true;
             drum.subdiv   = dd.subdiv || '16n';
             drum.rate     = dd.rate   || 120;

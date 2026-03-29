@@ -332,6 +332,11 @@
     .lfo-slot.lfo-override .vp-hs-fill {
       background: var(--lfo-color, rgba(255,255,255,0.45));
     }
+    /* Per-lane drum sliders: color the track when LFO-connected */
+    .lfo-slot.lfo-override input[type="range"] {
+      background: var(--lfo-color, rgba(255,255,255,0.4)) !important;
+      opacity: 0.85;
+    }
 
     .lfo-badge {
       font-size: 7px;

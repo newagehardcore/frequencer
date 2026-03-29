@@ -1,0 +1,12 @@
+Bassdrum.wav
+Clap.wav
+Cowbell.wav
+Crash.wav
+Hat Closed.wav
+Hat Open.wav
+Ride.wav
+Rim Shot.wav
+Snaredrum.wav
+Tom H.wav
+Tom L.wav
+Tom M.wav

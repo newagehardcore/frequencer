@@ -1,0 +1,123 @@
+ FX 1.wav
+ FX 10.wav
+ FX 11.wav
+ FX 12.wav
+ FX 13.wav
+ FX 14.wav
+ FX 15.wav
+ FX 16.wav
+ FX 17.wav
+ FX 18.wav
+ FX 19.wav
+ FX 2.wav
+ FX 20.wav
+ FX 21.wav
+ FX 22.wav
+ FX 23.wav
+ FX 24.wav
+ FX 25.wav
+ FX 26.wav
+ FX 27.wav
+ FX 28.wav
+ FX 29.wav
+ FX 3.wav
+ FX 30.wav
+ FX 31.wav
+ FX 32.wav
+ FX 33.wav
+ FX 34.wav
+ FX 35.wav
+ FX 36.wav
+ FX 37.wav
+ FX 38.wav
+ FX 39.wav
+ FX 4.wav
+ FX 40.wav
+ FX 41.wav
+ FX 42.wav
+ FX 43.wav
+ FX 44.wav
+ FX 45.wav
+ FX 5.wav
+ FX 6.wav
+ FX 7.wav
+ FX 8.wav
+ FX 9.wav
+ Kick 1.wav
+ Kick 2.wav
+ Kick 3.wav
+ Kick 4.wav
+ Kick 5.wav
+ Perc 1.wav
+ Perc 10.wav
+ Perc 11.wav
+ Perc 12.wav
+ Perc 13.wav
+ Perc 14.wav
+ Perc 15.wav
+ Perc 16.wav
+ Perc 17.wav
+ Perc 18.wav
+ Perc 19.wav
+ Perc 2.wav
+ Perc 20.wav
+ Perc 21.wav
+ Perc 22.wav
+ Perc 23.wav
+ Perc 24.wav
+ Perc 25.wav
+ Perc 26.wav
+ Perc 27.wav
+ Perc 28.wav
+ Perc 29.wav
+ Perc 3.wav
+ Perc 30.wav
+ Perc 31.wav
+ Perc 32.wav
+ Perc 33.wav
+ Perc 34.wav
+ Perc 35.wav
+ Perc 36.wav
+ Perc 37.wav
+ Perc 38.wav
+ Perc 4.wav
+ Perc 5.wav
+ Perc 6.wav
+ Perc 7.wav
+ Perc 8.wav
+ Perc 9.wav
+ Snare 1.wav
+ Snare 2.wav
+ Snare 3.wav
+ Snare 4.wav
+ Snare 5.wav
+ Snare 6.wav
+ Snare 7.wav
+ Snare 8.wav
+ Sub 1.wav
+ Sub 10.wav
+ Sub 11.wav
+ Sub 12.wav
+ Sub 13.wav
+ Sub 14.wav
+ Sub 15.wav
+ Sub 2.wav
+ Sub 3.wav
+ Sub 4.wav
+ Sub 5.wav
+ Sub 6.wav
+ Sub 7.wav
+ Sub 8.wav
+ Sub 9.wav
+ Tom 1a Hi.wav
+ Tom 1b Hi Mid.wav
+ Tom 1c Lo Mid.wav
+ Tom 1d Lo.wav
+ Tom 2a Hi.wav
+ Tom 2b Hi Mid.wav
+ Tom 2c Lo Mid.wav
+ Tom 2d Lo.wav
+ Tom 3a Hi.wav
+ Tom 3b Hi Mid.wav
+ Tom 3c Lo Mid.wav
+ Tom 3d Lo.wav

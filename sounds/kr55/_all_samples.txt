@@ -1,0 +1,10 @@
+Chat.wav
+Clav.wav
+Conga.wav
+Cowb.wav
+Cymb.wav
+Hat.wav
+Kick.wav
+Rim.wav
+Snare.wav
+Tom.wav

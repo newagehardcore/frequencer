@@ -1,0 +1,109 @@
+01.wav
+02.wav
+03.wav
+04.wav
+05.wav
+06.wav
+07.wav
+08.wav
+09.wav
+10.wav
+11.wav
+12.wav
+13.wav
+14.wav
+15.wav
+16.wav
+17.wav
+18.wav
+19.wav
+20.wav
+21.wav
+22.wav
+23.wav
+24.wav
+25.wav
+26.wav
+27.wav
+28.wav
+29.wav
+30.wav
+31.wav
+32.wav
+BassDrumrum1.wav
+BassDrumrum10.wav
+BassDrumrum11.wav
+BassDrumrum12.wav
+BassDrumrum2.wav
+BassDrumrum3.wav
+BassDrumrum4.wav
+BassDrumrum5.wav
+BassDrumrum6.wav
+BassDrumrum7.wav
+BassDrumrum8.wav
+BassDrumrum9.wav
+Crack.wav
+HH_close1.wav
+HH_close2.wav
+HH_close3.wav
+HH_open1.wav
+HH_open2.wav
+HH_pedal1.wav
+HH_pedal2.wav
+Kick 1.wav
+Kick 2.wav
+Kick 3.wav
+Kick 4.wav
+Rimshot1.wav
+Rimshot2.wav
+Rimshot3.wav
+Rimshot4.wav
+Rimshot5.wav
+Rimshot6.wav
+Rimshot7.wav
+Snare Hi 1.wav
+Snare Hi 2.wav
+Snare Lo.wav
+Snare Mid.wav
+Snare1.wav
+Snare10.wav
+Snare11.wav
+Snare12.wav
+Snare13.wav
+Snare14.wav
+Snare15.wav
+Snare16.wav
+Snare17.wav
+Snare18.wav
+Snare19.wav
+Snare2.wav
+Snare20.wav
+Snare21.wav
+Snare3.wav
+Snare4.wav
+Snare5.wav
+Snare6.wav
+Snare7.wav
+Snare8.wav
+Snare9.wav
+Tom 1.wav
+Tom 2.wav
+Tom 3.wav
+Tom 4.wav
+Tom1.wav
+Tom10.wav
+Tom11.wav
+Tom12.wav
+Tom13.wav
+Tom14.wav
+Tom15.wav
+Tom16.wav
+Tom17.wav
+Tom2.wav
+Tom3.wav
+Tom4.wav
+Tom5.wav
+Tom6.wav
+Tom7.wav
+Tom8.wav
+Tom9.wav

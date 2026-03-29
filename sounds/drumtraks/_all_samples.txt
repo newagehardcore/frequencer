@@ -1,0 +1,13 @@
+Cabasa.wav
+Clap.wav
+Closedhat.wav
+Cowbell.wav
+Crash.wav
+Kick.wav
+Openhat.wav
+Ride.wav
+Rimshot.wav
+Snare.wav
+Tamborine.wav
+Tom01.wav
+Tom02.wav

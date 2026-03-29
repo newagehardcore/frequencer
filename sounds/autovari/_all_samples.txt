@@ -1,0 +1,36 @@
+BassDrum 1.wav
+BassDrum 2.wav
+BassDrum 3.wav
+BassDrum 4.wav
+CLAV1.wav
+CLAV2.wav
+CYM1.wav
+CYM2.wav
+HH 1.wav
+HH 2.wav
+HH 3.wav
+HH 4.wav
+HH 5.wav
+HH 6.wav
+HHO1.wav
+HHO2.wav
+HHO4.wav
+SD1.1.wav
+SD1.3.wav
+SD1.4.wav
+SD2.1.wav
+SD2.2.wav
+SD3.1.wav
+SD3.2.wav
+SD4.1.wav
+SD4.2.wav
+SD5.1.wav
+SD5.2.wav
+SHA1.wav
+SHA2.wav
+SHA3.wav
+SHA4.wav
+TOM A1.wav
+TOM A2.wav
+TOM B1.wav
+TOM B2.wav

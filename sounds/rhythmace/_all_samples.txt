@@ -1,0 +1,16 @@
+Clave.wav
+HHcl.wav
+HHop.wav
+Kick1.wav
+Kick2.wav
+Kick3.wav
+Perc1.wav
+Perc2.wav
+Perc3.wav
+Perc4.wav
+Perc5.wav
+Perc6.wav
+Perc7.wav
+Snare1.wav
+Snare2.wav
+Snare3.wav

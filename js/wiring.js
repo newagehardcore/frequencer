@@ -314,13 +314,13 @@ function startWireDrag(lfo, startEvent, portEl) {
 
           const modVal = d.min + val * (d.max - d.min);
 
-          // Drum machine pitch modulation
+          // Drum machine pitch/vol modulation
           if (pInfo.isDrum && s instanceof DrumMachine) {
-            s.pitches[pInfo.subProp] = modVal;
+            s[pInfo.prop][pInfo.subProp] = modVal;
             const cardInfo = openCards.get(d.sampleId);
             if (cardInfo) {
               const slider = cardInfo.el.querySelector('.' + d.param);
-              if (slider) { slider.value = modVal; slider.closest('.cslider')?._syncPos?.(); }
+              if (slider) slider.value = modVal;
             }
             continue;
           }

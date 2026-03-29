@@ -1,0 +1,71 @@
+Blip Perc 1.wav
+Blip Perc 10.wav
+Blip Perc 11.wav
+Blip Perc 12.wav
+Blip Perc 13.wav
+Blip Perc 2.wav
+Blip Perc 3.wav
+Blip Perc 4.wav
+Blip Perc 5.wav
+Blip Perc 6.wav
+Blip Perc 7.wav
+Blip Perc 8.wav
+Blip Perc 9.wav
+Blipp 1.wav
+Blipp 2.wav
+Blipp 3.wav
+Blipp 4.wav
+Blipp 5.wav
+Blipp 6.wav
+Blipp 7.wav
+Chh 2.wav
+Chh 3.wav
+Chh.wav
+Crash 1.wav
+Kick 1.wav
+Kick 2.wav
+Kick 3 Rev.wav
+Kick 3.wav
+Kick 4.wav
+Kick 5.wav
+Kick 6.wav
+Ohh 2.wav
+Ohh 3.wav
+Ohh.wav
+Snare 1.wav
+Snare 10.wav
+Snare 11.wav
+Snare 12.wav
+Snare 13.wav
+Snare 14.wav
+Snare 15.wav
+Snare 16.wav
+Snare 17.wav
+Snare 18.wav
+Snare 19.wav
+Snare 2.wav
+Snare 20.wav
+Snare 21.wav
+Snare 22.wav
+Snare 3.wav
+Snare 4.wav
+Snare 5.wav
+Snare 6.wav
+Snare 7.wav
+Snare 8.wav
+Snare 9.wav
+Sonar.wav
+Tjokk 1.wav
+Tjupp 1.wav
+Tjupp 2.wav
+Tjupp 3.wav
+Tjupp 4.wav
+Tjupp 5.wav
+Tjupp 6.wav
+Tjupp 7.wav
+Tjupp 8.wav
+Tjupp 9.wav
+WaveDrum C3.wav
+WaveDrum C4.wav
+WaveDrum C5.wav
+WaveDrum C6.wav

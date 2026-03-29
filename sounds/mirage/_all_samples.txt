@@ -1,0 +1,31 @@
+Cabasa Louder.wav
+Cabasa.wav
+Clap Filter.wav
+Clap.wav
+Cowbell.wav
+Crash 1a.wav
+Crash 1b.wav
+Crash 1c.wav
+Crash 1d.wav
+Crash 1e.wav
+Hat 1a.wav
+Hat 1b.wav
+Hat 1c.wav
+Hat Open 1a.wav
+Hat Open 1b.wav
+Kick 1a.wav
+Kick 1b.wav
+Ride Filter 1a.wav
+Ride Filter 1b.wav
+Ride Filter 1c.wav
+Ride Filter 1d.wav
+Rim.wav
+Snare 1a.wav
+Snare 1b.wav
+Tamb Hi.wav
+Tamb Lo.wav
+Tom Hi Mid.wav
+Tom Hi.wav
+Tom Lo Mid.wav
+Tom Lo.wav
+Tom Mid.wav

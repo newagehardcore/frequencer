@@ -230,7 +230,7 @@
         const y = padY + li * (cellH + gapY);
         for (let si = 0; si < nSteps; si++) {
           const x = padX + si * (cellW + gapX);
-          const vel = drum.patterns[name][si];
+          const vel = (drum.patterns[name] || [])[si] ?? 0;
           if (vel === 0) {
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
           } else if (vel === 1) {

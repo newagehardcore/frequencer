@@ -1,0 +1,13 @@
+BassDrum1.wav
+BassDrum2.wav
+BassDrum3.wav
+Hihat1.wav
+Hihat2.wav
+Sd1.wav
+Sd2.wav
+Sd3.wav
+Sdfx.wav
+Tom1.wav
+Tom2.wav
+Wood1.wav
+Wood2.wav

@@ -1,0 +1,28 @@
+Clap.wav
+Closed Hihat.wav
+Conga Hi.wav
+Conga Lo.wav
+Cow Hi.wav
+Cow Lo.wav
+Crash Cymbal.wav
+Crash.wav
+Hand Clap.wav
+Hat C.wav
+High Conga.wav
+High Cowbell.wav
+High Tom-Tom.wav
+Kick.wav
+Low Conga.wav
+Low Cowbell.wav
+Low Tom-Tom.wav
+Mid Tom-Tom.wav
+Open Hihat.wav
+Ride Cymbal.wav
+Ride.wav
+Rim Shot.wav
+Rim.wav
+Snare.wav
+Timbale.wav
+Tom Hi.wav
+Tom Lo.wav
+Tom Mid.wav

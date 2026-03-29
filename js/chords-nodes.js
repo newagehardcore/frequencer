@@ -181,7 +181,6 @@
       // ── Build step grid ──
       function buildStepRow() {
         const row = q('.chords-step-row');
-        row.style.gridTemplateColumns = `repeat(${chordsInst.numSteps}, 1fr)`;
         row.innerHTML = '';
         for (let i = 0; i < chordsInst.numSteps; i++) {
           const sd = chordsInst.steps[i];
@@ -380,7 +379,7 @@
       });
       q('.chords-steps-inc').addEventListener('click', e => {
         e.stopPropagation();
-        if (chordsInst.numSteps < 16) {
+        if (chordsInst.numSteps < 64) {
           chordsInst.numSteps++;
           q('.chords-steps-val').textContent = chordsInst.numSteps;
           buildStepRow(); updateMiniGrid();

@@ -998,10 +998,17 @@
         dup.kitId    = synth.kitId;
         dup.kitName  = synth.kitName;
         dup.numSteps = synth.numSteps;
-        for (const n of dup.INSTRUMENTS) {
-          dup.patterns[n] = [...synth.patterns[n]];
-          dup.pitches[n]  = synth.pitches[n];
+        for (const lane of (synth.lanes || [])) {
+          if (synth.patterns[lane.id]) dup.patterns[lane.id] = [...synth.patterns[lane.id]];
+          if (synth.pitches[lane.id]  !== undefined) dup.pitches[lane.id]  = synth.pitches[lane.id];
+          if (synth.laneVols[lane.id] !== undefined) dup.laneVols[lane.id] = synth.laneVols[lane.id];
         }
+        // Copy lane variant selections
+        const sels = {};
+        for (const lane of (synth.lanes || [])) {
+          if (lane.options.length > 1) sels[lane.id] = lane.selectedSlot;
+        }
+        if (Object.keys(sels).length) dup._pendingLaneSelections = sels;
         dup.gridSync = synth.gridSync;
         dup.subdiv   = synth.subdiv;
         dup.rate     = synth.rate;
@@ -1211,23 +1218,51 @@
         `<div class="cslider"><input type="range" class="${cls}" min="${min}" max="${max}" step="${step}" value="${val}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div>`;
 
       const fmtPitch = v => (parseFloat(v) >= 0 ? '+' : '') + Math.round(parseFloat(v)) + ' st';
+      const fmtVol   = v => (parseFloat(v) >= 0 ? '+' : '') + parseFloat(v).toFixed(1) + ' dB';
       const fmtBpm   = v => Math.round(parseFloat(v)) + ' BPM';
 
-      const laneLabel = n => n === 'HiHat' ? 'Hi-Hat' : n === 'Tom1' ? 'Tom 1' : n === 'Tom2' ? 'Tom 2' : n === 'Tom3' ? 'Tom 3' : n;
+      // Category display names for lane labels
+      const CAT_NAMES = {kick:'Kick',snare:'Snare',clap:'Clap',rim:'Rim',
+        hh_closed:'HH Cl',hh_open:'HH Op',tom_hi:'Tom H',tom_low:'Tom L',cowbell:'Cbell',ride:'Ride'};
 
       const buildGridHtml = () => {
-        const lbls = drum.INSTRUMENTS.map(name =>
-          `<div class="dm-lane-lbl">${laneLabel(name)}</div>`).join('');
-        const stepsRows = drum.INSTRUMENTS.map(name => {
-          const btns = Array.from({length: drum.numSteps}, (_, i) => {
-            const vel = drum.patterns[name][i];
-            return `<button class="dm-step" data-lane="${name}" data-step="${i}" data-vel="${vel}" style="--lane-col:${drum.color}"></button>`;
-          }).join('');
-          return `<div class="dm-lane-steps" data-lane="${name}">${btns}</div>`;
+        const lbls = drum.lanes.map(lane => {
+          const catName = CAT_NAMES[lane.category] || lane.category;
+          if (lane.options.length > 1) {
+            const opts = lane.options.map(s =>
+              `<option value="${s}"${s===lane.selectedSlot?' selected':''}>${drum.kitFiles[s]||s}</option>`
+            ).join('');
+            return `<div class="dm-lane-lbl dm-lane-lbl-sel">
+              <select class="dm-lane-sel" data-lane="${lane.id}">${opts}</select>
+              <span class="dm-lane-arrow">▾</span>
+            </div>`;
+          }
+          const lbl = drum.kitFiles[lane.selectedSlot] || catName;
+          return `<div class="dm-lane-lbl">${lbl}</div>`;
         }).join('');
-        const pitches = drum.INSTRUMENTS.map(name =>
-          `<div class="dm-pitch-wrap">${mkCsl(`dm-pitch-${name}`, -12, 12, 0.5, (drum.pitches[name] || 0))}</div>`).join('');
-        return `<div class="dm-lbls-col">${lbls}</div><div class="dm-steps-scroll">${stepsRows}</div><div class="dm-pitch-col">${pitches}</div>`;
+
+        const stepsRows = drum.lanes.map(lane => {
+          const btns = Array.from({length: drum.numSteps}, (_, i) => {
+            const vel = (drum.patterns[lane.id] || [])[i] || 0;
+            return `<button class="dm-step" data-lane="${lane.id}" data-step="${i}" data-vel="${vel}" style="--lane-col:${drum.color}"></button>`;
+          }).join('');
+          return `<div class="dm-lane-steps" data-lane="${lane.id}">${btns}</div>`;
+        }).join('');
+
+        const pvCols = drum.lanes.map(lane => {
+          const pitch = drum.pitches[lane.id] || 0;
+          const vol   = drum.laneVols[lane.id] || 0;
+          return `<div class="dm-pv-wrap">
+            <div class="lfo-slot dm-lane-pitch-slot">
+              <input type="range" class="dm-pitch-input dm-pitch-${lane.id}" data-lane="${lane.id}" min="-12" max="12" step="0.5" value="${pitch}" title="Pitch: ${fmtPitch(pitch)}">
+            </div>
+            <div class="lfo-slot dm-lane-vol-slot">
+              <input type="range" class="dm-vol-input dm-lvol-${lane.id}" data-lane="${lane.id}" min="-40" max="6" step="0.5" value="${vol}" title="Vol: ${fmtVol(vol)}">
+            </div>
+          </div>`;
+        }).join('');
+
+        return `<div class="dm-lbls-col">${lbls}</div><div class="dm-steps-scroll">${stepsRows}</div><div class="dm-pv-col">${pvCols}</div>`;
       };
 
       el.innerHTML = `
@@ -1286,49 +1321,86 @@
         requestAnimationFrame(updateLfoWires);
       });
 
-      // Attach step button listeners (called after initial render and after grid rebuild)
+      // Drag-to-draw step listeners
+      let _dragAction = null;
+      const _dragUpHandler = () => { _dragAction = null; };
+      document.addEventListener('mouseup', _dragUpHandler);
+
+      function applyDragToStep(btn) {
+        if (_dragAction === null) return;
+        const lane = btn.dataset.lane, step = parseInt(btn.dataset.step);
+        const newVel = _dragAction === 'erase' ? 0 : _dragAction === 'hi' ? 2 : 1;
+        drum.patterns[lane][step] = newVel;
+        btn.dataset.vel = newVel;
+      }
+
       function attachStepListeners() {
         el.querySelectorAll('.dm-step').forEach(btn => {
-          btn.addEventListener('click', e => {
-            e.stopPropagation();
-            const lane = btn.dataset.lane, step = parseInt(btn.dataset.step);
-            const next = (parseInt(btn.dataset.vel) + 1) % 3;
-            drum.patterns[lane][step] = next;
-            btn.dataset.vel = next;
-          });
-          btn.addEventListener('contextmenu', e => {
+          btn.addEventListener('mousedown', e => {
             e.preventDefault(); e.stopPropagation();
-            const lane = btn.dataset.lane, step = parseInt(btn.dataset.step);
-            const next = (parseInt(btn.dataset.vel) + 2) % 3;
-            drum.patterns[lane][step] = next;
-            btn.dataset.vel = next;
+            const vel = parseInt(btn.dataset.vel);
+            _dragAction = vel === 0 ? 'lo' : vel === 1 ? 'hi' : 'erase';
+            applyDragToStep(btn);
+          });
+          btn.addEventListener('mouseover', () => {
+            applyDragToStep(btn);
           });
         });
       }
       attachStepListeners();
 
-      // Rebuild grid when numSteps changes
+      // Rebuild grid when numSteps or kit changes
       function rebuildGrid() {
         q('.dm-grid').innerHTML = buildGridHtml();
-        // Re-init pitch csliders (they're inside the grid per lane)
-        drum.INSTRUMENTS.forEach(name => {
-          const cls = `dm-pitch-${name}`;
-          const wrap = el.querySelector(`.${cls}`)?.closest('.cslider');
-          if (!wrap) return;
-          initCslider(wrap, fmtPitch);
-          el.querySelector(`.${cls}`).addEventListener('input', e => {
-            drum.pitches[name] = parseFloat(e.target.value);
-          });
-        });
+        attachPvListeners();
         attachStepListeners();
+        attachLaneSelListeners();
       }
 
-      // Kit selector
-      q('.dm-kit-sel').addEventListener('change', e => {
+      function attachPvListeners() {
+        el.querySelectorAll('.dm-pitch-input').forEach(inp => {
+          inp.addEventListener('input', e => {
+            const laneId = e.target.dataset.lane;
+            drum.pitches[laneId] = parseFloat(e.target.value);
+            e.target.title = 'Pitch: ' + fmtPitch(e.target.value);
+          });
+        });
+        el.querySelectorAll('.dm-vol-input').forEach(inp => {
+          inp.addEventListener('input', e => {
+            const laneId = e.target.dataset.lane;
+            drum.laneVols[laneId] = parseFloat(e.target.value);
+            e.target.title = 'Vol: ' + fmtVol(e.target.value);
+          });
+        });
+      }
+
+      function attachLaneSelListeners() {
+        el.querySelectorAll('.dm-lane-sel').forEach(sel => {
+          sel.addEventListener('change', e => {
+            e.stopPropagation();
+            const laneId = e.target.dataset.lane;
+            const lane = drum.lanes.find(l => l.id === laneId);
+            if (lane) {
+              lane.selectedSlot = e.target.value;
+              // Preload the selected slot's buffer if not already cached
+              const bufs = drum._kitCache[drum.kitId];
+              if (bufs && !bufs[lane.selectedSlot]) {
+                fetch(`${DRUM_SAMPLE_BASE}${drum.kitId}/${lane.selectedSlot}.wav`)
+                  .then(r => r.arrayBuffer())
+                  .then(ab => Tone.context.rawContext.decodeAudioData(ab))
+                  .then(buf => { bufs[lane.selectedSlot] = buf; })
+                  .catch(() => {});
+              }
+            }
+          });
+        });
+      }
+
+      // Kit selector — await loadKit so INSTRUMENTS is updated before grid rebuild
+      q('.dm-kit-sel').addEventListener('change', async e => {
         const kitId = e.target.value;
-        drum.kitId = kitId;
-        drum.kitName = DRUM_KITS.find(k => k.id === kitId)?.name || kitId;
-        drum.loadKit(kitId);
+        await drum.loadKit(kitId);
+        rebuildGrid();
       });
 
       // Play/stop
@@ -1349,7 +1421,7 @@
       // Clear all steps
       q('.dm-clr-btn').addEventListener('click', e => {
         e.stopPropagation();
-        for (const name of drum.INSTRUMENTS) drum.patterns[name].fill(0);
+        for (const lane of drum.lanes) drum.patterns[lane.id].fill(0);
         rebuildGrid();
       });
 
@@ -1397,16 +1469,9 @@
         }
       });
 
-      // Pitch csliders (one per lane, LFO-targetable)
-      drum.INSTRUMENTS.forEach(name => {
-        const cls = `dm-pitch-${name}`;
-        const wrap = el.querySelector(`.${cls}`)?.closest('.cslider');
-        if (!wrap) return;
-        initCslider(wrap, fmtPitch);
-        el.querySelector(`.${cls}`).addEventListener('input', e => {
-          drum.pitches[name] = parseFloat(e.target.value);
-        });
-      });
+      // Initial pitch/vol slider listeners
+      attachPvListeners();
+      attachLaneSelListeners();
 
       q('.synth-vol').addEventListener('input', () => { drum._currentDb  = parseFloat(q('.synth-vol').value); drum._applyVol(); });
       q('.synth-pan').addEventListener('input', () => { drum._currentPan = parseFloat(q('.synth-pan').value); drum._applyPan(); });
