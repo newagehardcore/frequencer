@@ -230,6 +230,62 @@
           noteSpan.textContent = stepData.note || '—';
           cell.appendChild(noteSpan);
 
+          // Glide strip
+          const glideStrip = document.createElement('div');
+          glideStrip.className = 'riff-glide-strip' + (stepData.slide ? ' on' : '');
+          glideStrip.dataset.idx = i;
+          const glideFill = document.createElement('div');
+          glideFill.className = 'riff-glide-fill';
+          const _initMs = stepData.glideMs ?? 50;
+          glideFill.style.width = (_initMs / 500 * 100) + '%';
+          glideStrip.appendChild(glideFill);
+          const glideArrow = document.createElement('span');
+          glideArrow.className = 'riff-glide-arrow';
+          glideArrow.textContent = '›';
+          glideStrip.appendChild(glideArrow);
+          const glideValSpan = document.createElement('span');
+          glideValSpan.className = 'riff-glide-val';
+          glideValSpan.textContent = _initMs + 'ms';
+          glideStrip.appendChild(glideValSpan);
+          cell.appendChild(glideStrip);
+
+          glideStrip.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
+          glideStrip.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            e.preventDefault();
+            const si = parseInt(glideStrip.dataset.idx);
+            const wasOn = riff.steps[si].slide;
+            if (!wasOn) {
+              riff.steps[si].slide = true;
+              glideStrip.classList.add('on');
+              updateGlideStrip(si);
+            }
+            const startX = e.clientX;
+            const startMs = riff.steps[si].glideMs ?? 50;
+            let dragged = false;
+            const onMove = mv => {
+              const dx = mv.clientX - startX;
+              if (!dragged && Math.abs(dx) > 3) { dragged = true; glideStrip.classList.add('dragging'); }
+              if (!dragged) return;
+              riff.steps[si].glideMs = Math.max(0, Math.min(500, Math.round(startMs + dx * 2)));
+              updateGlideStrip(si);
+            };
+            const onUp = () => {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+              glideStrip.classList.remove('dragging');
+              if (!dragged && wasOn) {
+                riff.steps[si].slide = false;
+                updateGlideStrip(si);
+              } else {
+                updateGlideStrip(si);
+              }
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          });
+
           if (!stepEntryActive && i === selectedStep) cell.classList.add('selected');
           if (stepEntryActive && i === entryCursor) cell.classList.add('entry-cursor');
 
@@ -259,6 +315,26 @@
             document.addEventListener('mouseup', onUp);
           });
           cell.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); clearStep(i); });
+
+          // Octave transpose buttons
+          const mkOctBtn = (dir) => {
+            const btn = document.createElement('button');
+            btn.className = 'riff-oct-btn ' + (dir > 0 ? 'riff-oct-up' : 'riff-oct-dn');
+            btn.textContent = dir > 0 ? '+' : '−';
+            btn.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
+            btn.addEventListener('contextmenu', e => { e.stopPropagation(); e.preventDefault(); });
+            btn.addEventListener('click', e => {
+              e.stopPropagation();
+              if (!riff.steps[i].note) return;
+              const newMidi = Math.max(0, Math.min(127, noteToSemis(riff.steps[i].note) + dir * 12));
+              riff.steps[i].note = midiToNoteName(newMidi);
+              noteSpan.textContent = riff.steps[i].note;
+            });
+            return btn;
+          };
+          cell.appendChild(mkOctBtn(-1));
+          cell.appendChild(mkOctBtn(+1));
+
           grid.appendChild(cell);
         }
         q('.riff-steps-val').textContent = riff.numSteps;
@@ -282,6 +358,18 @@
         if (!cell) return;
         const bar = cell.querySelector('.riff-step-vel');
         if (bar) bar.style.height = ((riff.steps[idx].vel ?? 1.0) * 100) + '%';
+      }
+
+      function updateGlideStrip(idx) {
+        const strip = q(`.riff-glide-strip[data-idx="${idx}"]`);
+        if (!strip) return;
+        const stepData = riff.steps[idx];
+        const ms = stepData.glideMs ?? 50;
+        strip.classList.toggle('on', !!stepData.slide);
+        const fill = strip.querySelector('.riff-glide-fill');
+        if (fill) fill.style.width = (ms / 500 * 100) + '%';
+        const valSpan = strip.querySelector('.riff-glide-val');
+        if (valSpan) valSpan.textContent = ms + 'ms';
       }
 
       function refreshEntryCursor() {
@@ -401,11 +489,13 @@
       function shiftPattern(dir) {
         // dir: +1 = shift right (delay by one step), -1 = shift left (advance by one step)
         const n = riff.numSteps;
-        const notes = riff.steps.slice(0, n).map(s => ({ note: s.note, vel: s.vel ?? 1.0 }));
+        const notes = riff.steps.slice(0, n).map(s => ({ note: s.note, vel: s.vel ?? 1.0, slide: s.slide ?? false, glideMs: s.glideMs ?? 50 }));
         for (let i = 0; i < n; i++) {
           const src = notes[((i - dir) % n + n) % n];
           riff.steps[i].note = src.note;
           riff.steps[i].vel = src.vel;
+          riff.steps[i].slide = src.slide;
+          riff.steps[i].glideMs = src.glideMs;
         }
         buildStepGrid();
         if (isPlaying) riff.reschedule();

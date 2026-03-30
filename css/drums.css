@@ -376,7 +376,20 @@
     .riff-step.playing { background: #fff !important; border-color: #fff !important; }
     .riff-step.playing .riff-step-note { color: #000 !important; }
     .riff-step.playing .riff-step-num { color: #000; }
-    .riff-step-num { font-size: 6px; opacity: 0.3; position: absolute; top: 2px; left: 3px; line-height: 1; z-index: 1; }
+    .riff-step-num { font-size: 6px; opacity: 0.3; position: absolute; top: 2px; left: 3px; line-height: 1; z-index: 1; pointer-events: none; }
+    .riff-oct-btn {
+      position: absolute; top: 0; width: 11px; height: 11px;
+      background: none; border: none; padding: 0; margin: 0;
+      font-size: 11px; font-weight: 700; line-height: 1; cursor: pointer;
+      color: rgba(255,255,255,0); display: flex; align-items: center; justify-content: center;
+      z-index: 3; transition: color 0.08s; font-family: inherit;
+    }
+    .riff-oct-dn { left: 0; }
+    .riff-oct-up { right: 0; }
+    .riff-step:hover .riff-oct-btn { color: rgba(255,255,255,0.3); }
+    .riff-oct-btn:hover { color: rgba(255,255,255,0.9) !important; }
+    .riff-step.playing .riff-step:hover .riff-oct-btn { color: rgba(0,0,0,0.25); }
+    .riff-step.playing .riff-oct-btn:hover { color: rgba(0,0,0,0.7) !important; }
     .riff-step-note { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.35); position: relative; z-index: 1; }
     .riff-step.has-note .riff-step-note { color: #fff; }
     .riff-step-vel {
@@ -386,6 +399,29 @@
     }
     .riff-step.has-note .riff-step-vel { opacity: 0.85; }
     .riff-step.playing .riff-step-vel { background: rgba(0,0,0,0.18) !important; opacity: 1; }
+    .riff-glide-strip {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 6px; line-height: 1; cursor: pointer; user-select: none;
+      background: rgba(0,0,0,0.35); color: rgba(255,255,255,0.18);
+      z-index: 2; pointer-events: auto; overflow: hidden;
+    }
+    .riff-glide-strip.on { color: rgba(255,255,255,0.75); }
+    .riff-glide-fill {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+      background: var(--riff-color, #fff); opacity: 0.8;
+      pointer-events: none; z-index: 0;
+    }
+    .riff-glide-strip:not(.on) .riff-glide-fill { display: none; }
+    .riff-glide-arrow { position: relative; z-index: 1; }
+    .riff-glide-val {
+      position: relative; z-index: 1; display: none;
+      font-size: 5.5px; color: rgba(0,0,0,0.75); font-weight: 700;
+    }
+    .riff-glide-strip.dragging .riff-glide-val { display: block; }
+    .riff-glide-strip.dragging .riff-glide-arrow { display: none; }
+    .riff-step.playing .riff-glide-strip { color: rgba(0,0,0,0.3); background: rgba(0,0,0,0.15); }
+    .riff-step.playing .riff-glide-strip.on { color: rgba(0,0,0,0.6); }
     /* Control rows — match seq padding */
     .riff-row {
       display: flex; align-items: center; gap: 6px;

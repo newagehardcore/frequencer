@@ -26,7 +26,7 @@
         this.color = nextRiffColor();
         this.mode = 'step';           // 'step' | 'record'
         this.numSteps = 16;
-        this.steps = Array.from({length: 64}, () => ({ note: null, vel: 1.0 })); // null = rest
+        this.steps = Array.from({length: 64}, () => ({ note: null, vel: 1.0, slide: false, glideMs: 50 })); // null = rest
         this.notes = [];              // [{note, time, duration}] seconds — record mode
         this.subdiv = '16n';
         this.gridSync = true;
@@ -95,6 +95,14 @@
           for (const instrId of this.destinations) {
             const instr = getInstrument(instrId);
             if (!instr || instr.muted) continue;
+            // Per-step glide: override portamento before triggering
+            if (instr instanceof SynthInstrument) {
+              const newPortamento = stepData.slide ? ((stepData.glideMs ?? 50) / 1000) : 0;
+              if (instr.portamento !== newPortamento) {
+                instr.portamento = newPortamento;
+                instr.updatePortamento();
+              }
+            }
             for (const n of tNotes) {
               if (instr instanceof SynthInstrument) {
                 instr.triggerAtTime(n, noteDur, time, vel);

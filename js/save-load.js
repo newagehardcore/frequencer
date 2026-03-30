@@ -605,8 +605,8 @@
           riff.mode = rd.mode || 'step';
           riff.numSteps = rd.numSteps || 16;
           if (Array.isArray(rd.steps)) {
-            const loaded = rd.steps.slice(0, 64).map(s => ({ note: s.note || null, vel: s.vel ?? 1.0 }));
-            while (loaded.length < 64) loaded.push({ note: null, vel: 1.0 });
+            const loaded = rd.steps.slice(0, 64).map(s => ({ note: s.note || null, vel: s.vel ?? 1.0, slide: s.slide ?? false, glideMs: s.glideMs ?? 50 }));
+            while (loaded.length < 64) loaded.push({ note: null, vel: 1.0, slide: false, glideMs: 50 });
             riff.steps = loaded;
           }
           if (Array.isArray(rd.notes)) riff.notes = rd.notes.map(n => ({ ...n }));

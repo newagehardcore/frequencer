@@ -377,6 +377,18 @@ Up to 64 steps in an 8-column grid. Each step shows its note name and a velocity
 - **Clear** — erase all steps
 - **Steps +/−** — 1–64 steps
 
+### Per-Step Controls
+
+Each step cell has two sets of per-step controls:
+
+**Octave transpose** — `−` and `+` buttons appear in the top-left and top-right corners of the cell on hover. Click to shift that step's note down or up one octave. Click repeatedly to transpose multiple octaves. Has no effect on empty (rest) steps.
+
+**Per-step glide** — a thin strip runs along the bottom of each cell.
+- *Off (default)*: dim strip with a muted `›` arrow. Click to enable glide for that step.
+- *On*: strip lights up in the riff's accent color; a fill bar grows from left to right showing the glide duration relative to the 500 ms maximum. Drag left/right to set the glide time (0–500 ms). The current value in ms is shown while dragging. Click again (without dragging) to turn glide off.
+
+When a step fires with glide enabled, the sequencer sets that synth's portamento to the step's glide time before triggering the note, overriding the global Glide knob for that step only. Steps with glide off always set portamento to 0. Glide data moves with the note when the pattern is shifted with ◀ ▶. Glide settings are saved and restored with the project.
+
 ### Grid & Subdivision
 
 - **Grid** — lock to BPM at the selected subdivision; off = free Rate slider
