@@ -291,19 +291,24 @@ function startWireDrag(lfo, startEvent, portEl) {
     function lfoModulationTick() {
       const now = performance.now() / 1000;
       for (const [, lfo] of lfos) {
-        lfo.tick(now);
-        const val = lfo.evaluate(lfo._phase);
+        if (isPlaying) lfo.tick(now);
+        else lfo._lastTime = now; // keep lastTime fresh so tick doesn't jump on resume
 
         // Update playhead on the LFO node
         const nodeInfo = lfoNodes.get(lfo.id);
         if (nodeInfo) {
           const ph = nodeInfo.el.querySelector('.lfo-playhead');
           if (ph) {
+            if (!isPlaying) { ph.style.display = 'none'; continue; }
             const shapeWrap = nodeInfo.el.querySelector('.lfo-shape-wrap');
             const sw = shapeWrap ? shapeWrap.clientWidth : 200;
             ph.style.left = (lfo._phase * sw) + 'px';
+            ph.style.display = '';
           }
         }
+
+        if (!isPlaying) continue;
+        const val = lfo.evaluate(lfo._phase);
 
         // Apply modulation to destinations
         for (const d of lfo.destinations) {

@@ -938,6 +938,11 @@
         }
       }
 
+      resetPhase() {
+        this._phase = 0;
+        this._lastTime = performance.now() / 1000;
+      }
+
       addDestination(sampleId, param, min, max, fxUid) {
         // Don't duplicate
         if (this.destinations.find(d => d.sampleId === sampleId && d.param === param && d.fxUid === fxUid)) return;

@@ -195,7 +195,10 @@
 
     /* ═══ WAVETABLE PRESET LIST ═══ */
     .wt-preset-list {
-      max-height: 160px;
+      max-height: 200px;
+    }
+    .rom-preset-list {
+      max-height: 200px;
     }
     .wt-wave-btn {
       background: transparent;
@@ -250,9 +253,38 @@
     .sk-key-white.sk-out-scale.skact { background: var(--card-color, #aaa); opacity: 0.85; }
     .sk-key-black.sk-out-scale.skact { background: var(--card-color, #444); filter: brightness(0.7); }
 
+    /* ═══ PRESET BANKS ═══ */
+    .preset-bank { }
+    .preset-bank > summary {
+      padding: 3px 8px 3px 6px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.38);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+      background: rgba(0,0,0,0.18);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .preset-bank > summary::-webkit-details-marker { display: none; }
+    .preset-bank > summary::before {
+      content: '▸';
+      font-size: 7px;
+      display: inline-block;
+      transition: transform 0.1s;
+      opacity: 0.7;
+    }
+    .preset-bank[open] > summary::before { transform: rotate(90deg); }
+    .preset-bank > summary:hover { color: rgba(255,255,255,0.7); }
+
     /* ═══ FM PRESET LIST ═══ */
     .fm-preset-list {
-      max-height: 112px;
+      max-height: 160px;
       overflow-y: auto;
       border: 1px solid rgba(255,255,255,0.1);
       margin-bottom: 5px;

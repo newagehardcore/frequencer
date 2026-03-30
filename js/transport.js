@@ -24,6 +24,7 @@
     function playAll() {
       isPlaying = true;
       document.getElementById('btn-play').classList.add('playing');
+      for (const [, lfo] of lfos) lfo.resetPhase();
       // Register sample grids FIRST while transport is still at position 0.
       // playGrid() detects Transport.state !== 'started' and schedules
       // the first fire at transport time 0.001 (bar 1, cold-start path).
@@ -75,6 +76,7 @@
       document.getElementById('btn-play').classList.remove('playing');
       Tone.Transport.stop();
       Tone.Transport.position = 0;
+      for (const [, lfo] of lfos) lfo.resetPhase();
       for (const [, s] of samples) if (s instanceof Sample) s.stop();
       for (const [, riff] of riffs) riff.unschedule();
       for (const [, ch] of chords) if (ch instanceof ChordsSequencer) ch.unschedule();

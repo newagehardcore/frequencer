@@ -237,21 +237,34 @@
             </div></div>
           </div>`;
 
+        const ANALOG_BANK_ORDER = ['Bass','Lead','Keys','Pluck','Pad','Brass','FX','Init'];
         const renderAnalogPresets = () => {
           const list = qs('.sc-preset-list'); if (!list) return;
           list.innerHTML = '';
-          ANALOG_PRESETS.forEach((p, i) => {
-            const item = document.createElement('div');
-            item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
-            item.textContent = p.name;
-            item.addEventListener('click', () => {
-              synth.currentPreset = i; synth.loadAnalogPreset(p); renderAnalogPresets();
-              qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
-              qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
-              const propMap = { 'sc-ffreq':'filterFreq','sc-fq':'filterQ','sc-atk':'attack','sc-dec':'decay','sc-sus':'sustain','sc-rel':'release' };
-              Object.keys(propMap).forEach(cls => { const sl=qs('.'+cls); if(sl){sl.value=synth[propMap[cls]]; sl.closest('.cslider')?._syncPos?.();} });
+          const byBank = {};
+          ANALOG_PRESETS.forEach((p, i) => { const c = p.cat||'Other'; (byBank[c]||(byBank[c]=[])).push({p,i}); });
+          ANALOG_BANK_ORDER.forEach(cat => {
+            const entries = byBank[cat]; if (!entries) return;
+            const det = document.createElement('details');
+            det.className = 'preset-bank';
+            if (entries.some(({i}) => i === synth.currentPreset)) det.open = true;
+            const sum = document.createElement('summary');
+            sum.textContent = cat;
+            det.appendChild(sum);
+            entries.forEach(({p, i}) => {
+              const item = document.createElement('div');
+              item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+              item.textContent = p.name;
+              item.addEventListener('click', () => {
+                synth.currentPreset = i; synth.loadAnalogPreset(p); renderAnalogPresets();
+                qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+                qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+                const propMap = { 'sc-ffreq':'filterFreq','sc-fq':'filterQ','sc-atk':'attack','sc-dec':'decay','sc-sus':'sustain','sc-rel':'release' };
+                Object.keys(propMap).forEach(cls => { const sl=qs('.'+cls); if(sl){sl.value=synth[propMap[cls]]; sl.closest('.cslider')?._syncPos?.();} });
+              });
+              det.appendChild(item);
             });
-            list.appendChild(item);
+            list.appendChild(det);
           });
         };
         renderAnalogPresets();
@@ -348,16 +361,39 @@
           });
         };
 
+        const FM_BANK_ORDER = ['Keys','Bass','Lead','Pad','Brass','Pluck','Perc','FX'];
         const renderFMPresets = () => {
           const list = qs('.fm-preset-list'); if (!list) return;
           list.innerHTML = '';
           const plist = synth._usingCustom ? synth._customPresets : DX7_PRESETS;
-          plist.forEach((p, i) => {
-            const item = document.createElement('div');
-            item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
-            item.textContent = p.name;
-            item.addEventListener('click', () => { synth.currentPreset=i; synth.loadFMPreset(p); renderFMPresets(); syncFMSliders(); });
-            list.appendChild(item);
+          if (synth._usingCustom) {
+            plist.forEach((p, i) => {
+              const item = document.createElement('div');
+              item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+              item.textContent = p.name;
+              item.addEventListener('click', () => { synth.currentPreset=i; synth.loadFMPreset(p); renderFMPresets(); syncFMSliders(); });
+              list.appendChild(item);
+            });
+            return;
+          }
+          const byBank = {};
+          plist.forEach((p, i) => { const c = p.cat||'Other'; (byBank[c]||(byBank[c]=[])).push({p,i}); });
+          FM_BANK_ORDER.forEach(cat => {
+            const entries = byBank[cat]; if (!entries) return;
+            const det = document.createElement('details');
+            det.className = 'preset-bank';
+            if (entries.some(({i}) => i === synth.currentPreset)) det.open = true;
+            const sum = document.createElement('summary');
+            sum.textContent = cat;
+            det.appendChild(sum);
+            entries.forEach(({p, i}) => {
+              const item = document.createElement('div');
+              item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+              item.textContent = p.name;
+              item.addEventListener('click', () => { synth.currentPreset=i; synth.loadFMPreset(p); renderFMPresets(); syncFMSliders(); });
+              det.appendChild(item);
+            });
+            list.appendChild(det);
           });
         };
         renderFMPresets();
@@ -426,15 +462,28 @@
         const wtList = qs('.wt-preset-list');
         const renderWTPresets = () => {
           wtList.innerHTML = '';
-          WT_NAMES.forEach((name, i) => {
-            const item = document.createElement('div');
-            item.className = 'fm-preset-item' + (i === synth.currentWave ? ' fm-preset-active' : '');
-            item.textContent = name.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-            item.addEventListener('click', () => {
-              synth.currentWave = i; synth.updateWave();
-              wtList.querySelectorAll('.fm-preset-item').forEach((el, j) => el.classList.toggle('fm-preset-active', j === i));
+          WT_BANKS.forEach(bank => {
+            const det = document.createElement('details');
+            det.className = 'preset-bank';
+            if (bank.items.some(n => WT_NAMES.indexOf(n) === synth.currentWave)) det.open = true;
+            const sum = document.createElement('summary');
+            sum.textContent = bank.name;
+            det.appendChild(sum);
+            bank.items.forEach(name => {
+              const i = WT_NAMES.indexOf(name);
+              if (i === -1) return;
+              const item = document.createElement('div');
+              item.className = 'fm-preset-item' + (i === synth.currentWave ? ' fm-preset-active' : '');
+              item.dataset.waveIdx = i;
+              item.textContent = name.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+              item.addEventListener('click', () => {
+                synth.currentWave = i; synth.updateWave();
+                wtList.querySelectorAll('.fm-preset-item').forEach(el =>
+                  el.classList.toggle('fm-preset-active', parseInt(el.dataset.waveIdx) === i));
+              });
+              det.appendChild(item);
             });
-            wtList.appendChild(item);
+            wtList.appendChild(det);
           });
           const active = wtList.querySelector('.fm-preset-active');
           if (active) active.scrollIntoView({ block: 'nearest' });
@@ -617,17 +666,28 @@
         const renderSf1Presets = () => {
           const list = qs('.rom-preset-list'); if (!list) return;
           list.innerHTML = '';
-          ROMPLER_INSTRUMENTS.forEach(inst => {
-            const item = document.createElement('div');
-            item.className = 'fm-preset-item' + (inst === synth.romplerInstrument ? ' fm-preset-active' : '');
-            item.textContent = inst.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
-            item.addEventListener('click', () => {
-              synth.romplerInstrument = inst;
-              updateStatusLocal('Loading…');
-              synth._romplerLoad();
-              list.querySelectorAll('.fm-preset-item').forEach((el, j) => el.classList.toggle('fm-preset-active', ROMPLER_INSTRUMENTS[j] === inst));
+          ROMPLER_GM_BANKS.forEach(bank => {
+            const det = document.createElement('details');
+            det.className = 'preset-bank';
+            if (bank.items.includes(synth.romplerInstrument)) det.open = true;
+            const sum = document.createElement('summary');
+            sum.textContent = bank.name;
+            det.appendChild(sum);
+            bank.items.forEach(inst => {
+              const item = document.createElement('div');
+              item.className = 'fm-preset-item' + (inst === synth.romplerInstrument ? ' fm-preset-active' : '');
+              item.dataset.inst = inst;
+              item.textContent = inst.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+              item.addEventListener('click', () => {
+                synth.romplerInstrument = inst;
+                updateStatusLocal('Loading…');
+                synth._romplerLoad();
+                list.querySelectorAll('.fm-preset-item').forEach(el =>
+                  el.classList.toggle('fm-preset-active', el.dataset.inst === inst));
+              });
+              det.appendChild(item);
             });
-            list.appendChild(item);
+            list.appendChild(det);
           });
           const active = list.querySelector('.fm-preset-active');
           if (active) active.scrollIntoView({ block: 'nearest' });
