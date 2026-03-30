@@ -286,31 +286,31 @@ Sample-based synthesizer using the Soundfont library format.
 
 ## Drum Machine
 
-Add a drum machine to the canvas via `+ Drum Machine`. Each instance is a standalone 6-lane step sequencer with sample-based kits.
+Add a drum machine to the canvas via `+ Drums`. Each instance is an independent step sequencer with sample-based kits.
 
 ### Lanes
 
-Six lanes: **Kick · Snare · Hi-Hat · Tom 1 · Tom 2 · Tom 3**.
+One lane per sound category — **Kick · Snare · Clap · Rim · HH Closed · HH Open · Tom Hi · Tom Low · Cowbell · Ride** — showing only the categories present in the selected kit. Kits with multiple variants per category (e.g. four kicks) offer an inline dropdown to select which sample plays on that lane.
 
 ### Step Grid
 
-- **Steps** — 4 to 64 steps per pattern, configurable with the +/− buttons.
-- **Velocity** — each step cycles through Off → Soft → Accent (left-click to advance, right-click to go back). Soft and Accent hits are visually distinguished.
-- **Per-lane pitch** — a ±12 semitone pitch slider sits next to each lane for tuning individual drums.
+- **Steps** — up to 64 steps, configurable with +/− buttons.
+- **Velocity** — click-drag across steps to draw patterns. Empty → Soft → Accent → erase, determined by the first step touched.
+- **Per-lane pitch & volume** — compact dual sliders (±12 st, −40 to +6 dB) next to each lane. Both are LFO-targetable.
 
 ### Kits
 
-15 sample kits sourced from the [Web Audio Samples](https://googlechromelabs.github.io/web-audio-samples/) library:
+50 sample kits, 3300+ samples hosted locally:
 
-Roland R-8 · Roland CR-78 · Korg KPR-77 · LinnDrum · Kit 3 · Kit 8 · Techno · Stark · Breakbeat 8 · Breakbeat 9 · Breakbeat 13 · Acoustic Kit · 4OP-FM · Cheebacabra 1 · Cheebacabra 2
+Roland TR-808 · TR-909 · TR-707 · TR-606 · CR-78 · CR-8000 · Korg KPR-77 · LinnDrum · Oberheim DMX · Alesis SR-16 · ASR-X · Basimilus · Elektron Machinedrum · and many more.
 
-Switch kits at any time; samples stream and cache on demand.
+Patterns are preserved across kit switches and restored when switching back.
 
 ### Transport
 
-- **Grid Sync** — lock step timing to the global BPM at the selected subdivision (`32n · 16n · 8n · 4n`).
-- **Free mode** — use the BPM slider to set an independent tempo (20–400 BPM).
-- **CLR** — clear all steps across all lanes.
+- **Grid Sync** — lock step timing to the global BPM at the selected subdivision.
+- **Free mode** — independent BPM slider.
+- **CLR** — clear all steps.
 
 ### Mixer & Effects
 
