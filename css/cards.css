@@ -827,6 +827,20 @@
       border-color: #fff;
     }
 
+    #midi-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      transition: background 0.05s, border-color 0.05s;
+    }
+
+    #midi-dot.flash {
+      background: #fff;
+      border-color: #fff;
+    }
+
     .finfo {
       margin-left: auto;
       text-align: right;

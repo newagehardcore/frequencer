@@ -105,6 +105,11 @@
         <div class="riff-titlebar">
           <div class="riff-color-dot"></div>
           <div class="riff-name">${riff.name}</div>
+          <span class="midi-dev-lbl">MIDI From</span>
+          <select class="midi-input-sel riff-midi-sel" data-riff-id="${riff.id}">
+            <option value="all">ALL</option>
+            <option value="keyboard">KEYBOARD</option>
+          </select>
           <button class="riff-hdr-btn riff-dup-btn" title="Duplicate">⧉</button>
           <button class="riff-hdr-btn riff-remove-btn" title="Remove">🗑</button>
           <button class="riff-hdr-btn riff-min-btn" title="Minimize">✕</button>
@@ -198,6 +203,12 @@
       `;
 
       const q = sel => el.querySelector(sel);
+
+      // MIDI input selector
+      populateMidiSelect(q('.riff-midi-sel'), riff.midiInput ?? 'all');
+      q('.riff-midi-sel').addEventListener('mousedown', e => e.stopPropagation());
+      q('.riff-midi-sel').addEventListener('click',     e => e.stopPropagation());
+      q('.riff-midi-sel').addEventListener('change',    e => { e.stopPropagation(); riff.midiInput = e.target.value; });
 
       // ── Step-entry state ──
       let selectedStep = -1;
@@ -681,7 +692,7 @@
       // ── Titlebar drag ──
       let titleMoved = false;
       q('.riff-titlebar').addEventListener('mousedown', e => {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button, select')) return;
         e.preventDefault(); e.stopPropagation();
         el.style.zIndex = ++cardZTop; titleMoved = false;
         const ox = e.clientX, oy = e.clientY;
@@ -699,7 +710,7 @@
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
       });
       q('.riff-titlebar').addEventListener('click', e => {
-        if (!e.target.closest('button') && !titleMoved) { e.stopPropagation(); el.classList.toggle('collapsed'); }
+        if (!e.target.closest('button, select') && !titleMoved) { e.stopPropagation(); el.classList.toggle('collapsed'); }
       });
 
       // ── Collapsed drag ──

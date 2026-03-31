@@ -795,6 +795,17 @@
         <div class="card-titlebar">
           <div class="card-color-dot" style="background:${synth.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
           <div class="card-name">${synth.name}</div>
+          <span class="midi-dev-lbl">MIDI From</span>
+          <select class="midi-input-sel" data-instr-id="${synth.id}">
+            <option value="all">ALL</option>
+            <option value="keyboard">KEYBOARD</option>
+          </select>
+          <button class="card-dup" title="Duplicate">&#x29C9;</button>
+          <button class="card-remove" title="Remove">&#x1F5D1;</button>
+          <button class="card-close" title="Close">&#x2715;</button>
+        </div>
+        <div class="synth-type-row">
+          <span class="synth-type-lbl">Type</span>
           <select class="synth-type-sel">
             <option value="analog"${synth.synthType==='analog'?' selected':''}>Analog</option>
             <option value="fm"${synth.synthType==='fm'?' selected':''}>FM</option>
@@ -802,9 +813,6 @@
             <option value="karplus"${synth.synthType==='karplus'?' selected':''}>Karplus</option>
             <option value="rompler"${synth.synthType==='rompler'?' selected':''}>Rompler</option>
           </select>
-          <button class="card-dup" title="Duplicate">&#x29C9;</button>
-          <button class="card-remove" title="Remove">&#x1F5D1;</button>
-          <button class="card-close" title="Close">&#x2715;</button>
         </div>
         <div class="vp-scope-row">
           <div class="vp-scope-wrap">
@@ -848,6 +856,10 @@
         _populateSynthTypeBody(synth, el);
         requestAnimationFrame(updateLfoWires);
       });
+
+      // MIDI input selector
+      populateMidiSelect(q('.midi-input-sel'), synth.midiInput ?? 'all');
+      q('.midi-input-sel').addEventListener('change', e => { synth.midiInput = e.target.value; });
 
       q('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
       q('.card-remove').addEventListener('click', e => { e.stopPropagation(); removeSynth(synth.id); });
@@ -1069,9 +1081,14 @@
           if (lane.options.length > 1) sels[lane.id] = lane.selectedSlot;
         }
         if (Object.keys(sels).length) dup._pendingLaneSelections = sels;
-        dup.gridSync = synth.gridSync;
-        dup.subdiv   = synth.subdiv;
-        dup.rate     = synth.rate;
+        dup.gridSync  = synth.gridSync;
+        dup.subdiv    = synth.subdiv;
+        dup.rate      = synth.rate;
+        dup.swing     = synth.swing  || 0;
+        dup.nudgeMs   = synth.nudgeMs || 0;
+        for (const lane of (synth.lanes || [])) {
+          if (synth.laneVelScales[lane.id] !== undefined) dup.laneVelScales[lane.id] = synth.laneVelScales[lane.id];
+        }
         // Share already-loaded kit buffers
         dup._kitCache = synth._kitCache;
         drums.set(id, dup);
@@ -1304,14 +1321,18 @@
         const stepsRows = drum.lanes.map(lane => {
           const btns = Array.from({length: drum.numSteps}, (_, i) => {
             const vel = (drum.patterns[lane.id] || [])[i] || 0;
-            return `<button class="dm-step" data-lane="${lane.id}" data-step="${i}" data-vel="${vel}" style="--lane-col:${drum.color}"></button>`;
+            const onCls = vel > 0 ? ' dm-on' : '';
+            const barH = Math.round(vel * 100);
+            return `<button class="dm-step${onCls}" data-lane="${lane.id}" data-step="${i}" data-vel="${vel}" style="--lane-col:${drum.color}"><div class="dm-step-vel" style="height:${barH}%"></div></button>`;
           }).join('');
           return `<div class="dm-lane-steps" data-lane="${lane.id}">${btns}</div>`;
         }).join('');
 
+        const fmtVelScale = v => Math.round(parseFloat(v) * 100) + '%';
         const pvCols = drum.lanes.map(lane => {
-          const pitch = drum.pitches[lane.id] || 0;
-          const vol   = drum.laneVols[lane.id] || 0;
+          const pitch    = drum.pitches[lane.id] || 0;
+          const vol      = drum.laneVols[lane.id] || 0;
+          const velScale = drum.laneVelScales[lane.id] ?? 1.0;
           return `<div class="dm-pv-wrap">
             <div class="lfo-slot dm-lane-pitch-slot">
               <input type="range" class="dm-pitch-input dm-pitch-${lane.id}" data-lane="${lane.id}" min="-12" max="12" step="0.5" value="${pitch}" title="Pitch: ${fmtPitch(pitch)}">
@@ -1329,6 +1350,11 @@
         <div class="card-titlebar">
           <div class="card-color-dot" style="background:${drum.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
           <div class="card-name">DRUMS · ${drum.name}</div>
+          <span class="midi-dev-lbl">MIDI From</span>
+          <select class="midi-input-sel" data-instr-id="${drum.id}">
+            <option value="all">ALL</option>
+            <option value="keyboard">KEYBOARD</option>
+          </select>
           <button class="card-dup" title="Duplicate">&#x29C9;</button>
           <button class="card-remove" title="Remove">&#x1F5D1;</button>
           <button class="card-close" title="Close">&#x2715;</button>
@@ -1353,6 +1379,10 @@
             <button class="dm-steps-inc">+</button>
           </div>
           <span class="dm-kit-status">${drum._kitLoading?'Loading…':''}</span>
+        </div>
+        <div class="dm-timing">
+          <div class="crow"><span class="clbl">Swing</span><div class="cslider lfo-slot"><input type="range" class="dm-swing" min="0" max="0.5" step="0.01" value="${(drum.swing||0).toFixed(2)}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
+          <div class="crow"><span class="clbl">Nudge</span><div class="cslider lfo-slot"><input type="range" class="dm-nudge" min="-500" max="500" step="1" value="${(drum.nudgeMs||0).toFixed(0)}"><div class="cslider-thumb"><span class="cslider-lbl"></span><input class="cslider-edit" type="text"></div></div></div>
         </div>
         <div class="dm-body">
           <div class="dm-grid">${buildGridHtml()}</div>
@@ -1381,29 +1411,64 @@
         requestAnimationFrame(updateLfoWires);
       });
 
-      // Drag-to-draw step listeners
-      let _dragAction = null;
-      const _dragUpHandler = () => { _dragAction = null; };
-      document.addEventListener('mouseup', _dragUpHandler);
-
-      function applyDragToStep(btn) {
-        if (_dragAction === null) return;
-        const lane = btn.dataset.lane, step = parseInt(btn.dataset.step);
-        const newVel = _dragAction === 'erase' ? 0 : _dragAction === 'hi' ? 2 : 1;
-        drum.patterns[lane][step] = newVel;
-        btn.dataset.vel = newVel;
+      // Step button state helper
+      function updateStepBtn(b, vel) {
+        const v = Math.max(0, Math.min(1.0, vel));
+        drum.patterns[b.dataset.lane][parseInt(b.dataset.step)] = v;
+        b.dataset.vel = v;
+        b.classList.toggle('dm-on', v > 0);
+        const bar = b.querySelector('.dm-step-vel');
+        if (bar) bar.style.height = (v * 100) + '%';
       }
 
       function attachStepListeners() {
         el.querySelectorAll('.dm-step').forEach(btn => {
           btn.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
             e.preventDefault(); e.stopPropagation();
-            const vel = parseInt(btn.dataset.vel);
-            _dragAction = vel === 0 ? 'lo' : vel === 1 ? 'hi' : 'erase';
-            applyDragToStep(btn);
-          });
-          btn.addEventListener('mouseover', () => {
-            applyDragToStep(btn);
+            const startX = e.clientX, startY = e.clientY;
+            const startVel = parseFloat(btn.dataset.vel) || 0;
+            const wasActive = startVel > 0;
+            const paintAction = wasActive ? 'erase' : 'draw';
+            const paintedSet = new Set();
+            let mode = null; // null | 'vel' | 'paint'
+
+            const onMove = mv => {
+              const dx = mv.clientX - startX;
+              const dy = startY - mv.clientY; // positive = upward drag
+              if (mode === null) {
+                if (Math.abs(dy) > 4) {
+                  mode = 'vel';
+                  if (!wasActive) updateStepBtn(btn, 1.0); // turn on before dragging vel
+                } else if (Math.abs(dx) > 4) {
+                  mode = 'paint';
+                  const key = btn.dataset.lane + '-' + btn.dataset.step;
+                  paintedSet.add(key);
+                  updateStepBtn(btn, paintAction === 'draw' ? 1.0 : 0);
+                } else return;
+              }
+              if (mode === 'vel') {
+                const baseVel = wasActive ? startVel : 1.0;
+                updateStepBtn(btn, Math.max(0.05, Math.min(1.0, baseVel + dy / 60)));
+              } else if (mode === 'paint') {
+                const target = document.elementFromPoint(mv.clientX, mv.clientY);
+                const stepBtn = target?.closest?.('.dm-step');
+                if (stepBtn && el.contains(stepBtn)) {
+                  const key = stepBtn.dataset.lane + '-' + stepBtn.dataset.step;
+                  if (!paintedSet.has(key)) {
+                    paintedSet.add(key);
+                    updateStepBtn(stepBtn, paintAction === 'draw' ? 1.0 : 0);
+                  }
+                }
+              }
+            };
+            const onUp = () => {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+              if (mode === null) updateStepBtn(btn, wasActive ? 0 : 1.0);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
           });
         });
       }
@@ -1415,6 +1480,7 @@
         attachPvListeners();
         attachStepListeners();
         attachLaneSelListeners();
+        applyCardOverrides(drum.id);
       }
 
       function attachPvListeners() {
@@ -1529,12 +1595,24 @@
         }
       });
 
-      // Initial pitch/vol slider listeners
+      // Swing + Nudge csliders
+      const fmtSwing = v => Math.round(parseFloat(v) * 100) + '%';
+      const fmtNudge = v => { const ms = Math.round(parseFloat(v)); return (ms >= 0 ? '+' : '') + ms + ' ms'; };
+      initCslider(q('.dm-swing').closest('.cslider'), fmtSwing);
+      initCslider(q('.dm-nudge').closest('.cslider'), fmtNudge);
+      q('.dm-swing').addEventListener('input', e => { drum.swing = parseFloat(e.target.value); });
+      q('.dm-nudge').addEventListener('input', e => { drum.nudgeMs = parseFloat(e.target.value); });
+
+      // Initial pitch/vol/vel slider listeners
       attachPvListeners();
       attachLaneSelListeners();
 
       q('.synth-vol').addEventListener('input', () => { drum._currentDb  = parseFloat(q('.synth-vol').value); drum._applyVol(); });
       q('.synth-pan').addEventListener('input', () => { drum._currentPan = parseFloat(q('.synth-pan').value); drum._applyPan(); });
+
+      // MIDI input selector
+      populateMidiSelect(q('.midi-input-sel'), drum.midiInput ?? 'all');
+      q('.midi-input-sel').addEventListener('change', e => { drum.midiInput = e.target.value; });
 
       // Titlebar drag/close
       q('.card-titlebar').addEventListener('click', e => {

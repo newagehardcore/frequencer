@@ -76,19 +76,21 @@
           if (inst.type === 'eq') return { type: 'eq', bands: inst.eqData.bands.map(b => ({ ...b })) };
           return { type: inst.type, params: { ...inst.params }, postFader: !!inst.postFader };
         });
-        const patternsData = {}, pitchesData = {}, laneVolsData = {}, laneSelectionsData = {};
+        const patternsData = {}, pitchesData = {}, laneVolsData = {}, laneSelectionsData = {}, laneVelScalesData = {};
         for (const lane of drum.lanes) {
-          patternsData[lane.id]    = [...(drum.patterns[lane.id] || Array(64).fill(0))];
-          pitchesData[lane.id]     = drum.pitches[lane.id] || 0;
-          laneVolsData[lane.id]    = drum.laneVols[lane.id] || 0;
+          patternsData[lane.id]      = [...(drum.patterns[lane.id] || Array(64).fill(0))];
+          pitchesData[lane.id]       = drum.pitches[lane.id] || 0;
+          laneVolsData[lane.id]      = drum.laneVols[lane.id] || 0;
+          laneVelScalesData[lane.id] = drum.laneVelScales[lane.id] ?? 1.0;
           if (lane.options.length > 1) laneSelectionsData[lane.id] = lane.selectedSlot;
         }
         projectData.drums.push({
           id: drum.id, name: drum.name, x: drum.x, y: drum.y, color: drum.color,
           kitId: drum.kitId, kitName: drum.kitName,
           patterns: patternsData, pitches: pitchesData,
-          laneVols: laneVolsData, laneSelections: laneSelectionsData,
+          laneVols: laneVolsData, laneVelScales: laneVelScalesData, laneSelections: laneSelectionsData,
           gridSync: drum.gridSync, subdiv: drum.subdiv, rate: drum.rate, numSteps: drum.numSteps,
+          swing: drum.swing || 0, nudgeMs: drum.nudgeMs || 0,
           volDb: drum._currentDb, panPos: drum._currentPan,
           fxChain: fxChainData,
         });
@@ -103,6 +105,7 @@
         const sd = {
           id: synth.id, name: synth.name, x: synth.x, y: synth.y, color: synth.color,
           synthType: synth.synthType, muted: synth.muted,
+          midiInput: synth.midiInput,
           volDb: synth._currentDb, panPos: synth._currentPan,
           fxChain: fxChainData,
         };
@@ -177,6 +180,7 @@
           subdiv: riff.subdiv, gridSync: riff.gridSync, rate: riff.rate,
           loopBars: riff.loopBars, quantize: riff.quantize,
           scale: riff.scale, scaleRoot: riff.scaleRoot, harmony: riff.harmony,
+          midiInput: riff.midiInput,
           destinations: [...riff.destinations]
         });
       }
@@ -396,17 +400,21 @@
             // Restore all patterns/pitches/laneVols by key (supports old saves with slot keys)
             if (dd.patterns) {
               for (const [n, p] of Object.entries(dd.patterns)) {
-                const loaded = p.slice(0, 64);
+                // Backward compat: old saves used integers 1 (soft) and 2 (accent)
+                const loaded = p.slice(0, 64).map(v => v === 1 ? 0.45 : v === 2 ? 1.0 : v);
                 while (loaded.length < 64) loaded.push(0);
                 drum.patterns[n] = loaded;
               }
             }
-            if (dd.pitches)   for (const [n, v] of Object.entries(dd.pitches))   drum.pitches[n]  = v;
-            if (dd.laneVols)  for (const [n, v] of Object.entries(dd.laneVols))  drum.laneVols[n] = v;
+            if (dd.pitches)        for (const [n, v] of Object.entries(dd.pitches))        drum.pitches[n]        = v;
+            if (dd.laneVols)       for (const [n, v] of Object.entries(dd.laneVols))       drum.laneVols[n]       = v;
+            if (dd.laneVelScales)  for (const [n, v] of Object.entries(dd.laneVelScales))  drum.laneVelScales[n]  = v;
             if (dd.laneSelections) drum._pendingLaneSelections = { ...dd.laneSelections };
             drum.gridSync = dd.gridSync !== undefined ? dd.gridSync : true;
             drum.subdiv   = dd.subdiv || '16n';
             drum.rate     = dd.rate   || 120;
+            drum.swing    = dd.swing   || 0;
+            drum.nudgeMs  = dd.nudgeMs || 0;
             drum._currentDb  = dd.volDb  ?? 0;
             drum._currentPan = dd.panPos ?? 0;
             drum._applyVol(); drum._applyPan();
@@ -520,6 +528,7 @@
               continue; // unknown type
             }
             if (sd.color) synth.color = sd.color;
+            synth.midiInput   = sd.midiInput ?? 'all';
             synth._currentDb  = sd.volDb  ?? 0;
             synth._currentPan = sd.panPos ?? 0;
             synth._applyVol(); synth._applyPan();
@@ -617,7 +626,8 @@
           riff.scale = rd.scale || 'Chromatic';
           riff.scaleRoot = rd.scaleRoot || 'C';
           riff.harmony = rd.harmony || 0;
-          riff.quantize = rd.quantize !== false;
+          riff.quantize   = rd.quantize !== false;
+          riff.midiInput  = rd.midiInput ?? 'all';
           riffs.set(rid, riff);
           createRiffNode(riff);
           document.getElementById('riff-' + rid)?.classList.add('collapsed');

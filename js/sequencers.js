@@ -37,6 +37,7 @@
         this.scaleRoot = 'C';
         this.scale = 'Chromatic';
         this.destinations = [];       // array of instrument IDs
+        this.midiInput = 'all';
         this._scheduleId = null;
         this._part = null;
         this._seqPhaseTransport = null;
@@ -835,6 +836,20 @@
       'wt-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'kp-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'rm-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
+      // Drum machine global params
+      'dm-swing': { prop: 'swing',   min: 0,    max: 0.5, label: 'Swing', isDrumDirect: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-nudge': { prop: 'nudgeMs', min: -500, max: 500, label: 'Nudge', isDrumDirect: true, fmtVal: v => (Math.round(v) >= 0 ? '+' : '') + Math.round(v) + ' ms' },
+      // Drum machine per-lane velocity scale params (10 lanes)
+      'dm-vel-kick':      { prop: 'laneVelScales', subProp: 'kick',      min: 0, max: 2, label: 'Kick Vel',    isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-snare':     { prop: 'laneVelScales', subProp: 'snare',     min: 0, max: 2, label: 'Snare Vel',   isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-clap':      { prop: 'laneVelScales', subProp: 'clap',      min: 0, max: 2, label: 'Clap Vel',    isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-rim':       { prop: 'laneVelScales', subProp: 'rim',       min: 0, max: 2, label: 'Rim Vel',     isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-hh_closed': { prop: 'laneVelScales', subProp: 'hh_closed', min: 0, max: 2, label: 'CH Vel',      isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-hh_open':   { prop: 'laneVelScales', subProp: 'hh_open',   min: 0, max: 2, label: 'OH Vel',      isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-tom_hi':    { prop: 'laneVelScales', subProp: 'tom_hi',    min: 0, max: 2, label: 'Tom H Vel',   isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-tom_low':   { prop: 'laneVelScales', subProp: 'tom_low',   min: 0, max: 2, label: 'Tom L Vel',   isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-cowbell':   { prop: 'laneVelScales', subProp: 'cowbell',   min: 0, max: 2, label: 'Cowbell Vel', isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
+      'dm-vel-ride':      { prop: 'laneVelScales', subProp: 'ride',      min: 0, max: 2, label: 'Ride Vel',    isDrum: true, fmtVal: v => Math.round(v * 100) + '%' },
       // Drum machine pitch params (10 lanes)
       'dm-pitch-kick':      { prop: 'pitches', subProp: 'kick',      min: -12, max: 12, label: 'Kick Pitch',    isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
       'dm-pitch-snare':     { prop: 'pitches', subProp: 'snare',     min: -12, max: 12, label: 'Snare Pitch',   isDrum: true, fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },

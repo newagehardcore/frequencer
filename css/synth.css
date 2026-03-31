@@ -1,3 +1,20 @@
+    /* ═══ SYNTH TYPE ROW ═══ */
+    .synth-type-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .synth-type-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      flex-shrink: 0;
+    }
+
     /* ═══ SYNTH TYPE SELECTOR ═══ */
     .synth-type-sel {
       background: rgba(255,255,255,0.08);
@@ -12,10 +29,41 @@
       cursor: pointer;
       outline: none;
       border-radius: 2px;
-      flex-shrink: 0;
+      flex: 1;
     }
     .synth-type-sel:hover { background: rgba(255,255,255,0.14); }
     .synth-type-sel option { background: #111; color: #fff; }
+
+    /* ═══ MIDI DEVICE LABEL ═══ */
+    .midi-dev-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ═══ MIDI INPUT SELECTOR ═══ */
+    .midi-input-sel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.6);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      padding: 3px 5px;
+      cursor: pointer;
+      outline: none;
+      border-radius: 2px;
+      flex-shrink: 0;
+      max-width: 90px;
+    }
+    .midi-input-sel:hover { background: rgba(255,255,255,0.12); }
+    .midi-input-sel option { background: #111; color: #fff; }
 
     /* ═══ SYNTH TILE ═══ */
     .tile-synth-badge {

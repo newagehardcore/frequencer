@@ -6,6 +6,7 @@
         this.id = id; this.name = name; this.x = x; this.y = y;
         this.color = nextColor();
         this.muted = false;
+        this.midiInput = 'all';
         this._currentDb = 0;
         this.synthType = 'base';
 
@@ -1512,16 +1513,19 @@
         this._kitLoading = false;
         this._pendingLaneSelections = null;  // applied by loadKit() on first load
 
-        // Patterns: 0=off 1=soft 2=accent, up to 64 steps per lane ID
-        this.numSteps = 16;
-        this.patterns = {};
-        this.pitches  = {};
-        this.laneVols = {};  // per-lane volume, dB
+        // Patterns: 0=off, float 0.05–1.0=velocity, up to 64 steps per lane ID
+        this.numSteps      = 16;
+        this.patterns      = {};
+        this.pitches       = {};
+        this.laneVols      = {};  // per-lane volume, dB
+        this.laneVelScales = {};  // per-lane velocity scale (0–2, default 1.0)
+        this.stepVelOverrides = {}; // { 'lane:stepIdx': velocity } — set by LFO tick
         // Pre-init so drawDrumMiniGrid never hits undefined before loadKit() resolves
         for (const lane of this.lanes) {
-          this.patterns[lane.id] = Array(64).fill(0);
-          this.pitches[lane.id]  = 0;
-          this.laneVols[lane.id] = 0;
+          this.patterns[lane.id]      = Array(64).fill(0);
+          this.pitches[lane.id]       = 0;
+          this.laneVols[lane.id]      = 0;
+          this.laneVelScales[lane.id] = 1.0;
         }
 
         // Playback
@@ -1530,6 +1534,8 @@
         this.gridSync     = true;
         this.subdiv       = '16n';
         this.rate         = 120;   // BPM when unsynced
+        this.swing        = 0;     // 0–0.5: fraction of step interval to delay odd steps
+        this.nudgeMs      = 0;     // ms to delay ALL hits (−500 to 500)
         this._seq         = null;
         this._activeSrcs  = [];    // pending AudioBufferSourceNodes — cancelled on stop
 
@@ -1550,9 +1556,10 @@
         if (!this._kitCache[kitId]) this._kitCache[kitId] = {};
         const bufs = this._kitCache[kitId];
         // Snapshot all existing pattern/pitch/vol data — will be merged back after lane update
-        const savedPatterns = Object.assign({}, this.patterns);
-        const savedPitches  = Object.assign({}, this.pitches);
-        const savedLaneVols = Object.assign({}, this.laneVols);
+        const savedPatterns      = Object.assign({}, this.patterns);
+        const savedPitches       = Object.assign({}, this.pitches);
+        const savedLaneVols      = Object.assign({}, this.laneVols);
+        const savedLaneVelScales = Object.assign({}, this.laneVelScales);
         // Only fetch slots that will actually be used in lanes
         const newLanes = buildLanes(kit);
         const neededSlots = [...new Set(newLanes.flatMap(l => l.options))];
@@ -1583,13 +1590,15 @@
         this.INSTRUMENTS = this.lanes.map(l => l.id);
         // Restore all previously saved data (never lose patterns on kit switch),
         // then ensure every current lane ID has an entry
-        Object.assign(this.patterns, savedPatterns);
-        Object.assign(this.pitches,  savedPitches);
-        Object.assign(this.laneVols, savedLaneVols);
+        Object.assign(this.patterns,      savedPatterns);
+        Object.assign(this.pitches,       savedPitches);
+        Object.assign(this.laneVols,      savedLaneVols);
+        Object.assign(this.laneVelScales, savedLaneVelScales);
         for (const lane of this.lanes) {
-          if (!this.patterns[lane.id]) this.patterns[lane.id] = Array(64).fill(0);
-          if (this.pitches[lane.id]  === undefined) this.pitches[lane.id] = 0;
-          if (this.laneVols[lane.id] === undefined) this.laneVols[lane.id] = 0;
+          if (!this.patterns[lane.id])                this.patterns[lane.id]      = Array(64).fill(0);
+          if (this.pitches[lane.id]       === undefined) this.pitches[lane.id]    = 0;
+          if (this.laneVols[lane.id]      === undefined) this.laneVols[lane.id]   = 0;
+          if (this.laneVelScales[lane.id] === undefined) this.laneVelScales[lane.id] = 1.0;
         }
         this._kitLoading = false;
         this._updateLoadStatus('');
@@ -1616,7 +1625,8 @@
         src.buffer             = bufs[slot];
         src.playbackRate.value = Math.pow(2, (this.pitches[name] || 0) / 12);
         const hg = ctx.createGain();
-        const velGain  = velocity === 1 ? 0.45 : 1.0;
+        const velScale = this.laneVelScales ? (this.laneVelScales[name] ?? 1.0) : 1.0;
+        const velGain  = Math.max(0, Math.min(1.0, velocity * velScale));
         const laneGain = Math.pow(10, (this.laneVols[name] || 0) / 20);
         hg.gain.value  = velGain * laneGain;
         src.connect(hg);
@@ -1634,11 +1644,19 @@
       startSequencer() {
         if (this._seq) { try { this._seq.stop(); this._seq.dispose(); } catch(e){} this._seq = null; }
         const interval = this.gridSync ? this.subdiv : `${60 / (this.rate * 4)}s`;
+        const stepSecs = Tone.Time(interval).toSeconds();
         this._seq = new Tone.Sequence((time, step) => {
           this.currentStep = step;
+          const swingDelay = (step % 2 === 1 && this.swing > 0) ? stepSecs * this.swing : 0;
+          const nudgeSecs  = (this.nudgeMs || 0) / 1000;
+          const hitTime    = time + swingDelay + nudgeSecs;
           for (const name of this.INSTRUMENTS) {
-            const vel = this.patterns[name][step];
-            if (vel > 0) this.triggerInstrument(name, vel, time);
+            const baseVel = this.patterns[name][step];
+            const overrideKey = name + ':' + step;
+            const vel = (overrideKey in this.stepVelOverrides)
+              ? this.stepVelOverrides[overrideKey]
+              : baseVel;
+            if (vel > 0) this.triggerInstrument(name, vel, hitTime);
           }
         }, Array.from({length: this.numSteps}, (_, i) => i), interval);
         // Always start at transport position 0 so the sequence is phase-locked to the

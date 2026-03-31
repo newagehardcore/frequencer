@@ -78,6 +78,7 @@ document.getElementById('file-input').addEventListener('change', async e => {
       // ── QWERTY keyboard → active riff ──
       if (_activeRiffId !== null && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const riff = riffs.get(_activeRiffId);
+        if (riff && riff.midiInput !== 'all' && riff.midiInput !== 'keyboard') return;
         const proxy = riffKbdProxies.get(_activeRiffId);
         const nodeInfo = riffNodes.get(_activeRiffId);
         if (riff && proxy && nodeInfo) {
@@ -153,6 +154,7 @@ document.getElementById('file-input').addEventListener('change', async e => {
       if (!mapping) return;
       _riffHeldKeys.delete(e.code);
       const riff = riffs.get(_activeRiffId);
+      if (riff && riff.midiInput !== 'all' && riff.midiInput !== 'keyboard') return;
       const proxy = riffKbdProxies.get(_activeRiffId);
       const nodeInfo = riffNodes.get(_activeRiffId);
       if (!riff || !proxy || !nodeInfo) return;

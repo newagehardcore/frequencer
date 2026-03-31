@@ -8,3 +8,4 @@
 
     updateEmpty();
     requestAnimationFrame(phLoop);
+    initMidi();
