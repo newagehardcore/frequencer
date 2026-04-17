@@ -90,14 +90,12 @@
         _midiAccess = access;
         _midiInitDone = true;
         const inputs = [...access.inputs.values()];
-        console.log(`[MIDI] Access granted. ${inputs.length} input device(s):`, inputs.map(d => d.name));
         for (const input of inputs) {
           input.onmidimessage = e => _routeMidiMessage(input.id, e.data);
         }
         access.onstatechange = e => {
           const port = e.port;
           if (port.type !== 'input') return;
-          console.log(`[MIDI] Device ${port.state}: ${port.name}`);
           if (port.state === 'connected') {
             port.onmidimessage = ev => _routeMidiMessage(port.id, ev.data);
           }

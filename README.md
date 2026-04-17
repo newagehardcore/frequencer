@@ -118,7 +118,14 @@ Parameters are grouped into collapsible accordion sections:
 
 **ENVELOPE** — Attack, Release, Crossfade (equal-power).
 
-**PITCH+TIME** — Pitch Shift (±24 st, speed unchanged) · Timestretch (±24 st, changes speed and pitch) · Paulstretch (extreme slow-down) · Warp (BPM-aware time stretch, see below).
+**PITCH+TIME** — Four independent pitch and time controls:
+
+| Slider | Engine | Range | Behaviour |
+|--------|--------|-------|-----------|
+| **PITCH** | RubberBand (WASM) | ±24 st | High-quality pitch shift — tempo unchanged. Snaps to semitones. |
+| **FINE** | Tone.js PitchShift | ±2 st | Smooth continuous pitch shift with portamento glide (~750 ms for full range). LFO-targetable for vibrato and pitch-sweep effects. |
+| **TAPE** | Playback rate | ±24 st | Changes playback speed and pitch together, like a tape deck. |
+| **PAUL** | PaulStretch (Worker) | ×1–×200 | Extreme time-stretch with no pitch change. Rendered offline; progress shown while building. |
 
 **EFFECTS** — FX rack. Add unlimited effect instances; each has a PRE/POST fader toggle.
 
@@ -175,7 +182,7 @@ Click the **Nudge** label (it's a button) to auto-detect the sample's first tran
 
 ### How It Works
 
-When Grid is active the sample fires via the global transport scheduler. Each repeat fires at the next quantization boundary; the PitchShift latency (~100 ms) is pre-compensated so audio exits the chain exactly on the beat. Loops use WebAudio's native loop splice point for sample-accurate boundaries with no gap or click. The visual playhead wraps continuously using the same timing math as the audio, so it stays tight even across loop boundaries.
+When Grid is active the sample fires via the global transport scheduler. Each repeat fires at the next quantization boundary. Loops use WebAudio's native loop splice point for sample-accurate boundaries with no gap or click. The visual playhead wraps continuously using the same timing math as the audio, so it stays tight even across loop boundaries.
 
 Sync and Grid are independent: you can use Grid without Sync (free tempo), Sync without Grid (BPM-matched but free-running loop), or both together for a fully locked loop. When Sync is activated on a sample that has Grid off, Grid is automatically enabled.
 
@@ -217,7 +224,7 @@ Add LFOs to the canvas via `+ LFO`. Modulate any sample parameter (Pitch, Stretc
 
 - **Presets** — Sine, Square, Triangle, Random, and Blank (flat line).
 - **Custom Shapes** — Click to add breakpoints, Shift + Click to remove. Drag to reshape.
-- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Wire endpoints always track to the tile's input port regardless of whether the edit card is open or closed.
+- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Wire endpoints always track to the tile's input port regardless of whether the edit card is open or closed. Modulatable sample parameters include: Pitch, Fine, Tape, Volume, Pan, Loop Start/End, File Position, PaulStretch, Attack, Release, Crossfade, Grain controls, and all FX parameters.
 - **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for filter sweeps.
 - **Range Control** — Set Min/Max boundaries per modulation target.
 - **Sync** — Free-running (seconds) or locked to the project grid (bars/subdivisions).
@@ -457,13 +464,15 @@ Drag from the riff's wire port onto a synth tile or sampler tile to connect. A r
 
 **Normal mode (per sample):**
 ```
-AudioBuffer → Player(s) → FadeGain → ClipGain → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
+AudioBuffer → Player(s) → FadeGain → ClipGain → [RubberBand →] RbGain → FineShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
 ```
 
 **Granular mode (per sample):**
 ```
-AudioBuffer → GranularEngine → GranGain → ClipGain → PitchShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
+AudioBuffer → GranularEngine → GranGain → ClipGain → [RubberBand →] RbGain → FineShift → EQ (5 bands) → [Pre-fader FX] → Panner → Volume → [Post-fader FX] → Output
 ```
+
+`RubberBand` — async WASM AudioWorklet, wired in after load. `RbGain` is a passthrough until it's ready. `FineShift` — always present Tone.js PitchShift (±2 st FINE control).
 
 **Synth / Drum Machine:**
 ```

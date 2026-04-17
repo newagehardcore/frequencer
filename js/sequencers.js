@@ -737,8 +737,9 @@
 
     // Maps cslider CSS classes to { prop, min, max, label }
     const LFO_PARAM_MAP = {
-      'card-pitch': { prop: 'pitchST', min: -24, max: 24, label: 'Pitch', setter: 'setPitch', fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
-      'card-stretch': { prop: 'stretchST', min: -24, max: 24, label: 'Stretch', setter: 'setStretch', fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'card-pitch':   { prop: 'pitchST',  min: -24, max: 24, label: 'Pitch', setter: 'setPitch',  fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
+      'card-fine':    { prop: 'fineST',   min: -2,  max: 2,  label: 'Fine',  setter: 'setFine',   fmtVal: v => parseFloat(v).toFixed(2) + ' st' },
+      'card-stretch': { prop: 'stretchST', min: -24, max: 24, label: 'Tape', setter: 'setStretch', fmtVal: v => (v >= 0 ? '+' : '') + Math.round(v) + ' st' },
       'card-attack': { prop: 'attackTime', min: 0, max: 4, label: 'Attack', setter: null, fmtVal: v => fmtFade(v) },
       'card-release': { prop: 'releaseTime', min: 0, max: 4, label: 'Release', setter: null, fmtVal: v => fmtFade(v) },
       'card-xfade': { prop: 'crossfadeTime', min: 0, max: 4, label: 'X-Fade', setter: null, fmtVal: v => fmtFade(v) },

@@ -636,7 +636,7 @@
             <div class="card-acc-body">
               <div class="csec tight" style="border:none">
                 <div class="crow">
-                  <span class="clbl">Pitchshift</span>
+                  <span class="clbl">PITCH</span>
                   <input type="text" class="rng-field" value="-24">
                   <div class="cslider">
                     <input type="range" class="card-pitch" min="-24" max="24" step="1" value="0">
@@ -645,7 +645,16 @@
                   <input type="text" class="rng-field" value="24">
                 </div>
                 <div class="crow">
-                  <span class="clbl">Timestretch</span>
+                  <span class="clbl">FINE</span>
+                  <input type="text" class="rng-field" value="-2">
+                  <div class="cslider">
+                    <input type="range" class="card-fine" min="-2" max="2" step="0.01" value="0">
+                    <div class="cslider-thumb"><span class="cslider-lbl">0 st</span><input class="cslider-edit" type="text"></div>
+                  </div>
+                  <input type="text" class="rng-field" value="2">
+                </div>
+                <div class="crow">
+                  <span class="clbl">TAPE</span>
                   <input type="text" class="rng-field" value="-24">
                   <div class="cslider">
                     <input type="range" class="card-stretch" min="-24" max="24" step="1" value="0">
@@ -654,7 +663,7 @@
                   <input type="text" class="rng-field" value="24">
                 </div>
                 <div class="crow">
-                  <span class="clbl">Paulstretch</span>
+                  <span class="clbl">PAUL</span>
                   <span class="rng-spacer"></span>
                   <div class="cslider">
                     <input type="range" class="card-ps" min="0" max="100" step="0.5" value="0">
@@ -680,6 +689,7 @@
       q('.card-ph').style.background = '#fff';
       q('.card-name').textContent = s.name.toUpperCase();
       q('.card-pitch').value = s.pitchST;
+      q('.card-fine').value = s.fineST || 0;
       q('.card-stretch').value = s.stretchST;
       // Convert stored ratio back to slider position: sliderVal = log(ratio)/log(200)*100
       q('.card-ps').value = s.psStretch > 1 ? Math.log(s.psStretch) / Math.log(200) * 100 : 0;
@@ -1539,6 +1549,9 @@
       q('.card-pitch').addEventListener('input', e => {
         s.setPitch(parseInt(e.target.value));
       });
+      q('.card-fine').addEventListener('input', e => {
+        s.setFine(parseFloat(e.target.value));
+      });
       q('.card-vol').addEventListener('input', e => {
         s.setVolPos(parseFloat(e.target.value));
       });
@@ -1824,6 +1837,7 @@
         return (ratio < 10 ? ratio.toFixed(1) : Math.round(ratio)) + '×';
       };
       initCslider(q('.card-pitch').closest('.cslider'), fmtST);
+      initCslider(q('.card-fine').closest('.cslider'), v => parseFloat(v).toFixed(2) + ' st');
       initCslider(q('.card-stretch').closest('.cslider'), fmtST);
       initCslider(q('.card-ps').closest('.cslider'), fmtPS);
       initCslider(q('.card-attack').closest('.cslider'));
@@ -1955,6 +1969,7 @@
         });
       }
       wireRangeFields('.card-pitch');
+      wireRangeFields('.card-fine');
       wireRangeFields('.card-stretch');
       wireRangeFields('.card-attack');
       wireRangeFields('.card-release');

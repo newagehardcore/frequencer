@@ -4,6 +4,8 @@
     // CONSTANTS & GLOBALS
     // ════════════════════════════════════════════════════
     const TW = 136, TH = 56;
+
+    const RB_PROCESSOR_URL = 'js/rubberband-processor.js';
     const WORLD_W = 10000, WORLD_H = 8000;
     const cv = document.getElementById('cv');
 

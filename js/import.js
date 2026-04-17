@@ -164,6 +164,7 @@
         if (stub.parentNode) stub.remove();
 
         const s = new Sample(id, name, decoded, x, y);
+        s._initRb();
         samples.set(id, s);
         createTile(s);
 

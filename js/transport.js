@@ -103,7 +103,7 @@
       if (transVal) transVal.textContent = (globalTranspose >= 0 ? '+' : '') + globalTranspose;
 
       // Samples: re-apply pitch with new offset
-      for (const [, s] of samples) if (s instanceof Sample) s.ps.pitch = s.pitchST + globalTranspose;
+      for (const [, s] of samples) if (s instanceof Sample) s.setPitch(s.pitchST);
 
       // Riffs: update root dropdown in open cards + keyboard highlight
       for (const [, riff] of riffs) {

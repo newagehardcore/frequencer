@@ -84,6 +84,11 @@ function _switchDelayMode(inst, newMode, instrument) {
         this.color = nextColor();
         this.pitchST = 0;
         this.stretchST = 0;
+        this._rbPitchST = 0;   // current interpolated RB pitch (includes globalTranspose)
+        this._rbPitchRaf = null;
+        this.fineST = 0;       // fine-tune target (semitones, ±2)
+        this._fineST = 0;      // current interpolated fine pitch
+        this._fineRaf = null;
         this.reversed = false;
         this._revBuf = null;
         this.loopStart = 0;  // normalized 0..1
@@ -131,7 +136,7 @@ function _switchDelayMode(inst, newMode, instrument) {
         this._currentDb = 0;
         this._currentPan = 0;
 
-        // Audio chain: Player → fadeGain → PitchShift → EQ → Panner → Volume → [postFx] → _outputTap → masterSamplesGain
+        // Audio chain: Player → fadeGain → clipGain → [RubberBand →] _rbGain → _fineShift → EQ → Panner → Volume → [postFx] → _outputTap → masterSamplesGain
         this._outputTap = new Tone.Gain(1).connect(masterSamplesGain);
         this.vol = new Tone.Volume(0).connect(this._outputTap);
         this.meter = new Tone.Meter({ channelCount: 2, normalRange: false, smoothing: 0.85 });
@@ -152,7 +157,16 @@ function _switchDelayMode(inst, newMode, instrument) {
           return f;
         });
         for (let i = 3; i >= 0; i--) this.eqFilters[i].connect(this.eqFilters[i + 1]);
-        this.ps = new Tone.PitchShift(0).connect(this.eqFilters[0]);
+
+        // RubberBand realtime PITCH node (async init via _initRb).
+        // Until the worklet is ready, _rbGain is a transparent passthrough.
+        this._rbNode = null;
+        this._rbGain = new Tone.Gain(1);
+        // FINE: Tone.PitchShift (±2 st) sits after _rbGain — continuously modulatable,
+        // smooth glide for LFO vibrato and fine-tune effects.
+        this._fineShift = new Tone.PitchShift({ pitch: 0, windowSize: 0.05 });
+        this._rbGain.connect(this._fineShift);
+        this._fineShift.connect(this.eqFilters[0]);
 
         // FX catalog (available types) + dynamic instance chain
         this.fxCatalog = [
@@ -169,7 +183,7 @@ function _switchDelayMode(inst, newMode, instrument) {
         this._fxUidCounter = 0;
         this.rebuildFxChain();
 
-        this.clipGain = new Tone.Gain(1).connect(this.ps);
+        this.clipGain = new Tone.Gain(1).connect(this._rbGain);
         this.fadeGain = new Tone.Gain(1).connect(this.clipGain);
         this.player = new Tone.Player().connect(this.fadeGain);
         this._fadedBuf = null; // cached baked-fade buffer; null = needs rebuild
@@ -200,7 +214,7 @@ function _switchDelayMode(inst, newMode, instrument) {
         this._psSrcEnd = 1;       // loopEnd saved at render time
 
         // Second player for crossfade overlap — both xfGain and fadeGain feed into this.ps
-        this.xfGain = new Tone.Gain(0).connect(this.ps);
+        this.xfGain = new Tone.Gain(0).connect(this._rbGain);
         this.xfPlayer = new Tone.Player().connect(this.xfGain);
 
         // Load buffer into both players
@@ -244,7 +258,60 @@ function _switchDelayMode(inst, newMode, instrument) {
 
       setPitch(st) {
         this.pitchST = st;
-        this.ps.pitch = st + globalTranspose;
+        if (!this._rbNode) return;
+        if (this._rbPitchRaf) { cancelAnimationFrame(this._rbPitchRaf); this._rbPitchRaf = null; }
+        this._schedulePitchGlide();
+      }
+
+      _schedulePitchGlide() {
+        const target = this.pitchST + globalTranspose;
+        const diff = target - this._rbPitchST;
+        if (Math.abs(diff) < 0.02) {
+          this._rbPitchST = target;
+          if (this._rbNode) this._rbNode.setPitch(Math.pow(2, this._rbPitchST / 12));
+          return;
+        }
+        this._rbPitchST += diff * 0.25;
+        if (this._rbNode) this._rbNode.setPitch(Math.pow(2, this._rbPitchST / 12));
+        this._rbPitchRaf = requestAnimationFrame(() => this._schedulePitchGlide());
+      }
+
+      setFine(st) {
+        this.fineST = Math.max(-2, Math.min(2, st));
+        if (this._fineRaf) { cancelAnimationFrame(this._fineRaf); this._fineRaf = null; }
+        this._glideFine();
+      }
+
+      _glideFine() {
+        const diff = this.fineST - this._fineST;
+        if (Math.abs(diff) < 0.001) {
+          this._fineST = this.fineST;
+          this._fineShift.pitch = this._fineST;
+          return;
+        }
+        // Smooth exponential glide — 15% per frame @ 60fps gives ~750ms for a full 2st sweep.
+        this._fineST += diff * 0.15;
+        this._fineShift.pitch = this._fineST;
+        this._fineRaf = requestAnimationFrame(() => this._glideFine());
+      }
+
+      async _initRb() {
+        if (this._rbNode) return;
+        const node = await _createRbNodeForSample();
+        if (!node || this._rbNode) return;
+        try {
+          try { this.clipGain.disconnect(this._rbGain); } catch (e) {}
+          try { this.xfGain.disconnect(this._rbGain);  } catch (e) {}
+          this.clipGain.connect(node);
+          this.xfGain.connect(node);
+          node.connect(this._rbGain.input);
+          this._rbNode = node;
+          this._rbPitchST = this.pitchST + globalTranspose;
+          this._rbNode.setPitch(Math.pow(2, this._rbPitchST / 12));
+        } catch (e) {
+          try { this.clipGain.connect(this._rbGain); } catch (_) {}
+          try { this.xfGain.connect(this._rbGain);   } catch (_) {}
+        }
       }
 
       setStretch(st) {
@@ -1342,7 +1409,11 @@ function _switchDelayMode(inst, newMode, instrument) {
           try { this.fadeGain.dispose(); } catch (e) { }
           try { this.clipGain.dispose(); } catch (e) { }
           try { this.xfGain.dispose(); } catch (e) { }
-          try { this.ps.dispose(); } catch (e) { }
+          if (this._rbPitchRaf) { cancelAnimationFrame(this._rbPitchRaf); this._rbPitchRaf = null; }
+          if (this._rbNode) { try { this._rbNode.disconnect(); } catch (e) {} }
+          try { this._rbGain.dispose(); } catch (e) { }
+          if (this._fineRaf) { cancelAnimationFrame(this._fineRaf); this._fineRaf = null; }
+          try { this._fineShift.dispose(); } catch (e) { }
           if (this.eqFilters) this.eqFilters.forEach(f => { try { f.dispose(); } catch (e) { } });
           try { this.pan.dispose(); } catch (e) { }
           try { this.vol.dispose(); } catch (e) { }

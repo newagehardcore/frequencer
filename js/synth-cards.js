@@ -1732,8 +1732,10 @@
       s.reversed = src.reversed;
       if (src.reversed && src._revBuf) s._revBuf = src._revBuf; // share reversed buffer
       s.setPitch(src.pitchST);
+      s.setFine(src.fineST || 0);
       s.setStretch(src.stretchST);
       if (src.psStretch > 1) s.setPsStretch(src.psStretch);
+      s._initRb();
       s.setClipGain(src.clipGainDb);
       s.gridSync = src.gridSync;
       s.subdiv = src.subdiv;

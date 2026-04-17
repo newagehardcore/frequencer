@@ -46,7 +46,7 @@
           id: s.id,
           name: s.name, x: s.x, y: s.y, color: s.color,
           volDb: s._currentDb, panPos: s._currentPan,
-          pitchST: s.pitchST, stretchST: s.stretchST, psStretch: s.psStretch, reversed: s.reversed,
+          pitchST: s.pitchST, fineST: s.fineST, stretchST: s.stretchST, psStretch: s.psStretch, reversed: s.reversed,
           loopStart: s.loopStart, loopEnd: s.loopEnd, _origLoopEnd: s._origLoopEnd, filePosition: s.filePosition,
           muted: s.muted, gridSync: s.gridSync, subdiv: s.subdiv,
           subdivFactor: s.subdivFactor, gridMulti: s.gridMulti, nudgeMs: s._nudgeMs || 0, beatShiftMs: s._beatShiftMs || 0,
@@ -289,8 +289,10 @@
 
           // Restore settings via built-in setters
           s.setPitch(sd.pitchST || 0);
+          if (sd.fineST) s.setFine(sd.fineST);
           s.setStretch(sd.stretchST || 0);
           if (sd.psStretch > 1) s.setPsStretch(sd.psStretch);
+          s._initRb();
           s.setClipGain(sd.clipGainDb || 0);
           s.loopStart = sd.loopStart ?? 0;
           s.loopEnd = sd.loopEnd ?? 1;
