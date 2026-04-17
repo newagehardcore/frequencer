@@ -2,24 +2,70 @@
     // ANALOG PRESET LIBRARY
     // ════════════════════════════════════════════════════
     const ANALOG_PRESETS = [
-      { name: 'Init',        cat:'Init',  oscType:'sawtooth', filterType:'lowpass',  filterFreq:8000, filterQ:1.0,  attack:0.001, decay:0.3,  sustain:0.8,  release:0.5  },
-      { name: 'Acid Bass',   cat:'Bass',  oscType:'sawtooth', filterType:'lowpass',  filterFreq:400,  filterQ:12.0, attack:0.001, decay:0.2,  sustain:0.0,  release:0.1  },
-      { name: 'Sub Bass',    cat:'Bass',  oscType:'sine',     filterType:'lowpass',  filterFreq:200,  filterQ:1.0,  attack:0.001, decay:0.5,  sustain:0.0,  release:0.15 },
-      { name: 'Reese Bass',  cat:'Bass',  oscType:'sawtooth', filterType:'lowpass',  filterFreq:300,  filterQ:2.0,  attack:0.001, decay:0.8,  sustain:0.7,  release:0.2  },
-      { name: 'Saw Lead',    cat:'Lead',  oscType:'sawtooth', filterType:'lowpass',  filterFreq:3500, filterQ:3.0,  attack:0.01,  decay:0.2,  sustain:0.6,  release:0.3  },
-      { name: 'Sq Lead',     cat:'Lead',  oscType:'square',   filterType:'lowpass',  filterFreq:2000, filterQ:2.0,  attack:0.005, decay:0.15, sustain:0.5,  release:0.2  },
-      { name: 'Tri Lead',    cat:'Lead',  oscType:'triangle', filterType:'lowpass',  filterFreq:4000, filterQ:1.5,  attack:0.005, decay:0.2,  sustain:0.55, release:0.25 },
-      { name: 'PWM Keys',    cat:'Keys',  oscType:'square',   filterType:'lowpass',  filterFreq:1500, filterQ:1.5,  attack:0.02,  decay:0.5,  sustain:0.7,  release:0.4  },
-      { name: 'Organ',       cat:'Keys',  oscType:'sine',     filterType:'lowpass',  filterFreq:8000, filterQ:1.0,  attack:0.001, decay:2.0,  sustain:1.0,  release:0.05 },
-      { name: 'Bell',        cat:'Keys',  oscType:'sine',     filterType:'bandpass', filterFreq:1500, filterQ:10.0, attack:0.001, decay:2.5,  sustain:0.0,  release:1.2  },
-      { name: 'Pluck',       cat:'Pluck', oscType:'sawtooth', filterType:'lowpass',  filterFreq:5000, filterQ:8.0,  attack:0.001, decay:0.18, sustain:0.0,  release:0.12 },
-      { name: 'Strings',     cat:'Pad',   oscType:'sawtooth', filterType:'lowpass',  filterFreq:1800, filterQ:1.0,  attack:0.35,  decay:0.4,  sustain:0.8,  release:0.9  },
-      { name: 'Warm Pad',    cat:'Pad',   oscType:'sawtooth', filterType:'lowpass',  filterFreq:800,  filterQ:1.5,  attack:0.6,   decay:0.5,  sustain:0.9,  release:1.5  },
-      { name: 'Hollow Pad',  cat:'Pad',   oscType:'triangle', filterType:'lowpass',  filterFreq:1200, filterQ:2.0,  attack:0.4,   decay:0.4,  sustain:0.85, release:1.2  },
-      { name: 'Sweep',       cat:'Pad',   oscType:'sawtooth', filterType:'lowpass',  filterFreq:600,  filterQ:5.0,  attack:1.0,   decay:0.6,  sustain:0.7,  release:1.8  },
-      { name: 'Brass',       cat:'Brass', oscType:'sawtooth', filterType:'lowpass',  filterFreq:2500, filterQ:4.0,  attack:0.08,  decay:0.3,  sustain:0.75, release:0.2  },
-      { name: 'HP Zap',      cat:'FX',    oscType:'sawtooth', filterType:'highpass', filterFreq:3000, filterQ:6.0,  attack:0.001, decay:0.12, sustain:0.0,  release:0.08 },
+      // ── Init ─────────────────────────────────────────────────────────────────
+      { name: 'Init',         cat:'Init',  oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:8000, filterQ:1.0,  attack:0.001, decay:0.3,  sustain:0.8,  release:0.5  },
+      // ── Bass ─────────────────────────────────────────────────────────────────
+      { name: 'Acid Bass',    cat:'Bass',  oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:400,  filterQ:12.0, attack:0.001, decay:0.2,  sustain:0.0,  release:0.1  },
+      { name: 'Sub Bass',     cat:'Bass',  oscType:'sine',     texture:0,    filterType:'lowpass',  filterFreq:200,  filterQ:1.0,  attack:0.001, decay:0.5,  sustain:0.0,  release:0.15 },
+      { name: 'Tri Sub',      cat:'Bass',  oscType:'triangle', texture:0,    filterType:'lowpass',  filterFreq:180,  filterQ:1.0,  attack:0.001, decay:0.3,  sustain:0.5,  release:0.2  },
+      { name: 'Fat Bass',     cat:'Bass',  oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:150,  filterQ:0.7,  attack:0.001, decay:0.5,  sustain:0.6,  release:0.3  },
+      { name: 'Reese Bass',   cat:'Bass',  oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:300,  filterQ:2.0,  attack:0.001, decay:0.8,  sustain:0.7,  release:0.2  },
+      { name: 'PW Bass',      cat:'Bass',  oscType:'pulse',    texture:0.2,  filterType:'lowpass',  filterFreq:500,  filterQ:6.0,  attack:0.001, decay:0.3,  sustain:0.0,  release:0.12 },
+      { name: 'Fold Bass',    cat:'Bass',  oscType:'sawtooth', texture:0.35, filterType:'lowpass',  filterFreq:600,  filterQ:4.0,  attack:0.001, decay:0.4,  sustain:0.0,  release:0.15 },
+      // ── Lead ─────────────────────────────────────────────────────────────────
+      { name: 'Saw Lead',     cat:'Lead',  oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:3500, filterQ:3.0,  attack:0.01,  decay:0.2,  sustain:0.6,  release:0.3  },
+      { name: 'Sq Lead',      cat:'Lead',  oscType:'square',   texture:0,    filterType:'lowpass',  filterFreq:2000, filterQ:2.0,  attack:0.005, decay:0.15, sustain:0.5,  release:0.2  },
+      { name: 'Tri Lead',     cat:'Lead',  oscType:'triangle', texture:0,    filterType:'lowpass',  filterFreq:4000, filterQ:1.5,  attack:0.005, decay:0.2,  sustain:0.55, release:0.25 },
+      { name: 'PW Lead',      cat:'Lead',  oscType:'pulse',    texture:0.35, filterType:'lowpass',  filterFreq:3000, filterQ:3.0,  attack:0.005, decay:0.18, sustain:0.55, release:0.2  },
+      { name: 'Harsh Lead',   cat:'Lead',  oscType:'sawtooth', texture:0.55, filterType:'lowpass',  filterFreq:4000, filterQ:5.0,  attack:0.005, decay:0.15, sustain:0.6,  release:0.2  },
+      { name: 'Flute',        cat:'Lead',  oscType:'sine',     texture:0.18, filterType:'lowpass',  filterFreq:7000, filterQ:1.0,  attack:0.08,  decay:0.1,  sustain:0.85, release:0.3  },
+      { name: 'Buzz',         cat:'Lead',  oscType:'sine',     texture:0.55, filterType:'lowpass',  filterFreq:3000, filterQ:2.0,  attack:0.01,  decay:0.2,  sustain:0.7,  release:0.2  },
+      { name: 'Fold Lead',    cat:'Lead',  oscType:'triangle', texture:0.42, filterType:'lowpass',  filterFreq:3500, filterQ:2.0,  attack:0.008, decay:0.2,  sustain:0.6,  release:0.3  },
+      // ── Keys ─────────────────────────────────────────────────────────────────
+      { name: 'E.Piano',      cat:'Keys',  oscType:'triangle', texture:0,    filterType:'lowpass',  filterFreq:2800, filterQ:1.0,  attack:0.001, decay:1.2,  sustain:0.0,  release:0.5  },
+      { name: 'Clav',         cat:'Keys',  oscType:'pulse',    texture:0.15, filterType:'bandpass', filterFreq:1800, filterQ:8.0,  attack:0.001, decay:0.25, sustain:0.0,  release:0.1  },
+      { name: 'Metal Bell',   cat:'Keys',  oscType:'triangle', texture:0.72, filterType:'bandpass', filterFreq:2200, filterQ:12.0, attack:0.001, decay:3.0,  sustain:0.0,  release:1.5  },
+      { name: 'PWM Keys',     cat:'Keys',  oscType:'pulse',    texture:0.5,  filterType:'lowpass',  filterFreq:1500, filterQ:1.5,  attack:0.02,  decay:0.5,  sustain:0.7,  release:0.4  },
+      { name: 'Organ',        cat:'Keys',  oscType:'sine',     texture:0,    filterType:'lowpass',  filterFreq:8000, filterQ:1.0,  attack:0.001, decay:2.0,  sustain:1.0,  release:0.05 },
+      { name: 'Bell',         cat:'Keys',  oscType:'sine',     texture:0,    filterType:'bandpass', filterFreq:1500, filterQ:10.0, attack:0.001, decay:2.5,  sustain:0.0,  release:1.2  },
+      { name: 'Fold Keys',    cat:'Keys',  oscType:'sine',     texture:0.4,  filterType:'lowpass',  filterFreq:3000, filterQ:2.0,  attack:0.01,  decay:0.4,  sustain:0.6,  release:0.4  },
+      // ── Pluck ────────────────────────────────────────────────────────────────
+      { name: 'Pluck',        cat:'Pluck', oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:5000, filterQ:8.0,  attack:0.001, decay:0.18, sustain:0.0,  release:0.12 },
+      { name: 'PW Pluck',     cat:'Pluck', oscType:'pulse',    texture:0.15, filterType:'lowpass',  filterFreq:4000, filterQ:6.0,  attack:0.001, decay:0.22, sustain:0.0,  release:0.15 },
+      { name: 'Thin PW',      cat:'Pluck', oscType:'pulse',    texture:0.1,  filterType:'lowpass',  filterFreq:4500, filterQ:5.0,  attack:0.001, decay:0.2,  sustain:0.0,  release:0.15 },
+      // ── Pad ──────────────────────────────────────────────────────────────────
+      { name: 'Strings',      cat:'Pad',   oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:1800, filterQ:1.0,  attack:0.35,  decay:0.4,  sustain:0.8,  release:0.9  },
+      { name: 'Warm Pad',     cat:'Pad',   oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:800,  filterQ:1.5,  attack:0.6,   decay:0.5,  sustain:0.9,  release:1.5  },
+      { name: 'Hollow Pad',   cat:'Pad',   oscType:'triangle', texture:0,    filterType:'lowpass',  filterFreq:1200, filterQ:2.0,  attack:0.4,   decay:0.4,  sustain:0.85, release:1.2  },
+      { name: 'Sweep',        cat:'Pad',   oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:600,  filterQ:5.0,  attack:1.0,   decay:0.6,  sustain:0.7,  release:1.8  },
+      { name: 'PWM Pad',      cat:'Pad',   oscType:'pulse',    texture:0.65, filterType:'lowpass',  filterFreq:1200, filterQ:2.0,  attack:0.5,   decay:0.6,  sustain:0.85, release:1.4  },
+      { name: 'Fold Pad',     cat:'Pad',   oscType:'sawtooth', texture:0.3,  filterType:'lowpass',  filterFreq:900,  filterQ:2.0,  attack:0.5,   decay:0.5,  sustain:0.8,  release:1.2  },
+      // ── Brass ────────────────────────────────────────────────────────────────
+      { name: 'Brass',        cat:'Brass', oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:2500, filterQ:4.0,  attack:0.08,  decay:0.3,  sustain:0.75, release:0.2  },
+      { name: 'Stab',         cat:'Brass', oscType:'sawtooth', texture:0,    filterType:'lowpass',  filterFreq:1200, filterQ:5.0,  attack:0.001, decay:0.12, sustain:0.0,  release:0.08 },
+      { name: 'Dirty Brass',  cat:'Brass', oscType:'sawtooth', texture:0.25, filterType:'lowpass',  filterFreq:2800, filterQ:5.0,  attack:0.06,  decay:0.25, sustain:0.8,  release:0.2  },
+      // ── FX ───────────────────────────────────────────────────────────────────
+      { name: 'HP Zap',       cat:'FX',    oscType:'sawtooth', texture:0,    filterType:'highpass', filterFreq:3000, filterQ:6.0,  attack:0.001, decay:0.12, sustain:0.0,  release:0.08 },
+      { name: 'Fold Zap',     cat:'FX',    oscType:'triangle', texture:0.7,  filterType:'highpass', filterFreq:2000, filterQ:8.0,  attack:0.001, decay:0.1,  sustain:0.0,  release:0.07 },
+      { name: 'Digital',      cat:'FX',    oscType:'sawtooth', texture:0.8,  filterType:'bandpass', filterFreq:2500, filterQ:10.0, attack:0.001, decay:0.35, sustain:0.2,  release:0.3  },
     ];
+
+    // ════════════════════════════════════════════════════
+    // USER PRESET HELPERS (localStorage)
+    // ════════════════════════════════════════════════════
+    function getUserAnalogPresets() {
+      try { return JSON.parse(localStorage.getItem('freq_analog_user') || '[]'); } catch(e) { return []; }
+    }
+    function saveUserAnalogPreset(preset) {
+      const list = getUserAnalogPresets();
+      list.push(preset);
+      localStorage.setItem('freq_analog_user', JSON.stringify(list));
+    }
+    function deleteUserAnalogPreset(idx) {
+      const list = getUserAnalogPresets();
+      list.splice(idx, 1);
+      localStorage.setItem('freq_analog_user', JSON.stringify(list));
+    }
 
     // ════════════════════════════════════════════════════
     // DX7 PRESET LIBRARY + SYSEX PARSER

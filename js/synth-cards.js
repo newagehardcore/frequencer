@@ -198,7 +198,7 @@
         typeBody.innerHTML = `
           <div class="card-accordion">
             <div class="card-acc-hdr">PRESETS</div>
-            <div class="card-acc-body"><div class="csec"><div class="sc-preset-list"></div></div></div>
+            <div class="card-acc-body"><div class="csec"><div class="sc-preset-list"></div><button class="sc-save-preset-btn" style="margin-top:6px;width:100%;padding:4px 0;font-size:9px;background:#1a1a1a;border:1px solid #444;color:#aaa;border-radius:3px;cursor:pointer;letter-spacing:0.05em">+ SAVE CURRENT AS PRESET</button></div></div>
           </div>
           <div class="card-accordion">
             <div class="card-acc-hdr">OSCILLATOR + FILTER</div>
@@ -208,7 +208,9 @@
                 <button class="synth-btn ${synth.oscType==='sawtooth'?'act':''}" data-osc="sawtooth">Saw</button>
                 <button class="synth-btn ${synth.oscType==='square'?'act':''}"   data-osc="square">Square</button>
                 <button class="synth-btn ${synth.oscType==='triangle'?'act':''}" data-osc="triangle">Tri</button>
+                <button class="synth-btn ${synth.oscType==='pulse'?'act':''}"    data-osc="pulse">PW</button>
               </div>
+              <div class="crow"><span class="clbl sc-texture-lbl">${synth.oscType==='pulse'?'Width':'Texture'}</span>${mkCsl('sc-texture','0','1','0.01',synth.texture??0)}</div>
               <div class="synth-row" style="margin-bottom:6px">
                 <div class="synth-lbl">Type</div>
                 <div class="synth-btn-row" style="flex:1">
@@ -238,9 +240,38 @@
           </div>`;
 
         const ANALOG_BANK_ORDER = ['Bass','Lead','Keys','Pluck','Pad','Brass','FX','Init'];
+        const _syncAnalogSliders = () => {
+          qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+          qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+          const propMap = { 'sc-ffreq':'filterFreq','sc-fq':'filterQ','sc-atk':'attack','sc-dec':'decay','sc-sus':'sustain','sc-rel':'release' };
+          Object.keys(propMap).forEach(cls => { const sl=qs('.'+cls); if(sl){sl.value=synth[propMap[cls]]; sl.closest('.cslider')?._syncPos?.();} });
+          const stl = qs('.sc-texture'); if (stl) { stl.value = synth.texture ?? 0; stl.closest('.cslider')?._syncPos?.(); }
+          const lbl = qs('.sc-texture-lbl'); if (lbl) lbl.textContent = synth.oscType === 'pulse' ? 'Width' : 'Texture';
+        };
         const renderAnalogPresets = () => {
           const list = qs('.sc-preset-list'); if (!list) return;
           list.innerHTML = '';
+          // User presets bank
+          const userPresets = getUserAnalogPresets();
+          if (userPresets.length) {
+            const det = document.createElement('details');
+            det.className = 'preset-bank'; det.open = true;
+            const sum = document.createElement('summary'); sum.textContent = 'User'; det.appendChild(sum);
+            userPresets.forEach((p, ui) => {
+              const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center';
+              const item = document.createElement('div');
+              item.className = 'fm-preset-item'; item.textContent = p.name; item.style.flex = '1';
+              item.addEventListener('click', () => {
+                synth.currentPreset = -1; synth.loadAnalogPreset(p); renderAnalogPresets(); _syncAnalogSliders();
+              });
+              const del = document.createElement('button');
+              del.textContent = '✕'; del.style.cssText = 'background:none;border:none;color:#666;cursor:pointer;font-size:9px;padding:0 4px;flex-shrink:0';
+              del.addEventListener('click', e => { e.stopPropagation(); deleteUserAnalogPreset(ui); renderAnalogPresets(); });
+              row.appendChild(item); row.appendChild(del); det.appendChild(row);
+            });
+            list.appendChild(det);
+          }
+          // Built-in presets by category
           const byBank = {};
           ANALOG_PRESETS.forEach((p, i) => { const c = p.cat||'Other'; (byBank[c]||(byBank[c]=[])).push({p,i}); });
           ANALOG_BANK_ORDER.forEach(cat => {
@@ -256,11 +287,7 @@
               item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
               item.textContent = p.name;
               item.addEventListener('click', () => {
-                synth.currentPreset = i; synth.loadAnalogPreset(p); renderAnalogPresets();
-                qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
-                qas('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
-                const propMap = { 'sc-ffreq':'filterFreq','sc-fq':'filterQ','sc-atk':'attack','sc-dec':'decay','sc-sus':'sustain','sc-rel':'release' };
-                Object.keys(propMap).forEach(cls => { const sl=qs('.'+cls); if(sl){sl.value=synth[propMap[cls]]; sl.closest('.cslider')?._syncPos?.();} });
+                synth.currentPreset = i; synth.loadAnalogPreset(p); renderAnalogPresets(); _syncAnalogSliders();
               });
               det.appendChild(item);
             });
@@ -279,10 +306,12 @@
         initCslider(qs('.sc-sus').closest('.cslider'),   fmtPct);
         initCslider(qs('.sc-rel').closest('.cslider'),   fmtFade);
         initCslider(qs('.sc-glide').closest('.cslider'), fmtGlide);
+        initCslider(qs('.sc-texture').closest('.cslider'), fmtPct);
 
         qas('[data-osc]').forEach(btn => btn.addEventListener('click', () => {
           synth.oscType = btn.dataset.osc;
           qas('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+          const lbl = qs('.sc-texture-lbl'); if (lbl) lbl.textContent = synth.oscType === 'pulse' ? 'Width' : 'Texture';
           synth.updateOscType();
         }));
         qas('[data-flt]').forEach(btn => btn.addEventListener('click', () => {
@@ -297,6 +326,15 @@
         qs('.sc-sus').addEventListener('input',   () => { synth.sustain     = parseFloat(qs('.sc-sus').value);    synth.updateEnvelope(); });
         qs('.sc-rel').addEventListener('input',   () => { synth.release     = parseFloat(qs('.sc-rel').value);    synth.updateEnvelope(); });
         qs('.sc-glide').addEventListener('input', () => { synth.portamento  = parseFloat(qs('.sc-glide').value); synth.updatePortamento(); });
+        qs('.sc-texture').addEventListener('input', () => { synth.texture = parseFloat(qs('.sc-texture').value); synth.updateTexture(); });
+        qs('.sc-save-preset-btn').addEventListener('click', () => {
+          const name = prompt('Preset name:', synth.name);
+          if (!name) return;
+          saveUserAnalogPreset({ name, cat:'User', oscType:synth.oscType, texture:synth.texture??0,
+            filterType:synth.filterType, filterFreq:synth.filterFreq, filterQ:synth.filterQ,
+            attack:synth.attack, decay:synth.decay, sustain:synth.sustain, release:synth.release });
+          renderAnalogPresets();
+        });
 
       } else if (synth.synthType === 'fm') {
         typeBody.innerHTML = `
@@ -905,7 +943,7 @@
         <div class="card-accordion">
           <div class="card-acc-hdr">PRESETS</div>
           <div class="card-acc-body">
-            <div class="csec"><div class="fm-preset-list sc-preset-list"></div></div>
+            <div class="csec"><div class="fm-preset-list sc-preset-list"></div><button class="sc-save-preset-btn" style="margin-top:6px;width:100%;padding:4px 0;font-size:9px;background:#1a1a1a;border:1px solid #444;color:#aaa;border-radius:3px;cursor:pointer;letter-spacing:0.05em">+ SAVE CURRENT AS PRESET</button></div>
           </div>
         </div>
         <div class="card-accordion">
@@ -917,7 +955,9 @@
                 <button class="synth-btn ${synth.oscType==='sawtooth'?'act':''}" data-osc="sawtooth">Saw</button>
                 <button class="synth-btn ${synth.oscType==='square'?'act':''}"   data-osc="square">Square</button>
                 <button class="synth-btn ${synth.oscType==='triangle'?'act':''}" data-osc="triangle">Tri</button>
+                <button class="synth-btn ${synth.oscType==='pulse'?'act':''}"    data-osc="pulse">PW</button>
               </div>
+              <div class="crow"><span class="clbl sc-texture-lbl">${synth.oscType==='pulse'?'Width':'Texture'}</span>${mkCsl('sc-texture','0','1','0.01',synth.texture??0)}</div>
               <div class="synth-row" style="margin-bottom:6px">
                 <div class="synth-lbl">Type</div>
                 <div class="synth-btn-row" style="flex:1">
@@ -952,38 +992,77 @@
 
       const q = sel => el.querySelector(sel), qa = sel => el.querySelectorAll(sel);
 
+      const _syncAnalogSliders = () => {
+        qa('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+        qa('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
+        const propMap = { 'sc-ffreq':'filterFreq','sc-fq':'filterQ','sc-atk':'attack','sc-dec':'decay','sc-sus':'sustain','sc-rel':'release' };
+        Object.keys(propMap).forEach(cls => { const sl=q('.'+cls); if(sl){sl.value=synth[propMap[cls]]; sl.closest('.cslider')?._syncPos?.();} });
+        const stl = q('.sc-texture'); if (stl) { stl.value = synth.texture ?? 0; stl.closest('.cslider')?._syncPos?.(); }
+        const lbl = q('.sc-texture-lbl'); if (lbl) lbl.textContent = synth.oscType === 'pulse' ? 'Width' : 'Texture';
+      };
+      const ANALOG_BANK_ORDER2 = ['Bass','Lead','Keys','Pluck','Pad','Brass','FX','Init'];
       const renderAnalogPresets = () => {
         const list = q('.sc-preset-list');
         if (!list) return;
         list.innerHTML = '';
-        ANALOG_PRESETS.forEach((p, i) => {
-          const item = document.createElement('div');
-          item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
-          item.textContent = p.name;
-          item.addEventListener('click', () => {
-            synth.currentPreset = i;
-            synth.loadPreset(p);
-            renderAnalogPresets();
-            qa('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
-            qa('[data-flt]').forEach(b => b.classList.toggle('act', b.dataset.flt === synth.filterType));
-            q('.sc-ffreq').value = synth.filterFreq; q('.sc-ffreq').closest('.cslider')?._syncPos?.();
-            q('.sc-fq').value    = synth.filterQ;    q('.sc-fq').closest('.cslider')?._syncPos?.();
-            q('.sc-atk').value   = synth.attack;     q('.sc-atk').closest('.cslider')?._syncPos?.();
-            q('.sc-dec').value   = synth.decay;      q('.sc-dec').closest('.cslider')?._syncPos?.();
-            q('.sc-sus').value   = synth.sustain;    q('.sc-sus').closest('.cslider')?._syncPos?.();
-            q('.sc-rel').value   = synth.release;    q('.sc-rel').closest('.cslider')?._syncPos?.();
+        // User presets bank
+        const userPresets = getUserAnalogPresets();
+        if (userPresets.length) {
+          const det = document.createElement('details');
+          det.className = 'preset-bank'; det.open = true;
+          const sum = document.createElement('summary'); sum.textContent = 'User'; det.appendChild(sum);
+          userPresets.forEach((p, ui) => {
+            const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center';
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item'; item.textContent = p.name; item.style.flex = '1';
+            item.addEventListener('click', () => {
+              synth.currentPreset = -1; synth.loadPreset(p); renderAnalogPresets(); _syncAnalogSliders();
+            });
+            const del = document.createElement('button');
+            del.textContent = '✕'; del.style.cssText = 'background:none;border:none;color:#666;cursor:pointer;font-size:9px;padding:0 4px;flex-shrink:0';
+            del.addEventListener('click', e => { e.stopPropagation(); deleteUserAnalogPreset(ui); renderAnalogPresets(); });
+            row.appendChild(item); row.appendChild(del); det.appendChild(row);
           });
-          list.appendChild(item);
+          list.appendChild(det);
+        }
+        // Built-in presets grouped by category
+        const byBank = {};
+        ANALOG_PRESETS.forEach((p, i) => { const c = p.cat||'Other'; (byBank[c]||(byBank[c]=[])).push({p,i}); });
+        ANALOG_BANK_ORDER2.forEach(cat => {
+          const entries = byBank[cat]; if (!entries) return;
+          const det = document.createElement('details');
+          det.className = 'preset-bank';
+          if (entries.some(({i}) => i === synth.currentPreset)) det.open = true;
+          const sum = document.createElement('summary'); sum.textContent = cat; det.appendChild(sum);
+          entries.forEach(({p, i}) => {
+            const item = document.createElement('div');
+            item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+            item.textContent = p.name;
+            item.addEventListener('click', () => {
+              synth.currentPreset = i; synth.loadPreset(p); renderAnalogPresets(); _syncAnalogSliders();
+            });
+            det.appendChild(item);
+          });
+          list.appendChild(det);
         });
       };
       renderAnalogPresets();
 
       q('.card-close').addEventListener('click',  () => closeSynthCard(synth.id));
       q('.card-remove').addEventListener('click', (e) => { e.stopPropagation(); removeSynth(synth.id); });
+      q('.sc-save-preset-btn').addEventListener('click', () => {
+        const name = prompt('Preset name:', synth.name);
+        if (!name) return;
+        saveUserAnalogPreset({ name, cat:'User', oscType:synth.oscType, texture:synth.texture??0,
+          filterType:synth.filterType, filterFreq:synth.filterFreq, filterQ:synth.filterQ,
+          attack:synth.attack, decay:synth.decay, sustain:synth.sustain, release:synth.release });
+        renderAnalogPresets();
+      });
 
       qa('[data-osc]').forEach(btn => btn.addEventListener('click', () => {
         synth.oscType = btn.dataset.osc;
         qa('[data-osc]').forEach(b => b.classList.toggle('act', b.dataset.osc === synth.oscType));
+        const lbl = q('.sc-texture-lbl'); if (lbl) lbl.textContent = synth.oscType === 'pulse' ? 'Width' : 'Texture';
         synth.updateOscType();
       }));
       qa('[data-flt]').forEach(btn => btn.addEventListener('click', () => {
@@ -1001,6 +1080,7 @@
       initCslider(q('.sc-dec').closest('.cslider'),   fmtFade);
       initCslider(q('.sc-sus').closest('.cslider'),   fmtPct);
       initCslider(q('.sc-rel').closest('.cslider'),   fmtFade);
+      initCslider(q('.sc-texture').closest('.cslider'), fmtPct);
 
       q('.sc-ffreq').addEventListener('input', () => { synth.filterFreq = parseFloat(q('.sc-ffreq').value); synth.updateFilter(); });
       q('.sc-fq').addEventListener('input',    () => { synth.filterQ    = parseFloat(q('.sc-fq').value);    synth.updateFilter(); });
@@ -1008,6 +1088,7 @@
       q('.sc-dec').addEventListener('input',   () => { synth.decay      = parseFloat(q('.sc-dec').value);   synth.updateEnvelope(); });
       q('.sc-sus').addEventListener('input',   () => { synth.sustain    = parseFloat(q('.sc-sus').value);   synth.updateEnvelope(); });
       q('.sc-rel').addEventListener('input',   () => { synth.release    = parseFloat(q('.sc-rel').value);   synth.updateEnvelope(); });
+      q('.sc-texture').addEventListener('input', () => { synth.texture = parseFloat(q('.sc-texture').value); synth.updateTexture(); });
 
       // Accordion toggles
       qa('.card-acc-hdr').forEach(hdr => {
@@ -1042,7 +1123,8 @@
         dup.oscType = synth.oscType; dup.attack = synth.attack; dup.decay = synth.decay;
         dup.sustain = synth.sustain; dup.release = synth.release;
         dup.filterType = synth.filterType; dup.filterFreq = synth.filterFreq; dup.filterQ = synth.filterQ;
-        dup.updateOscType(); dup.updateEnvelope(); dup.updateFilter();
+        dup.texture = synth.texture ?? 0;
+        dup.updateOscType(); dup.updateEnvelope(); dup.updateFilter(); dup.updateTexture();
       } else if (synth.synthType === 'fm') {
         dup = new FMSynthInstrument(id, synth.name, synth.x + offset, synth.y + offset);
         dup.loadPreset({ name: synth.name, harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex, attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release, modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease });

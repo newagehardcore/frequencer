@@ -6,7 +6,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
-      padding: 5px 10px;
+      padding: 4px 10px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       flex-wrap: wrap;
     }
@@ -109,21 +109,45 @@
       min-width: 18px;
       text-align: center;
     }
+    .dm-timing {
+      padding: 3px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .dm-timing .crow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 16px;
+    }
+    .dm-timing .clbl {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      flex-shrink: 0;
+      width: 36px;
+      text-align: right;
+    }
+    .dm-timing .cslider { flex: 1; overflow: hidden; }
     .dm-kit-status {
       font-size: 8px;
       color: rgba(255,255,255,0.35);
       font-style: italic;
     }
 
-    /* Step sequencer grid — 3-column layout: labels | scrollable steps | pitch+vol */
+    /* Step sequencer grid — 3-column layout: labels | scrollable steps | pitch+vol+vel */
     .dm-grid {
       display: flex;
       align-items: flex-start;
-      padding: 5px 0 5px;
+      padding: 2px 0;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       overflow-x: hidden;
-      /* 10 rows × 20px + 9 gaps × 2px + 10px padding = 228px */
-      max-height: 228px;
+      /* 10 rows × 22px + 9 gaps × 1px + 4px padding = 233px */
+      max-height: 233px;
       overflow-y: auto;
     }
     .dm-grid::-webkit-scrollbar { width: 3px; }
@@ -135,8 +159,8 @@
       padding-left: 8px;
     }
     .dm-lane-lbl {
-      height: 20px;
-      margin-bottom: 2px;
+      height: 22px;
+      margin-bottom: 1px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -144,7 +168,7 @@
       overflow: hidden;
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
       color: rgba(255,255,255,0.4);
       white-space: nowrap;
@@ -163,7 +187,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.15);
       color: rgba(255,255,255,0.65);
       font-family: Helvetica, Arial, sans-serif;
-      font-size: 7px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -200,38 +224,59 @@
     .dm-lane-steps {
       display: flex;
       gap: 2px;
-      margin-bottom: 2px;
-      height: 20px;
+      margin-bottom: 1px;
+      height: 22px;
       align-items: center;
     }
     .dm-lane-steps:last-child { margin-bottom: 0; }
+    /* Individual step LFO drag-target (shown during wire drag) */
+    .dm-step.dm-step-drag-target {
+      outline: 1px dashed rgba(255,255,255,0.3);
+      outline-offset: -1px;
+    }
+    /* Individual step wired to LFO */
+    .dm-step.lfo-override {
+      outline: 1px solid var(--lfo-color, rgba(255,255,255,0.6));
+      outline-offset: -1px;
+    }
+    .dm-step.lfo-override .dm-step-vel {
+      background: var(--lfo-color, rgba(255,255,255,0.8)) !important;
+    }
     .dm-step {
       width: 17px;
-      height: 16px;
+      height: 18px;
       border: 1px solid rgba(255,255,255,0.1);
       background: rgba(255,255,255,0.03);
       cursor: pointer;
       border-radius: 1px;
       flex-shrink: 0;
-      transition: background 0.05s, border-color 0.05s;
+      transition: border-color 0.05s;
       position: relative;
+      overflow: hidden;
     }
     /* Beat grid grouping: slightly brighter left border every 4 steps */
     .dm-step:nth-child(4n+1) { border-left-color: rgba(255,255,255,0.28); }
-    .dm-step[data-vel="1"] {
-      background: var(--lane-col);
+    .dm-step.dm-on {
       border-color: var(--lane-col);
-      opacity: 0.55;
     }
-    .dm-step[data-vel="2"] {
+    .dm-step-vel {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
       background: var(--lane-col);
-      border-color: var(--lane-col);
-      opacity: 1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .dm-step.dm-on .dm-step-vel {
+      opacity: 0.85;
     }
     .dm-step.dm-step-head {
       outline: 2px solid rgba(255,255,255,0.7);
       outline-offset: 1px;
       z-index: 1;
+    }
+    .dm-step.dm-step-head .dm-step-vel {
+      background: rgba(255,255,255,0.9);
+      opacity: 1;
     }
     /* Pitch + Volume column */
     .dm-pv-col {
@@ -240,8 +285,8 @@
       padding: 0 8px 0 4px;
     }
     .dm-pv-wrap {
-      height: 20px;
-      margin-bottom: 2px;
+      height: 22px;
+      margin-bottom: 1px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -286,6 +331,8 @@
     .dm-vol-input { background: rgba(120,180,255,0.15) !important; }
     .dm-vol-input:hover { background: rgba(120,180,255,0.3) !important; }
     .dm-vol-input::-webkit-slider-thumb { background: rgba(160,200,255,0.8) !important; }
+    /* Tighter accordion header for drum card only */
+    .drum-card .card-acc-hdr { padding: 3px 8px; }
     .synth-scope-canvas {
       display: block;
       width: 100%;

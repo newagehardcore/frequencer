@@ -265,6 +265,11 @@
       color: #fff;
     }
 
+    .rng-spacer {
+      width: 28px;
+      flex-shrink: 0;
+    }
+
     /* ═══ CUSTOM ENVELOPE SLIDER ═══ */
     .cslider {
       position: relative;

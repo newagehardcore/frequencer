@@ -67,6 +67,7 @@
         if (this._poly) try { this._poly.releaseAll(); } catch(e) {}
       }
       updateOscType()  { if (this._poly && this.synthType === 'analog') try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {} }
+      updateTexture()  {}
       updateEnvelope() { if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }); }
       updateFilter()   { if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
       updateFMParams() { if (this._poly && this.synthType === 'fm') this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); }
@@ -76,7 +77,8 @@
       _applyPan() { this.pan.pan.value = this._currentPan; }
       loadAnalogPreset(p) {
         Object.assign(this, { oscType: p.oscType, filterType: p.filterType, filterFreq: p.filterFreq, filterQ: p.filterQ, attack: p.attack, decay: p.decay, sustain: p.sustain, release: p.release });
-        this.updateOscType(); this.updateFilter(); this.updateEnvelope();
+        if (p.texture != null) this.texture = p.texture;
+        this.updateOscType(); this.updateFilter(); this.updateEnvelope(); this.updateTexture();
       }
       loadFMPreset(preset) {
         Object.assign(this, { harmonicity: preset.harmonicity, modulationIndex: preset.modulationIndex, attack: preset.attack, decay: preset.decay, sustain: preset.sustain, release: preset.release, modAttack: preset.modAttack, modDecay: preset.modDecay, modSustain: preset.modSustain, modRelease: preset.modRelease });
@@ -101,6 +103,7 @@
         if (this._wtFilter) { try { this._wtFilter.disconnect(); } catch(e) {} this._wtFilter = null; }
         if (this._wtBridge) { try { this._wtBridge.dispose(); } catch(e) {} this._wtBridge = null; }
         if (this._poly) { try { this._poly.releaseAll(); this._poly.dispose(); } catch(e) {} this._poly = null; }
+        if (this._wavefolder) { try { this._wavefolder.dispose(); } catch(e) {} this._wavefolder = null; }
         if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }
         // Karplus voices
         if (this._kpVoices) {
@@ -180,14 +183,16 @@
         this._disposeTypeNodes();
         if (newType === 'analog') {
           this.oscType = 'sawtooth'; this.filterType = 'lowpass'; this.filterFreq = 2500;
-          this.filterQ = 1.0; this.portamento = 0; this.currentPreset = 0;
+          this.filterQ = 1.0; this.portamento = 0; this.currentPreset = 0; this.texture = 0;
           this.attack = 0.01; this.decay = 0.15; this.sustain = 0.6; this.release = 0.4;
           this._glideSynth = null; this._glideLastFreq = null;
           this.synthType = 'analog';
           this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
-          this._poly = new Tone.PolySynth(Tone.Synth, { oscillator: { type: this.oscType }, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }).connect(this._filter);
+          this._wavefolder = new Tone.WaveShaper(AnalogSynth.prototype._makeWavefoldCurve.call(this, 0), 2048);
+          this._wavefolder.connect(this._filter);
+          this._poly = new Tone.PolySynth(Tone.Synth, { oscillator: { type: this.oscType }, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } }).connect(this._wavefolder);
           this._poly.maxPolyphony = 16;
-          ['noteOn','noteOff','allNotesOff','triggerAtTime','updatePortamento','updateEnvelope','updateOscType'].forEach(m => {
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','updatePortamento','updateEnvelope','updateOscType','updateTexture','_makeWavefoldCurve','loadPreset'].forEach(m => {
             this[m] = AnalogSynth.prototype[m].bind(this);
           });
         } else if (newType === 'fm') {
@@ -395,18 +400,48 @@
         this._glideSynth   = null;
         this._glideLastFreq = null;
 
+        this.texture = 0;
         this._filter = new Tone.Filter({ type: this.filterType, frequency: this.filterFreq, Q: this.filterQ }).connect(this.pan);
+        this._wavefolder = new Tone.WaveShaper(this._makeWavefoldCurve(0), 2048);
+        this._wavefolder.connect(this._filter);
         this._poly = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: this.oscType },
           envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release },
           portamento: 0,
-        }).connect(this._filter);
+        }).connect(this._wavefolder);
         this._poly.maxPolyphony = 16;
       }
       get presetList() { return ANALOG_PRESETS; }
       loadPreset(p) {
         Object.assign(this, { oscType: p.oscType, filterType: p.filterType, filterFreq: p.filterFreq, filterQ: p.filterQ, attack: p.attack, decay: p.decay, sustain: p.sustain, release: p.release });
+        if (p.texture != null) this.texture = p.texture;
         this.updateOscType(); this.updateFilter(); this.updateEnvelope();
+        // updateOscType calls updateTexture internally
+      }
+      _makeWavefoldCurve(amount) {
+        const n = 2048;
+        const curve = new Float32Array(n);
+        const gain = 1 + amount * 5; // 1x at 0 (passthrough), 6x at 1
+        for (let i = 0; i < n; i++) {
+          const x = (i / (n - 1)) * 2 - 1; // input in [-1, 1]
+          let v = x * gain;
+          // triangle-wave fold: period=4, maps any v into [-1, 1]
+          let u = ((v + 1) % 4 + 4) % 4 - 1; // shift to [-1, 3)
+          if (u > 1) u = 2 - u;               // fold [1, 3) back to [1, -1]
+          curve[i] = u;
+        }
+        return curve;
+      }
+      updateTexture() {
+        if (this.oscType === 'pulse') {
+          // Texture controls pulse width (0.05–0.95)
+          const pw = 0.05 + this.texture * 0.9;
+          if (this._poly) try { this._poly.set({ oscillator: { width: pw } }); } catch(e) {}
+          if (this._glideSynth) try { this._glideSynth.set({ oscillator: { width: pw } }); } catch(e) {}
+          if (this._wavefolder) this._wavefolder.curve = this._makeWavefoldCurve(0);
+        } else {
+          if (this._wavefolder) this._wavefolder.curve = this._makeWavefoldCurve(this.texture);
+        }
       }
       noteOn(note, vel = 100) {
         const now = Tone.now();
@@ -455,6 +490,7 @@
       updateOscType() {
         if (this._poly && this._filter) try { this._poly.set({ oscillator: { type: this.oscType } }); } catch(e) {}
         if (this._glideSynth) try { this._glideSynth.set({ oscillator: { type: this.oscType } }); } catch(e) {}
+        this.updateTexture();
       }
       updateEnvelope() {
         if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
@@ -462,14 +498,15 @@
       }
       updateFilter() { if (this._filter) this._filter.set({ frequency: this.filterFreq, Q: this.filterQ, type: this.filterType }); }
       updatePortamento() {
-        if (!this._filter) return;
+        if (!this._wavefolder) return;
         if (this.portamento > 0) {
           if (!this._glideSynth) {
             this._glideSynth = new Tone.Synth({
               oscillator: { type: this.oscType },
               envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release },
               portamento: 0,
-            }).connect(this._filter);
+            }).connect(this._wavefolder);
+            this.updateTexture(); // apply current PW/fold state to new glide synth
           }
         } else {
           if (this._glideSynth) {
@@ -484,6 +521,7 @@
         this.allNotesOff();
         if (this._glideSynth) { try { this._glideSynth.dispose(); } catch(e) {} this._glideSynth = null; }
         try { this._poly.dispose(); } catch(e) {}
+        try { this._wavefolder.dispose(); } catch(e) {}
         try { this._filter.dispose(); } catch(e) {}
         super.dispose();
       }

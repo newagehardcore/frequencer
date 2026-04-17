@@ -856,28 +856,23 @@ function _switchDelayMode(inst, newMode, instrument) {
         // nudgeSec: combined fine-nudge + beat-shift offset in seconds.
         const nudgeSec = ((this._nudgeMs || 0) + (this._beatShiftMs || 0)) * 0.001;
 
-        // Phase: normalize nudge into [0, gridPeriod) so the scheduleRepeat anchor
-        // is always a positive offset from transport t=0.
-        // All samples with the same period and nudge fire at the same absolute
-        // transport times: phase, phase+gridPeriod, phase+2*gridPeriod, ...
-        // Tone.js skips any of these that are in the past when the transport is
-        // mid-play, automatically snapping to the next future occurrence.
-        // Normalize nudge into (0, gridPeriod] so the phase is always a small positive
-        // offset from transport t=0. The 0.001s floor prevents Tone.js from treating
-        // phase=0 as "already past" when the transport starts, which would delay the
-        // first fire by a full gridPeriod (one bar of silence before the sample plays).
-        const rawPhase = gridPeriod > 0
-          ? ((nudgeSec % gridPeriod) + gridPeriod) % gridPeriod
-          : 0.001;
-        const phase = rawPhase < 0.001 ? 0.001 : rawPhase;
+        // Always snap first fire to the next bar boundary — at most 3 beats away.
+        // Every repeat is a whole number of bars after that, so every loop start
+        // also lands on a bar boundary regardless of how many bars the loop spans.
+        const transportPos = Tone.Transport.seconds;
+        const secsSinceBar = transportPos % barSec;
+        const prevBar = transportPos - secsSinceBar;
+        let nextBoundary = (secsSinceBar < 0.01 ? prevBar : prevBar + barSec) + nudgeSec;
+        let firstFireAt = nextBoundary;
+        if (firstFireAt <= transportPos + 0.01) {
+          firstFireAt = nextBoundary + barSec;
+        }
 
         if (this.crossfadeTime > 0 && this.attackTime === 0 && this.releaseTime === 0) {
-          // Crossfade mode: trigger via transport schedule (phase-locked) and let
-          // _playCrossfadeLoop handle its own internal crossfade timing.
           this._gridEv = Tone.Transport.scheduleRepeat((time) => {
             this._stopXfLoop();
             this._playCrossfadeLoop(time);
-          }, gridPeriod, phase); // phase already has 0.001s floor applied above
+          }, gridPeriod, firstFireAt);
           this.playing = true;
           this._renderTile();
           return;
@@ -993,13 +988,9 @@ function _switchDelayMode(inst, newMode, instrument) {
           }, time);
         };
 
-        // Phase-locked scheduling: a single scheduleRepeat anchored to transport t=0.
-        // Events fire at: phase, phase+gridPeriod, phase+2*gridPeriod, ...
-        // Tone.js automatically skips any past events when mid-play, so the first
-        // fire is always the next future occurrence — no manual boundary math needed.
-        // This is identical on cold start and mid-play, eliminating the divergence
-        // that caused inconsistent sync after stop/restart.
-        this._gridEv = Tone.Transport.scheduleRepeat(fire, gridPeriod, phase);
+        // Schedule repeating grid fires. First fire is at the next bar boundary
+        // (at most 3 beats away); subsequent fires are every gridPeriod after that.
+        this._gridEv = Tone.Transport.scheduleRepeat(fire, gridPeriod, firstFireAt);
         this.playing = true;
         this._renderTile();
       }

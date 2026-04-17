@@ -113,6 +113,7 @@
           Object.assign(sd, {
             oscType: synth.oscType, filterType: synth.filterType, filterFreq: synth.filterFreq, filterQ: synth.filterQ,
             attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
+            texture: synth.texture ?? 0,
             portamento: synth.portamento, currentPreset: synth.currentPreset,
           });
         } else if (synth.synthType === 'fm') {
@@ -458,7 +459,8 @@
               if (sd.sustain != null) synth.sustain = sd.sustain;
               if (sd.release != null) synth.release = sd.release;
               synth.updateEnvelope();
-              if (sd.portamento != null) { synth.portamento = sd.portamento; synth.updatePortamento(); }
+              if (sd.texture     != null) { synth.texture     = sd.texture;     synth.updateTexture(); }
+              if (sd.portamento  != null) { synth.portamento  = sd.portamento;  synth.updatePortamento(); }
               if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
             } else if (sd.synthType === 'fm') {
               synth = new FMSynthInstrument(id, sd.name || ('FM Synth ' + id), sd.x || 300, sd.y || 300);

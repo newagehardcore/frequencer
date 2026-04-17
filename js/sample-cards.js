@@ -482,77 +482,16 @@
           <input type="range" class="card-pan vp-pan" min="-1" max="1" step="0.01" value="0">
         </div>
         <div class="card-body">
-          <div class="csec">
+          <div class="csec tight">
             <div class="crow">
               <button class="cbtn act card-play" style="flex:2">&#9654; Play</button>
               <button class="cbtn card-stop" style="flex:2">&#9632; Stop</button>
               <button class="cbtn ms-btn card-mute-btn">M</button>
               <button class="cbtn ms-btn card-solo-btn">S</button>
             </div>
-            <div class="crow" style="padding-top:2px;gap:3px">
-              <button class="cbtn card-sync-btn" style="flex:0 0 auto;padding:4px 10px">SYNC</button>
-              <input class="card-sync-bpm" type="number" min="20" max="400" step="0.1" placeholder="BPM" style="width:52px;flex:0 0 auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:3px;padding:2px 4px;font-size:10px;text-align:center;-moz-appearance:textfield" title="Sample BPM — edit to override auto-detection">
-              <button class="cbtn card-sync-mode-btn" style="flex:1">Analog</button>
-            </div>
-            <div class="crow" style="padding-top:0;padding-bottom:2px;gap:3px">
-              <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px;flex:0 0 auto">BPM:</span>
-              <button class="cbtn card-sync-d2" title="Detected BPM is too slow — treat as 2× faster (×2 BPM)">×2</button>
-              <button class="cbtn card-sync-d32" title="Detected BPM is too slow — treat as 1.5× faster (×1.5 BPM)">×1.5</button>
-              <button class="cbtn card-sync-x32" title="Detected BPM is too fast — treat as 1.5× slower (÷1.5 BPM)">÷1.5</button>
-              <button class="cbtn card-sync-x2" title="Detected BPM is too fast — treat as 2× slower (÷2 BPM)">÷2</button>
-            </div>
-            <div class="card-sync-dig-ctrls crow" style="display:none;padding-top:0;padding-bottom:4px;gap:3px">
-              <span style="font-size:8px;color:rgba(255,255,255,0.35);align-self:center;padding-left:4px">Quality:</span>
-              <button class="cbtn card-sync-quality" data-q="512" title="Crisp transients, smaller window">Crisp</button>
-              <button class="cbtn card-sync-quality act" data-q="2048" title="Balanced">Bal</button>
-              <button class="cbtn card-sync-quality" data-q="4096" title="Smooth, larger window">Smooth</button>
-            </div>
-            <div class="crow" style="padding-top:0;padding-bottom:2px;min-height:0">
-              <span class="card-sync-status" style="font-size:8px;color:rgba(255,255,255,0.5);padding-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;line-height:1.2"></span>
-            </div>
-          </div>
-          <div class="csec loop-grid-section" style="border-top:1px solid rgba(255,255,255,0.08);border-bottom:none;padding:6px 8px">
-            <div class="crow">
-              <button class="cbtn card-grid" style="flex:0 0 auto;padding:6px 8px">Grid</button>
-              <select class="card-subdiv" style="flex:1">
-                <option value="sample" selected>Sample</option>
-                <option value="0.25">4 bars</option>
-                <option value="0.333">3 bars</option>
-                <option value="0.4">2.5 bars</option>
-                <option value="0.5">2 bars</option>
-                <option value="0.667">1.5 bars</option>
-                <option value="1">1 bar</option>
-                <option value="2">1/2</option>
-                <option value="4">1/4</option>
-                <option value="8">1/8</option>
-                <option value="16">1/16</option>
-                <option value="32">1/32</option>
-              </select>
-              <button class="cbtn ms-btn card-dot-btn">Dot</button>
-              <button class="cbtn ms-btn card-tri-btn">3let</button>
-              <button class="cbtn ms-btn card-skip2-btn">÷2</button>
-              <button class="cbtn ms-btn card-skip3-btn">÷3</button>
-            </div>
-            <div class="crow" style="padding-top:4px;gap:5px">
-              <span class="clbl" style="flex:0 0 36px;font-size:8px">Nudge</span>
-              <input type="range" class="card-nudge" min="-300" max="300" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
-              <span class="card-nudge-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:38px;text-align:right;flex:0 0 38px">0 ms</span>
-            </div>
-            <div class="crow" style="padding-top:3px;gap:4px;align-items:center">
-              <span class="clbl" style="flex:0 0 36px;font-size:8px">Shift</span>
-              <button class="cbtn card-beat-dn" style="padding:0 6px;font-size:11px;line-height:16px">◀</button>
-              <select class="card-beat-subdiv" style="flex:1;font-size:8px;background:#1a1a1a;color:#ccc;border:1px solid #444;border-radius:3px;padding:1px 3px">
-                <option value="4">1/4</option>
-                <option value="8">1/8</option>
-                <option value="16">1/16</option>
-              </select>
-              <button class="cbtn card-beat-up" style="padding:0 6px;font-size:11px;line-height:16px">▶</button>
-              <span class="card-beat-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:34px;text-align:right;flex:0 0 34px">0</span>
-              <button class="cbtn card-beat-clr" style="padding:0 5px;font-size:9px;line-height:16px;opacity:0.6" title="Reset shift">✕</button>
-            </div>
           </div>
           <div class="card-accordion">
-            <div class="card-acc-hdr">PLAYBACK</div>
+            <div class="card-acc-hdr">LOOP</div>
             <div class="card-acc-body">
               <div class="card-times" style="padding:4px 8px 0">
                 <span class="ct-s">Start: 0.000s</span>
@@ -561,6 +500,7 @@
               <div class="csec tight" style="border:none;padding:4px 8px 6px">
                 <div class="crow">
                   <span class="clbl">Start</span>
+                  <span class="rng-spacer"></span>
                   <div class="cslider">
                     <input type="range" class="card-loopstart" min="0" max="1" step="0.0001" value="0">
                     <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
@@ -568,6 +508,7 @@
                 </div>
                 <div class="crow">
                   <span class="clbl">End</span>
+                  <span class="rng-spacer"></span>
                   <div class="cslider">
                     <input type="range" class="card-loopend" min="0" max="1" step="0.0001" value="1">
                     <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
@@ -575,47 +516,12 @@
                 </div>
                 <div class="crow">
                   <span class="clbl">File Pos</span>
+                  <span class="rng-spacer"></span>
                   <div class="cslider">
                     <input type="range" class="card-filepos" min="0" max="1" step="0.0001" value="0">
                     <div class="cslider-thumb"><span class="cslider-lbl">0.000s</span><input class="cslider-edit" type="text"></div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div class="csec tight gran-sliders">
-            <div class="crow">
-              <span class="clbl">Position</span>
-              <input type="text" class="rng-field" value="0%">
-              <div class="cslider">
-                <input type="range" class="card-grain-position" min="0" max="1" step="0.01" value="0.5">
-                <div class="cslider-thumb"><span class="cslider-lbl">50%</span><input class="cslider-edit" type="text"></div>
-              </div>
-              <input type="text" class="rng-field" value="100%">
-            </div>
-            <div class="crow">
-              <span class="clbl">Spread</span>
-              <input type="text" class="rng-field" value="0%">
-              <div class="cslider">
-                <input type="range" class="card-grain-spread" min="0" max="1" step="0.01" value="0.3">
-                <div class="cslider-thumb"><span class="cslider-lbl">30%</span><input class="cslider-edit" type="text"></div>
-              </div>
-              <input type="text" class="rng-field" value="100%">
-            </div>
-            <div class="crow">
-              <span class="clbl">Density</span>
-              <input type="text" class="rng-field" value="0%">
-              <div class="cslider">
-                <input type="range" class="card-grain-density" min="0" max="1" step="0.01" value="0.85">
-                <div class="cslider-thumb"><span class="cslider-lbl">85%</span><input class="cslider-edit" type="text"></div>
-              </div>
-              <input type="text" class="rng-field" value="100%">
-            </div>
-          </div>
-          <div class="card-accordion">
-            <div class="card-acc-hdr">ENVELOPE</div>
-            <div class="card-acc-body">
-              <div class="csec tight" style="border:none">
                 <div class="crow">
                   <span class="clbl">Attack</span>
                   <input type="text" class="rng-field" value="0">
@@ -647,6 +553,85 @@
             </div>
           </div>
           <div class="card-accordion">
+            <div class="card-acc-hdr">SYNC</div>
+            <div class="card-acc-body">
+              <div class="csec tight" style="border:none">
+                <div class="crow">
+                  <button class="cbtn card-sync-btn" style="flex:0 0 auto;padding:4px 8px">SYNC</button>
+                  <input class="card-sync-bpm" type="number" min="20" max="400" step="0.1" placeholder="BPM" style="width:46px;flex:0 0 auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:3px;padding:2px 4px;font-size:10px;text-align:center;-moz-appearance:textfield" title="Sample BPM — edit to override auto-detection">
+                  <button class="cbtn card-sync-d2" title="Detected BPM is too slow — treat as 2× faster (×2 BPM)">×2</button>
+                  <button class="cbtn card-sync-d32" title="Detected BPM is too slow — treat as 1.5× faster (×1.5 BPM)">×1.5</button>
+                  <button class="cbtn card-sync-x32" title="Detected BPM is too fast — treat as 1.5× slower (÷1.5 BPM)">÷1.5</button>
+                  <button class="cbtn card-sync-x2" title="Detected BPM is too fast — treat as 2× slower (÷2 BPM)">÷2</button>
+                </div>
+                <span class="card-sync-status" style="display:block;font-size:8px;color:rgba(255,255,255,0.5);padding:0 4px 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;min-height:0"></span>
+                <div class="loop-grid-section">
+                  <div class="crow">
+                    <button class="cbtn card-grid" style="flex:0 0 auto;padding:4px 8px">Grid</button>
+                    <select class="card-subdiv" style="flex:1">
+                      <option value="sample" selected>Sample</option>
+                      <option value="0.25">4 bars</option>
+                      <option value="0.333">3 bars</option>
+                      <option value="0.4">2.5 bars</option>
+                      <option value="0.5">2 bars</option>
+                      <option value="0.667">1.5 bars</option>
+                      <option value="1">1 bar</option>
+                      <option value="2">1/2</option>
+                      <option value="4">1/4</option>
+                      <option value="8">1/8</option>
+                      <option value="16">1/16</option>
+                      <option value="32">1/32</option>
+                    </select>
+                    <button class="cbtn ms-btn card-dot-btn">Dot</button>
+                    <button class="cbtn ms-btn card-tri-btn">3let</button>
+                    <button class="cbtn ms-btn card-skip2-btn">÷2</button>
+                    <button class="cbtn ms-btn card-skip3-btn">÷3</button>
+                  </div>
+                  <div class="crow">
+                    <button class="cbtn card-nudge-auto" style="flex:0 0 36px;font-size:8px;padding:2px 0;line-height:1" title="Auto-detect transient and align to beat">Nudge</button>
+                    <input type="range" class="card-nudge" min="-300" max="300" step="1" value="0" style="flex:1;height:3px;accent-color:#fff">
+                    <span class="card-nudge-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:38px;text-align:right;flex:0 0 38px">0 ms</span>
+                  </div>
+                  <div class="crow" style="align-items:center">
+                    <span class="clbl" style="flex:0 0 36px;font-size:8px">Shift</span>
+                    <button class="cbtn card-beat-dn" style="padding:0 6px;font-size:11px;line-height:16px">◀</button>
+                    <select class="card-beat-subdiv" style="flex:1;font-size:8px;background:#1a1a1a;color:#ccc;border:1px solid #444;border-radius:3px;padding:1px 3px">
+                      <option value="4">1/4</option>
+                      <option value="8">1/8</option>
+                      <option value="16">1/16</option>
+                    </select>
+                    <button class="cbtn card-beat-up" style="padding:0 6px;font-size:11px;line-height:16px">▶</button>
+                    <span class="card-beat-val" style="font-size:8px;color:rgba(255,255,255,0.5);width:34px;text-align:right;flex:0 0 34px">0</span>
+                    <button class="cbtn card-beat-clr" style="padding:0 5px;font-size:9px;line-height:16px;opacity:0.6" title="Reset shift">✕</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="csec tight gran-sliders">
+            <div class="crow">
+              <span class="clbl">Position</span>
+              <div class="cslider">
+                <input type="range" class="card-grain-position" min="0" max="1" step="0.01" value="0.5">
+                <div class="cslider-thumb"><span class="cslider-lbl">50%</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
+            <div class="crow">
+              <span class="clbl">Spread</span>
+              <div class="cslider">
+                <input type="range" class="card-grain-spread" min="0" max="1" step="0.01" value="0.3">
+                <div class="cslider-thumb"><span class="cslider-lbl">30%</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
+            <div class="crow">
+              <span class="clbl">Density</span>
+              <div class="cslider">
+                <input type="range" class="card-grain-density" min="0" max="1" step="0.01" value="0.85">
+                <div class="cslider-thumb"><span class="cslider-lbl">85%</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-accordion">
             <div class="card-acc-hdr">PITCH+TIME</div>
             <div class="card-acc-body">
               <div class="csec tight" style="border:none">
@@ -670,6 +655,7 @@
                 </div>
                 <div class="crow">
                   <span class="clbl">Paulstretch</span>
+                  <span class="rng-spacer"></span>
                   <div class="cslider">
                     <input type="range" class="card-ps" min="0" max="100" step="0.5" value="0">
                     <div class="cslider-thumb"><span class="cslider-lbl">Off</span><input class="cslider-edit" type="text"></div>
@@ -1031,7 +1017,8 @@
 
       async function applySync() {
         const isFirstSync = !s._syncActive;
-        const mode = s._syncMode;
+        s._syncMode = 'analog';
+        const mode = 'analog';
         const src = s._syncSrcBuf || s.raw;   // always stretch from original
         const sr = src.sampleRate, ch = src.numberOfChannels;
 
@@ -1079,12 +1066,6 @@
           s._syncOrigLoopEnd   = loopEnd0;
           s._syncActive = true;
         }
-        // Always ensure _syncSrcBuf is set before digital stretching
-        // (may be cleared by mode-switch reset even when already active)
-        if (mode === 'digital' && !s._syncSrcBuf) {
-          s._syncSrcBuf = s.raw;
-        }
-
         const rateMult = s._syncRateMult || 1;
         const effectiveRatio = (projectBpm / detectedBpm) * rateMult;
 
@@ -1096,9 +1077,7 @@
         {
           const onsetBuf = _detectFirstOnset(regionBuf, 60 / detectedBpm);
           if (onsetBuf > 0.010) { // < 10ms → already on beat 1, skip
-            const realOnsetSec = mode === 'analog'
-              ? onsetBuf / effectiveRatio
-              : onsetBuf * effectiveRatio;
+            const realOnsetSec = onsetBuf / effectiveRatio;
             const nudgeMs = Math.max(-300, Math.round(-realOnsetSec * 1000));
             s._nudgeMs = nudgeMs;
             const nudgeEl = q('.card-nudge');
@@ -1120,69 +1099,28 @@
         const multLabel = rateMult === 2 ? ' ÷2' : rateMult === 0.5 ? ' ×2' : rateMult === 1.5 ? ' ÷1.5' : rateMult < 0.68 ? ' ×1.5' : '';
         const isUnity = Math.abs(effectiveRatio - 1.0) < 0.002; // < 0.2% — transparent, skip processing
 
-        if (mode === 'analog') {
-          // Adjust playback rate — pitch shifts with tempo (vinyl-style)
-          s._syncRate = isUnity ? 1 : effectiveRatio;
-          setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  ANA`);
-          // Update loop end handle to reflect the new _pbRate before rescheduling
+        // Analog: adjust playback rate (pitch shifts with tempo, vinyl-style)
+        s._syncRate = isUnity ? 1 : effectiveRatio;
+        setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  ANA`);
+        if (s.gridSync) { snapEndToSubdiv(); }
+        if (s.playing) {
+          s.player.playbackRate = s._pbRate;
+          s.xfPlayer.playbackRate = s._pbRate;
+          s._reschedule();
+        }
+
+        // Install BPM-change hook so transport tempo updates propagate
+        s._onBpmChange = (newBpm) => {
+          if (!s._syncActive) return;
+          s._syncRate = (newBpm / s._syncBpm) * (s._syncRateMult || 1);
+          const ml = s._syncRateMult === 2 ? ' ÷2' : s._syncRateMult === 0.5 ? ' ×2' : s._syncRateMult === 1.5 ? ' ÷1.5' : s._syncRateMult < 0.68 ? ' ×1.5' : '';
+          setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ANA`);
           if (s.gridSync) { snapEndToSubdiv(); }
           if (s.playing) {
             s.player.playbackRate = s._pbRate;
             s.xfPlayer.playbackRate = s._pbRate;
-            s._reschedule();
-          }
-        } else {
-          // Digital: pitch-preserving time stretch — bake into buffer
-          // At unity ratio, skip the vocoder entirely to preserve original audio quality
-          if (isUnity) {
-            // Restore source buffer directly (no DSP artifacts)
-            _setSyncBuf(src, loopStartSec, loopEndSec);
-            setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  DIG`);
-            if (s.gridSync) { snapEndToSubdiv(); }
-            s._reschedule();
-          } else {
-            setSync('Stretching…');
-            await new Promise(r => setTimeout(r, 0));
-            let stretchedBuf;
-            try {
-              stretchedBuf = _phaseVocoderStretch(regionBuf, effectiveRatio, s._syncFftSize || 2048);
-            } catch (err) { setSync('Stretch failed'); console.error(err); return; }
-
-            const preLen = startSample;
-            const newLen = preLen + stretchedBuf.length + Math.max(0, src.length - endSample);
-            const newBuf = new AudioBuffer({ numberOfChannels: ch, length: newLen, sampleRate: sr });
-            for (let c = 0; c < ch; c++) {
-              const nd = newBuf.getChannelData(c);
-              nd.set(src.getChannelData(c).subarray(0, preLen), 0);
-              nd.set(stretchedBuf.getChannelData(c), preLen);
-              nd.set(src.getChannelData(c).subarray(endSample), preLen + stretchedBuf.length);
-            }
-
-            _setSyncBuf(newBuf, loopStartSec, loopStartSec + stretchedBuf.length / sr);
-            setSync(`${detectedBpm.toFixed(1)} BPM${multLabel}  DIG`);
-            if (s.gridSync) { snapEndToSubdiv(); }
-            s._reschedule();
-          }
-        }
-
-        // Install BPM-change hook so transport tempo updates propagate
-        s._onBpmChange = async (newBpm) => {
-          if (!s._syncActive) return;
-          if (s._syncMode === 'analog') {
-            s._syncRate = (newBpm / s._syncBpm) * (s._syncRateMult || 1);
-            const ml = s._syncRateMult === 2 ? ' ÷2' : s._syncRateMult === 0.5 ? ' ×2' : '';
-            setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ANA`);
-            if (s.gridSync) { snapEndToSubdiv(); }
-            if (s.playing) {
-              s.player.playbackRate = s._pbRate;
-              s.xfPlayer.playbackRate = s._pbRate;
-              // Debounced reschedule: BPM drags fire on every mouse pixel
-              s._reschedule(100);
-            }
-          } else {
-            // Debounced re-bake for digital mode
-            clearTimeout(s._syncResyncTimer);
-            s._syncResyncTimer = setTimeout(() => applySync(), 450);
+            // Debounced reschedule: BPM drags fire on every mouse pixel
+            s._reschedule(100);
           }
         };
       }
@@ -1229,7 +1167,7 @@
       function updateFpHandle() {
         const fpEl = q('.card-fp');
         if (!fpEl) return;
-        const W = (q('.card-wave-wrap').clientWidth || 284) - 20;
+        const W = (q('.card-wave-wrap').clientWidth || 284);
         const { start: vs, width: vw } = getZView();
         const fpX = (s.filePosition - vs) / vw * W;
         // Show whenever it's within view (can be left of loop region now)
@@ -1239,7 +1177,7 @@
       }
 
       function updateLoopReg() {
-        const W = (q('.card-wave-wrap').clientWidth || 284) - 20;
+        const W = (q('.card-wave-wrap').clientWidth || 284);
         const { start: vs, width: vw } = getZView();
         const reg = q('.card-loop-reg');
         const regStart = (s.loopStart - vs) / vw;
@@ -1622,22 +1560,15 @@
       // ── SYNC controls ──
       function syncRefreshUI() {
         const active = s._syncActive;
-        const mode = s._syncMode;
         q('.card-sync-btn').classList.toggle('act', active);
-        const modeBtn = q('.card-sync-mode-btn');
-        if (modeBtn) modeBtn.textContent = mode === 'digital' ? 'Digital' : 'Analog';
-        const digEl = q('.card-sync-dig-ctrls');
-        if (digEl) digEl.style.display = mode === 'digital' ? 'flex' : 'none';
         q('.card-sync-x2').classList.toggle('act', s._syncRateMult === 2);
         q('.card-sync-d2').classList.toggle('act', s._syncRateMult === 0.5);
         q('.card-sync-x32').classList.toggle('act', s._syncRateMult === 1.5);
         q('.card-sync-d32').classList.toggle('act', s._syncRateMult < 0.68 && s._syncRateMult !== 0.5);
-        const fftQ = String(s._syncFftSize || 2048);
-        q('.card-body').querySelectorAll('.card-sync-quality').forEach(b => b.classList.toggle('act', b.dataset.q === fftQ));
         const bpmInputEl = q('.card-sync-bpm');
         if (active && s._syncBpm) {
           const ml = s._syncRateMult === 2 ? ' ÷2' : s._syncRateMult === 0.5 ? ' ×2' : s._syncRateMult === 1.5 ? ' ÷1.5' : s._syncRateMult < 0.68 ? ' ×1.5' : '';
-          setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ${mode === 'digital' ? 'DIG' : 'ANA'}`);
+          setSync(`${s._syncBpm.toFixed(1)} BPM${ml}  ANA`);
           if (bpmInputEl && !bpmInputEl.value) bpmInputEl.value = s._syncBpm.toFixed(1);
         } else if (!active && bpmInputEl) {
           bpmInputEl.value = '';
@@ -1657,32 +1588,6 @@
         const btn = q('.card-sync-btn');
         btn.disabled = true;
         try { await applySync(); syncRefreshUI(); } finally { btn.disabled = false; }
-      });
-
-      // Analog / Digital mode toggle button
-      q('.card-sync-mode-btn').addEventListener('click', async e => {
-        e.stopPropagation();
-        const newMode = s._syncMode === 'analog' ? 'digital' : 'analog';
-        s._syncMode = newMode;
-        if (s._syncActive) {
-          // Clean reset before switching: restore original buffer and zero the analog rate.
-          // This ensures neither mode inherits the other's modifications.
-          if (s._syncSrcBuf) {
-            // Digital had baked a buffer — restore the original
-            const origStart = s._syncOrigLoopStart * s._syncSrcBuf.duration;
-            const origEnd   = s._syncOrigLoopEnd   * s._syncSrcBuf.duration;
-            _setSyncBuf(s._syncSrcBuf, origStart, origEnd);
-            s._syncSrcBuf = null; // cleared; will be re-set by applySync for digital
-          }
-          s._syncRate = 1; // remove any analog rate multiplier
-          s.player.playbackRate = s._pbRate;
-          s.xfPlayer.playbackRate = s._pbRate;
-
-          const btn = q('.card-sync-btn');
-          btn.disabled = true;
-          try { await applySync(); } finally { btn.disabled = false; }
-        }
-        syncRefreshUI();
       });
 
       // Tempo rate multiplier buttons (toggle: click active button to reset to ×1)
@@ -1803,6 +1708,46 @@
         s._nudgeMs = 0;
         q('.card-nudge').value = 0;
         q('.card-nudge-val').textContent = '0 ms';
+        s._reschedule();
+      });
+
+      // Auto-nudge button — re-runs onset detection with current loop region + sync BPM
+      q('.card-nudge-auto').addEventListener('click', e => {
+        e.stopPropagation();
+        const src = s._syncSrcBuf || s.raw;
+        if (!src) return;
+        const sr = src.sampleRate, ch = src.numberOfChannels;
+        const loopStart0 = s._syncActive ? s._syncOrigLoopStart : s.loopStart;
+        const loopEnd0   = s._syncActive ? s._syncOrigLoopEnd   : s.loopEnd;
+        const startSample = Math.floor(loopStart0 * src.length);
+        const endSample   = Math.ceil(loopEnd0   * src.length);
+        const regionLen   = endSample - startSample;
+        if (regionLen < sr * 0.25) return; // too short to analyze
+        const regionBuf = new AudioBuffer({ numberOfChannels: ch, length: regionLen, sampleRate: sr });
+        for (let c = 0; c < ch; c++)
+          regionBuf.getChannelData(c).set(src.getChannelData(c).subarray(startSample, endSample));
+
+        const bpm = s._syncBpm || Tone.Transport.bpm.value;
+        const rateMult = s._syncRateMult || 1;
+        const projectBpm = Tone.Transport.bpm.value;
+        const effectiveRatio = (projectBpm / bpm) * rateMult;
+
+        const onsetBuf = _detectFirstOnset(regionBuf, 60 / bpm);
+        if (onsetBuf > 0.010) {
+          const realOnsetSec = onsetBuf / effectiveRatio;
+          const nudgeMs = Math.max(-300, Math.round(-realOnsetSec * 1000));
+          s._nudgeMs = nudgeMs;
+          const nudgeEl = q('.card-nudge');
+          const nudgeValEl = q('.card-nudge-val');
+          if (nudgeEl) nudgeEl.value = nudgeMs;
+          if (nudgeValEl) nudgeValEl.textContent = (nudgeMs === 0 ? '0' : (nudgeMs > 0 ? '+' + nudgeMs : nudgeMs)) + ' ms';
+        } else {
+          s._nudgeMs = 0;
+          const nudgeEl = q('.card-nudge');
+          const nudgeValEl = q('.card-nudge-val');
+          if (nudgeEl) nudgeEl.value = 0;
+          if (nudgeValEl) nudgeValEl.textContent = '0 ms';
+        }
         s._reschedule();
       });
 

@@ -233,10 +233,9 @@
           const vel = (drum.patterns[name] || [])[si] ?? 0;
           if (vel === 0) {
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
-          } else if (vel === 1) {
-            ctx.fillStyle = drum.color + '88';
           } else {
-            ctx.fillStyle = drum.color;
+            const a = Math.round(vel * 255).toString(16).padStart(2, '0');
+            ctx.fillStyle = drum.color + a;
           }
           ctx.fillRect(x, y, Math.max(cellW, 1), Math.max(cellH, 1));
         }

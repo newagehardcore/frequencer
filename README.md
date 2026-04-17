@@ -139,21 +139,15 @@ Parameters are grouped into collapsible accordion sections:
 
 ## Tempo Sync
 
-Each sample card has a **SYNC** button (Play · Stop · **SYNC** · M · S row) with two modes selectable via **ANA** / **DIG** toggle buttons below:
-
-| Mode | Behaviour |
-|------|-----------|
-| **ANA** (Analog) | Detects the loop region's BPM, then adjusts `playbackRate` to match the project tempo — pitch rises/falls with speed, like a record speeding up or slowing down. Zero artifacts, zero latency. |
-| **DIG** (Digital) | Detects BPM, then time-stretches the loop region pitch-preservingly (phase vocoder) to match the project tempo. Pitch stays constant; timing changes. |
+Each sample card has a **SYNC** button (Play · Stop · **SYNC** · M · S row). Click it to detect the loop region's BPM and lock to the project tempo via playback-rate adjustment (pitch rises/falls with speed, like a record). Zero artifacts, zero latency.
 
 **Workflow:**
 1. Set loop start/end around the rhythmic region.
-2. Choose ANA or DIG.
-3. Click **SYNC** — BPM is auto-detected and the sample locks to the project tempo.
-4. Changing the project BPM updates synced samples in real time (ANA: instant rate update; DIG: re-stretch after 450 ms debounce).
-5. Adjusting the loop region automatically clears sync; click SYNC again to re-analyze.
+2. Click **SYNC** — BPM is auto-detected and the sample locks to the project tempo.
+3. Changing the project BPM updates the playback rate in real time.
+4. Adjusting the loop region automatically clears sync; click SYNC again to re-analyze.
 
-Sync state is saved with the project. Digital mode bakes the stretched audio into the session file.
+Sync state is saved with the project.
 
 ---
 
@@ -175,7 +169,9 @@ Subdivision changes take effect immediately without waiting for the next downbea
 
 ### Nudge
 
-A ±500 ms nudge slider shifts the sample's firing phase relative to the bar grid. Use it to dial in swing, pre-delay, or offset patterns that intentionally drift from bar 1.
+A ±300 ms nudge slider shifts the sample's firing phase relative to the bar grid. Use it to dial in swing, pre-delay, or offset patterns that intentionally drift from bar 1.
+
+Click the **Nudge** label (it's a button) to auto-detect the sample's first transient and align it to the beat. This re-runs the same onset detection used when you press SYNC, so you can re-nudge after changing the subdivision without clicking SYNC again. Fine-tune manually afterward if needed.
 
 ### How It Works
 

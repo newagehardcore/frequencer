@@ -329,8 +329,42 @@
         list.innerHTML = '';
         for (const d of lfo.destinations) {
           const s = samples.get(d.sampleId) || synths.get(d.sampleId) || drums.get(d.sampleId);
+          if (!s) continue;
+
+          // Per-step drum velocity destinations
+          if (d.param.startsWith('dm-step:')) {
+            const [, lane, stepIdxStr] = d.param.split(':');
+            const lbl = lane.charAt(0).toUpperCase() + lane.slice(1).replace('_', ' ') + ' Step ' + (parseInt(stepIdxStr) + 1);
+            const item = document.createElement('div');
+            item.className = 'lfo-dest-item';
+            item.innerHTML = `
+              <span class="lfo-dest-name" title="${s.name} · ${lbl}">${s.name.substring(0, 8)}: ${lbl}</span>
+              <input class="lfo-dest-field lfo-dest-min" type="text" value="${d.min}" title="Min">
+              <input class="lfo-dest-field lfo-dest-max" type="text" value="${d.max}" title="Max">
+              <button class="lfo-dest-unlink" title="Unlink">✕</button>
+            `;
+            const minF = item.querySelector('.lfo-dest-min');
+            const maxF = item.querySelector('.lfo-dest-max');
+            minF.addEventListener('change', () => { const v = parseFloat(minF.value); if (!isNaN(v)) d.min = v; else minF.value = d.min; });
+            maxF.addEventListener('change', () => { const v = parseFloat(maxF.value); if (!isNaN(v)) d.max = v; else maxF.value = d.max; });
+            [minF, maxF].forEach(f => {
+              f.addEventListener('mousedown', e => e.stopPropagation());
+              f.addEventListener('click', e => e.stopPropagation());
+              f.addEventListener('keydown', e => { if (e.key === 'Enter') f.blur(); e.stopPropagation(); });
+            });
+            item.querySelector('.lfo-dest-unlink').addEventListener('click', e => {
+              e.stopPropagation();
+              lfo.removeDestination(d.sampleId, d.param, d.fxUid);
+              unlinkParamOverride(d.sampleId, d.param, d.fxUid);
+              updateDestList();
+              updateLfoWires();
+            });
+            list.appendChild(item);
+            continue;
+          }
+
           const pInfo = LFO_PARAM_MAP[d.param];
-          if (!s || !pInfo) continue;
+          if (!pInfo) continue;
 
           let targetLbl = pInfo.label;
           if (d.fxUid) {

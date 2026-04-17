@@ -9,10 +9,11 @@ function startWireDrag(lfo, startEvent, portEl) {
       const sx = portRect.left + portRect.width / 2;
       const sy = portRect.top + portRect.height / 2;
 
-      // Highlight potential targets: sample card sliders, synth card sliders
+      // Highlight potential targets: sample card sliders, synth card sliders, drum steps
       document.querySelectorAll('.sample-card .cslider, .synth-card .cslider, .sample-card .lfo-slot, .synth-card .lfo-slot').forEach(sl => {
         sl.style.outline = '1px dashed rgba(255,255,255,0.2)';
       });
+      document.querySelectorAll('.synth-card .dm-step').forEach(btn => btn.classList.add('dm-step-drag-target'));
 
       const mm = ev => {
         const ex = ev.clientX, ey = ev.clientY;
@@ -26,6 +27,7 @@ function startWireDrag(lfo, startEvent, portEl) {
         tempLine.remove();
         // Remove highlights
         document.querySelectorAll('.sample-card .cslider, .synth-card .cslider, .sample-card .lfo-slot, .synth-card .lfo-slot').forEach(sl => { sl.style.outline = ''; });
+        document.querySelectorAll('.dm-step-drag-target').forEach(btn => btn.classList.remove('dm-step-drag-target'));
 
         // Check if dropped on a target
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
@@ -51,6 +53,28 @@ function startWireDrag(lfo, startEvent, portEl) {
               updateLfoWires();
             }
           }
+          return;
+        }
+
+        // Drop on individual drum step button?
+        const stepBtn = target.closest('.dm-step');
+        if (stepBtn && !target.closest('.cslider, .lfo-slot')) {
+          const cardEl = stepBtn.closest('.synth-card');
+          const sampleId = findSampleIdFromCard(cardEl);
+          if (!sampleId) return;
+          const lane = stepBtn.dataset.lane;
+          const stepIdx = parseInt(stepBtn.dataset.step);
+          const param = `dm-step:${lane}:${stepIdx}`;
+          const existing = isParamModulated(sampleId, param, null);
+          if (existing) {
+            existing.removeDestination(sampleId, param, null);
+            unlinkParamOverride(sampleId, param, null);
+            lfoNodes.get(existing.id)?.updateDestList();
+          }
+          lfo.addDestination(sampleId, param, 0, 1, null);
+          applyParamOverride(sampleId, param, lfo, null);
+          lfoNodes.get(lfo.id)?.updateDestList();
+          updateLfoWires();
           return;
         }
 
@@ -215,6 +239,15 @@ function startWireDrag(lfo, startEvent, portEl) {
     function applyParamOverride(sampleId, paramClass, lfo, fxUid = null) {
       const cardInfo = openCards.get(sampleId);
       if (!cardInfo) return;
+
+      // Per-step: highlight the specific button
+      if (typeof paramClass === 'string' && paramClass.startsWith('dm-step:')) {
+        const [, lane, stepIdxStr] = paramClass.split(':');
+        const btn = cardInfo.el.querySelector(`.dm-step[data-lane="${lane}"][data-step="${stepIdxStr}"]`);
+        if (btn) { btn.classList.add('lfo-override'); btn.style.setProperty('--lfo-color', lfo.color); }
+        return;
+      }
+
       let targetWrap = null;
       const pInfo = LFO_PARAM_MAP[paramClass];
 
@@ -250,6 +283,29 @@ function startWireDrag(lfo, startEvent, portEl) {
     function unlinkParamOverride(sampleId, paramClass, fxUid = null) {
       const cardInfo = openCards.get(sampleId);
       if (!cardInfo) return;
+
+      // Per-step: restore button to stored velocity
+      if (typeof paramClass === 'string' && paramClass.startsWith('dm-step:')) {
+        const [, lane, stepIdxStr] = paramClass.split(':');
+        const stepIdx = parseInt(stepIdxStr);
+        const btn = cardInfo.el.querySelector(`.dm-step[data-lane="${lane}"][data-step="${stepIdxStr}"]`);
+        if (btn) {
+          btn.classList.remove('lfo-override');
+          btn.style.removeProperty('--lfo-color');
+        }
+        const s = drums.get(sampleId);
+        if (s) {
+          delete s.stepVelOverrides[lane + ':' + stepIdx];
+          const baseVel = s.patterns[lane]?.[stepIdx] ?? 0;
+          if (btn) {
+            const bar = btn.querySelector('.dm-step-vel');
+            if (bar) bar.style.height = (baseVel * 100) + '%';
+            btn.classList.toggle('dm-on', baseVel > 0);
+          }
+        }
+        return;
+      }
+
       let targetWrap = null;
       const pInfo = LFO_PARAM_MAP[paramClass];
 
@@ -315,17 +371,44 @@ function startWireDrag(lfo, startEvent, portEl) {
           const s = samples.get(d.sampleId) || synths.get(d.sampleId) || drums.get(d.sampleId);
           if (!s) continue;
           const pInfo = LFO_PARAM_MAP[d.param];
-          if (!pInfo) continue;
-
           const modVal = d.min + val * (d.max - d.min);
 
-          // Drum machine pitch/vol modulation
+          // Per-step velocity override
+          if (d.param.startsWith('dm-step:') && s instanceof DrumMachine) {
+            const [, lane, stepIdxStr] = d.param.split(':');
+            const stepIdx = parseInt(stepIdxStr);
+            s.stepVelOverrides[lane + ':' + stepIdx] = modVal;
+            const cardInfo = openCards.get(d.sampleId);
+            if (cardInfo) {
+              const btn = cardInfo.el.querySelector(`.dm-step[data-lane="${lane}"][data-step="${stepIdx}"]`);
+              if (btn) {
+                const bar = btn.querySelector('.dm-step-vel');
+                if (bar) bar.style.height = (modVal * 100) + '%';
+                btn.classList.toggle('dm-on', modVal > 0);
+              }
+            }
+            continue;
+          }
+
+          if (!pInfo) continue;
+
+          // Drum machine direct (scalar) params — swing, nudge
+          if (pInfo.isDrumDirect && s instanceof DrumMachine) {
+            s[pInfo.prop] = modVal;
+            const cardInfo = openCards.get(d.sampleId);
+            if (cardInfo) {
+              const slider = cardInfo.el.querySelector('.' + d.param);
+              if (slider) { slider.value = modVal; slider.closest('.cslider')?._syncPos?.(); }
+            }
+            continue;
+          }
+
+          // Drum machine pitch/vol/vel modulation (sub-property)
           if (pInfo.isDrum && s instanceof DrumMachine) {
             s[pInfo.prop][pInfo.subProp] = modVal;
             const cardInfo = openCards.get(d.sampleId);
             if (cardInfo) {
-              const slider = cardInfo.el.querySelector('.' + d.param);
-              if (slider) slider.value = modVal;
+              cardInfo.el.querySelectorAll('.' + d.param).forEach(sl => { sl.value = modVal; });
             }
             continue;
           }
