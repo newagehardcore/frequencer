@@ -117,14 +117,7 @@
             portamento: synth.portamento, currentPreset: synth.currentPreset,
           });
         } else if (synth.synthType === 'fm') {
-          Object.assign(sd, {
-            harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex,
-            attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release,
-            modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease,
-            portamento: synth.portamento,
-            currentPreset: synth.currentPreset, _usingCustom: synth._usingCustom,
-            _customPresets: synth._usingCustom ? synth._customPresets.map(p => ({ ...p })) : [],
-          });
+          Object.assign(sd, { currentPreset: synth.currentPreset });
         } else if (synth.synthType === 'wavetable') {
           Object.assign(sd, {
             currentWave: synth.currentWave, detune1: synth.detune1, detune2: synth.detune2,
@@ -466,25 +459,7 @@
               if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
             } else if (sd.synthType === 'fm') {
               synth = new FMSynthInstrument(id, sd.name || ('FM Synth ' + id), sd.x || 300, sd.y || 300);
-              if (sd.harmonicity     != null) synth.harmonicity     = sd.harmonicity;
-              if (sd.modulationIndex != null) synth.modulationIndex = sd.modulationIndex;
-              synth.updateFMParams();
-              if (sd.attack    != null) synth.attack    = sd.attack;
-              if (sd.decay     != null) synth.decay     = sd.decay;
-              if (sd.sustain   != null) synth.sustain   = sd.sustain;
-              if (sd.release   != null) synth.release   = sd.release;
-              synth.updateEnvelope();
-              if (sd.modAttack   != null) synth.modAttack   = sd.modAttack;
-              if (sd.modDecay    != null) synth.modDecay    = sd.modDecay;
-              if (sd.modSustain  != null) synth.modSustain  = sd.modSustain;
-              if (sd.modRelease  != null) synth.modRelease  = sd.modRelease;
-              synth.updateModEnv();
-              if (sd.portamento != null) { synth.portamento = sd.portamento; synth.updatePortamento(); }
               if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
-              if (sd._usingCustom && Array.isArray(sd._customPresets) && sd._customPresets.length) {
-                synth._customPresets = sd._customPresets.map(p => ({ ...p }));
-                synth._usingCustom = true;
-              }
             } else if (sd.synthType === 'wavetable') {
               synth = new WavetableSynth(id, sd.name || ('Wavetable ' + id), sd.x || 300, sd.y || 300);
               if (sd.currentWave  != null) { synth.currentWave  = sd.currentWave;  synth.updateWave(); }

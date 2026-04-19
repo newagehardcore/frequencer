@@ -250,13 +250,13 @@ Polyphonic subtractive synthesizer.
 - **Filter** — LP / HP / BP with Frequency and Q controls
 - **Presets** — built-in preset library; load/save custom patches
 
-### FM
+### FM (DX7)
 
-Frequency-modulation synthesizer with a built-in library of 32 DX7-style presets.
+Authentic 6-operator FM synthesizer — a full Yamaha DX7 clone running in an AudioWorklet.
 
-- **FM Parameters** — Harmonicity (carrier:modulator ratio), Modulation Index
-- **Carrier & Modulation envelopes** — independent ADSR for each
-- **Preset library** — 32 classic DX7 patches; load custom banks via SysEx `.syx` files
+- **Engine** — 6-operator FM with all 32 DX7 algorithms, operator envelopes, and feedback routing, ported from mmontag/dx7-synth-js
+- **Patch library** — 600+ unique patches from 47 bundled banks: all 8 Yamaha factory ROMs, VRC artist cartridges (David Bristow, Bo Tomlyn, Gary Leuenberger, Studio 64), Brian Eno, Wendy Carlos, Godric collection, and more — no internet required
+- **Browser** — patches organized into 12 categories (Voice · Crystal · Pad · Strings · FX · Lead · Keys · Brass · Bass · Pluck · Perc · Other) with a bank filter to browse by source
 
 ### Wavetable
 

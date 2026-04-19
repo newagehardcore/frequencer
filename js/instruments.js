@@ -118,6 +118,9 @@
         // Rompler
         if (this._smplr) { try { this._smplr.stop(); } catch(e) {} this._smplr = null; }
         if (this._romplerBridge) { try { this._romplerBridge.dispose(); } catch(e) {} this._romplerBridge = null; }
+        // DX7 AudioWorklet
+        if (this._dx7Node) { try { this._dx7Node.disconnect(); } catch(e) {} this._dx7Node = null; }
+        if (this._bridge && this._bridge !== this.pan) { try { this._bridge.dispose(); } catch(e) {} this._bridge = null; }
       }
       // Shared smplr loader — handles both SF1 (Soundfont) and SF2 (Soundfont2Sampler)
       _romplerLoad() {
@@ -196,18 +199,19 @@
             this[m] = AnalogSynth.prototype[m].bind(this);
           });
         } else if (newType === 'fm') {
-          this.harmonicity = 3.0; this.modulationIndex = 8.0;
-          this.attack = 0.001; this.decay = 1.2; this.sustain = 0.15; this.release = 0.8;
-          this.modAttack = 0.001; this.modDecay = 0.8; this.modSustain = 0.2; this.modRelease = 0.5;
-          this.currentPreset = 0; this._customPresets = []; this._usingCustom = false;
-          this.portamento = 0; this._glideSynth = null; this._glideLastFreq = null;
+          this.currentPreset = 0;
+          this._dx7Node = null; this._dx7Patches = null; this._currentPatch = null;
+          this._pending = []; this._engineReady = false;
           this.synthType = 'fm';
-          this._poly = new Tone.PolySynth(Tone.FMSynth, { harmonicity: this.harmonicity, modulationIndex: this.modulationIndex, portamento: 0, envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release }, modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }).connect(this.pan);
-          this._poly.maxPolyphony = 16;
-          ['noteOn','noteOff','allNotesOff','triggerAtTime','updatePortamento','updateEnvelope','updateFMParams','updateModEnv'].forEach(m => {
+          this._bridge = new Tone.Gain(1.0).connect(this.pan);
+          ['noteOn','noteOff','allNotesOff','triggerAtTime','_toMidi','_post','_sendPatch',
+           '_loadAllBanks','_emitUpdate','loadPreset',
+           'updateFMParams','updateEnvelope','updateModEnv','updatePortamento'].forEach(m => {
             this[m] = FMSynthInstrument.prototype[m].bind(this);
           });
-          if (typeof DX7_PRESETS !== 'undefined') this.loadFMPreset(DX7_PRESETS[0]);
+          Object.defineProperty(this, 'presetList',
+            Object.getOwnPropertyDescriptor(FMSynthInstrument.prototype, 'presetList'));
+          FMSynthInstrument.prototype._initEngine.call(this);
         } else if (newType === 'wavetable') {
           this.synthType = 'wavetable';
           this.currentWave = 0; this.detune1 = 4.5; this.detune2 = -2.5;
@@ -527,142 +531,139 @@
       }
     }
 
+    // ── DX7 worklet lifecycle (shared across all FMSynthInstrument instances) ──
+    let _dx7WorkletPromise = null;
+    function _ensureDX7Worklet() {
+      if (!_dx7WorkletPromise) {
+        _dx7WorkletPromise = Tone.context.rawContext.audioWorklet
+          .addModule('js/dx7-worklet.js')
+          .catch(() => { _dx7WorkletPromise = null; }); // reset on error so next call retries
+      }
+      return _dx7WorkletPromise;
+    }
+
     class FMSynthInstrument extends SynthInstrument {
       constructor(id, name, x, y) {
         super(id, name, x, y);
-        this.synthType       = 'fm';
-        this.harmonicity     = 3.0;
-        this.modulationIndex = 8.0;
-        this.attack          = 0.001;
-        this.decay           = 1.2;
-        this.sustain         = 0.15;
-        this.release         = 0.8;
-        this.modAttack       = 0.001;
-        this.modDecay        = 0.8;
-        this.modSustain      = 0.2;
-        this.modRelease      = 0.5;
-        this.currentPreset   = 0;
-        this._customPresets  = [];
-        this._usingCustom    = false;
-        this.portamento      = 0;
-        this._glideSynth     = null;
-        this._glideLastFreq  = null;
+        this.synthType     = 'fm';
+        this.currentPreset = 0;
+        this._dx7Patches   = null;   // merged flat patch array (all banks)
+        this._dx7Node      = null;
+        this._currentPatch = null;
+        this._pending      = [];
+        this._engineReady  = false;
 
-        this._poly = new Tone.PolySynth(Tone.FMSynth, {
-          harmonicity: this.harmonicity,
-          modulationIndex: this.modulationIndex,
-          portamento: 0,
-          envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
-          modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
-        }).connect(this.pan);
-        this._poly.maxPolyphony = 16;
-        this.loadPreset(DX7_PRESETS[0]);
+        // Tone.js gain as bridge: AudioWorkletNode (native) → pan → vol → master
+        this._bridge = new Tone.Gain(1.0).connect(this.pan);
+
+        this._initEngine();
       }
-      noteOn(note, vel = 100) {
-        const now = Tone.now();
-        const targetFreq = Tone.Frequency(note).toFrequency();
-        if (this.portamento > 0 && this._glideSynth) {
-          // FMSynth has no built-in portamento. triggerAttack sets frequency.setValueAtTime(targetFreq, now).
-          // We then override with setValueAtTime(lastFreq, now) — same-time last-write wins per Web Audio spec.
-          this._glideSynth.triggerAttack(note, now, vel / 127);
-          if (this._glideLastFreq != null) {
-            this._glideSynth.frequency.setValueAtTime(this._glideLastFreq, now);
-            this._glideSynth.frequency.exponentialRampToValueAtTime(Math.max(1e-6, targetFreq), now + this.portamento);
+
+      async _initEngine() {
+        try {
+          await _ensureDX7Worklet();
+          this._dx7Node = Tone.context.createAudioWorkletNode('dx7-processor', {
+            numberOfOutputs: 1,
+            outputChannelCount: [2],
+          });
+          this._dx7Node.connect(this._bridge.input);
+          this._engineReady = true;
+
+          for (const m of this._pending) this._dx7Node.port.postMessage(m);
+          this._pending = [];
+
+          await this._loadAllBanks();
+        } catch(e) {
+          console.error('[FMSynth] DX7 engine init failed:', e);
+        }
+      }
+
+      async _loadAllBanks() {
+        try {
+          const patches = await fetchAllDX7Patches();
+          this._dx7Patches = patches;
+          if (!this._currentPatch && patches.length) {
+            const idx = Math.min(this.currentPreset, patches.length - 1);
+            this.currentPreset = idx;
+            this._sendPatch(patches[idx]);
           }
-          this._glideLastFreq = targetFreq;
-        } else {
-          if (this._poly) this._poly.triggerAttack(note, now, vel / 127);
+          this._emitUpdate();
+        } catch(e) {
+          console.warn('[FMSynth] All banks load failed:', e);
+          this._emitUpdate();
         }
       }
+
+      _sendPatch(patch) {
+        if (!patch) return;
+        this._currentPatch = patch;
+        this._post({ type: 'loadPatch', patch });
+      }
+
+      _post(msg) {
+        if (this._engineReady && this._dx7Node) {
+          this._dx7Node.port.postMessage(msg);
+        } else {
+          this._pending.push(msg);
+        }
+      }
+
+      _emitUpdate() {
+        // Signal the card UI to re-render the preset list
+        document.dispatchEvent(new CustomEvent('dx7-updated', { detail: { id: this.id } }));
+      }
+
+      _toMidi(note) {
+        if (typeof note === 'number') return Math.round(note);
+        try { return Tone.Frequency(note).toMidi(); } catch(e) { return 60; }
+      }
+
+      get presetList() {
+        return this._dx7Patches || [];
+      }
+
+      loadPreset(patch) {
+        if (patch && patch.operators) this._sendPatch(patch);
+      }
+
+      noteOn(note, vel = 100) {
+        this._post({ type: 'noteOn', note: this._toMidi(note), velocity: vel });
+      }
+
       noteOff(note) {
-        if (this.portamento > 0 && this._glideSynth) {
-          this._glideSynth.triggerRelease(Tone.now());
-        } else {
-          if (this._poly) this._poly.triggerRelease(note, Tone.now());
-        }
+        this._post({ type: 'noteOff', note: this._toMidi(note) });
       }
+
       allNotesOff() {
-        if (this._poly) try { this._poly.releaseAll(); } catch(e) {}
-        if (this._glideSynth) try { this._glideSynth.triggerRelease(Tone.now()); } catch(e) {}
+        this._post({ type: 'allNotesOff' });
       }
+
       triggerAtTime(note, dur, time, vel) {
         this._noteHighlight(note, true);
-        const targetFreq = Tone.Frequency(note).toFrequency();
-        if (this.portamento > 0 && this._glideSynth) {
-          // Same-time override: triggerAttack sets freq=targetFreq at time, we overwrite with lastFreq
-          // then schedule exponential ramp. No cancelScheduledValues needed.
-          this._glideSynth.triggerAttack(note, time, vel);
-          if (this._glideLastFreq != null) {
-            this._glideSynth.frequency.setValueAtTime(this._glideLastFreq, time);
-            this._glideSynth.frequency.exponentialRampToValueAtTime(Math.max(1e-6, targetFreq), time + this.portamento);
-          }
-          this._glideSynth.triggerRelease(time + dur);
-        } else {
-          try { if (this._poly) this._poly.triggerAttackRelease(note, dur, time, vel); } catch(e) {}
-        }
-        this._glideLastFreq = targetFreq;
-        setTimeout(() => this._noteHighlight(note, false), (dur + 0.05) * 1000);
+        const midiNote = this._toMidi(note);
+        const nowCtx   = Tone.context.rawContext.currentTime;
+        const delayOn  = Math.max(0, time - nowCtx);
+        const delayOff = delayOn + dur;
+        setTimeout(() => this._post({ type: 'noteOn',  note: midiNote, velocity: Math.round(vel * 127) }), delayOn  * 1000);
+        setTimeout(() => {
+          this._post({ type: 'noteOff', note: midiNote });
+          this._noteHighlight(note, false);
+        }, delayOff * 1000);
       }
-      updateFMParams() {
-        if (this._poly) this._poly.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex });
-        if (this._glideSynth) try { this._glideSynth.set({ harmonicity: this.harmonicity, modulationIndex: this.modulationIndex }); } catch(e) {}
-      }
-      updateEnvelope() {
-        if (this._poly) this._poly.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
-        if (this._glideSynth) this._glideSynth.set({ envelope: { attack: this.attack, decay: this.decay, sustain: this.sustain, release: this.release } });
-      }
-      updateModEnv() {
-        if (this._poly) this._poly.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } });
-        if (this._glideSynth) try { this._glideSynth.set({ modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease } }); } catch(e) {}
-      }
-      updatePortamento() {
-        if (this.portamento > 0) {
-          if (!this._glideSynth) {
-            this._glideSynth = new Tone.FMSynth({
-              harmonicity: this.harmonicity,
-              modulationIndex: this.modulationIndex,
-              envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
-              modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
-              portamento: 0,
-            }).connect(this.pan);
-          }
-        } else {
-          if (this._glideSynth) {
-            try { this._glideSynth.triggerRelease(); } catch(e) {}
-            try { this._glideSynth.dispose(); } catch(e) {}
-            this._glideSynth = null;
-          }
-          this._glideLastFreq = null;
-        }
-      }
-      get presetList() { return this._usingCustom ? this._customPresets : DX7_PRESETS; }
-      loadPreset(preset) {
-        Object.assign(this, {
-          harmonicity: preset.harmonicity, modulationIndex: preset.modulationIndex,
-          attack: preset.attack, decay: preset.decay, sustain: preset.sustain, release: preset.release,
-          modAttack: preset.modAttack, modDecay: preset.modDecay, modSustain: preset.modSustain, modRelease: preset.modRelease,
-        });
-        const fmPresetParams = {
-          harmonicity: this.harmonicity, modulationIndex: this.modulationIndex,
-          envelope:           { attack: this.attack,    decay: this.decay,    sustain: this.sustain,    release: this.release },
-          modulationEnvelope: { attack: this.modAttack, decay: this.modDecay, sustain: this.modSustain, release: this.modRelease },
-        };
-        this._poly.set(fmPresetParams);
-        if (this._glideSynth) try { this._glideSynth.set(fmPresetParams); } catch(e) {}
-      }
-      loadSysEx(data) {
-        const presets = parseDX7SysEx(data);
-        if (!presets || !presets.length) return false;
-        this._customPresets = presets;
-        this._usingCustom = true;
-        this.currentPreset = 0;
-        this.loadPreset(presets[0]);
-        return true;
-      }
+
+      // Stubs — DX7 6-op engine uses its own per-operator envelopes from SysEx
+      updateFMParams()   {}
+      updateEnvelope()   {}
+      updateModEnv()     {}
+      updatePortamento() {}
+
       dispose() {
         this.allNotesOff();
-        if (this._glideSynth) { try { this._glideSynth.dispose(); } catch(e) {} this._glideSynth = null; }
-        try { this._poly.dispose(); } catch(e) {}
+        if (this._dx7Node) {
+          try { this._dx7Node.disconnect(); } catch(e) {}
+          this._dx7Node = null;
+        }
+        try { this._bridge.dispose(); } catch(e) {}
         super.dispose();
       }
     }

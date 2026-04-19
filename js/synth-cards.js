@@ -339,119 +339,121 @@
       } else if (synth.synthType === 'fm') {
         typeBody.innerHTML = `
           <div class="card-accordion">
-            <div class="card-acc-hdr">PRESETS <span style="opacity:0.4;font-weight:400;text-transform:none;letter-spacing:0;font-size:8px;margin-left:4px">${synth._usingCustom?'Custom SysEx':'Built-in'}</span></div>
+            <div class="card-acc-hdr">DX7 PATCHES
+              <span class="dx7-status-badge" style="opacity:0.5;font-weight:400;text-transform:none;letter-spacing:0;font-size:8px;margin-left:4px"></span>
+            </div>
             <div class="card-acc-body"><div class="csec">
+              <div class="dx7-bank-filter" style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;max-height:72px;overflow-y:auto"></div>
+              <div class="dx7-patch-info" style="font-size:8px;color:#666;margin-bottom:4px;min-height:14px"></div>
               <div class="fm-preset-list"></div>
-              <button class="fm-sysx-btn">Load DX7 SysEx (.syx) ▸</button>
-            </div></div>
-          </div>
-          <div class="card-accordion">
-            <div class="card-acc-hdr">FM PARAMETERS</div>
-            <div class="card-acc-body"><div class="csec">
-              <div class="crow"><span class="clbl">Harm.</span>${mkCsl('fm-harm','0.1','20','0.01',synth.harmonicity)}</div>
-              <div class="crow"><span class="clbl">Mod Idx</span>${mkCsl('fm-modi','0','20','0.1',synth.modulationIndex)}</div>
-            </div></div>
-          </div>
-          <div class="card-accordion">
-            <div class="card-acc-hdr">CARRIER ENVELOPE</div>
-            <div class="card-acc-body"><div class="csec">
-              <div class="crow"><span class="clbl">Attack</span>${mkCsl('fm-atk','0.001','5','0.001',synth.attack)}</div>
-              <div class="crow"><span class="clbl">Decay</span>${mkCsl('fm-dec','0.001','5','0.001',synth.decay)}</div>
-              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('fm-sus','0','1','0.01',synth.sustain)}</div>
-              <div class="crow"><span class="clbl">Release</span>${mkCsl('fm-rel','0.001','8','0.001',synth.release)}</div>
-            </div></div>
-          </div>
-          <div class="card-accordion">
-            <div class="card-acc-hdr">MODULATOR ENVELOPE</div>
-            <div class="card-acc-body"><div class="csec">
-              <div class="crow"><span class="clbl">Attack</span>${mkCsl('fm-matk','0.001','5','0.001',synth.modAttack)}</div>
-              <div class="crow"><span class="clbl">Decay</span>${mkCsl('fm-mdec','0.001','5','0.001',synth.modDecay)}</div>
-              <div class="crow"><span class="clbl">Sustain</span>${mkCsl('fm-msus','0','1','0.01',synth.modSustain)}</div>
-              <div class="crow"><span class="clbl">Release</span>${mkCsl('fm-mrel','0.001','8','0.001',synth.modRelease)}</div>
-            </div></div>
-          </div>
-          <div class="card-accordion">
-            <div class="card-acc-hdr">GLIDE</div>
-            <div class="card-acc-body"><div class="csec">
-              <div class="crow"><span class="clbl">Time</span>${mkCsl('fm-glide','0','1','0.001',synth.portamento)}</div>
             </div></div>
           </div>`;
 
-        const fmtHarm = v => v.toFixed(2), fmtModI = v => v.toFixed(1), fmtPct = v => Math.round(v*100)+'%';
-        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
-        initCslider(qs('.fm-harm').closest('.cslider'),  fmtHarm);
-        initCslider(qs('.fm-modi').closest('.cslider'),  fmtModI);
-        initCslider(qs('.fm-atk').closest('.cslider'),   fmtFade);
-        initCslider(qs('.fm-dec').closest('.cslider'),   fmtFade);
-        initCslider(qs('.fm-sus').closest('.cslider'),   fmtPct);
-        initCslider(qs('.fm-rel').closest('.cslider'),   fmtFade);
-        initCslider(qs('.fm-matk').closest('.cslider'),  fmtFade);
-        initCslider(qs('.fm-mdec').closest('.cslider'),  fmtFade);
-        initCslider(qs('.fm-msus').closest('.cslider'),  fmtPct);
-        initCslider(qs('.fm-mrel').closest('.cslider'),  fmtFade);
-        initCslider(qs('.fm-glide').closest('.cslider'), fmtGlide);
+        const statusBadge  = qs('.dx7-status-badge');
+        const patchInfo    = qs('.dx7-patch-info');
+        const bankFilter   = qs('.dx7-bank-filter');
+        let   activeBankFilter = 'ALL';
 
-        const syncFMSliders = () => {
-          [['fm-harm','harmonicity'],['fm-modi','modulationIndex'],['fm-atk','attack'],['fm-dec','decay'],
-           ['fm-sus','sustain'],['fm-rel','release'],['fm-matk','modAttack'],['fm-mdec','modDecay'],
-           ['fm-msus','modSustain'],['fm-mrel','modRelease']].forEach(([cls,prop]) => {
-            const sl=qs('.'+cls); if(sl){sl.value=synth[prop]; sl.closest('.cslider')?._syncPos?.();}
+        const _buildBankBtns = () => {
+          bankFilter.innerHTML = '';
+          const banks = ['ALL', ...Object.keys(_DX7_ROM_DATA || {})];
+          banks.forEach(b => {
+            const btn = document.createElement('button');
+            btn.textContent = b;
+            btn.style.cssText = 'font-size:8px;padding:2px 5px;border-radius:2px;cursor:pointer;border:1px solid #333;background:' +
+              (b === activeBankFilter ? 'var(--card-color,#4af)' : '#111') + ';color:' +
+              (b === activeBankFilter ? '#000' : '#aaa') + ';letter-spacing:0.04em';
+            btn.addEventListener('click', () => {
+              activeBankFilter = b;
+              _buildBankBtns();
+              renderFMPresets();
+            });
+            bankFilter.appendChild(btn);
           });
         };
 
-        const FM_BANK_ORDER = ['Keys','Bass','Lead','Pad','Brass','Pluck','Perc','FX'];
+        const _updatePatchInfo = () => {
+          const p = synth._currentPatch;
+          if (!p) { patchInfo.textContent = ''; return; }
+          const parts = [];
+          if (p.bank) parts.push(p.bank);
+          if (p.algorithm != null) parts.push(`Alg ${p.algorithm}`);
+          if (p.feedback   != null) parts.push(`FB ${p.feedback}`);
+          patchInfo.textContent = parts.join('  ·  ');
+        };
+
         const renderFMPresets = () => {
           const list = qs('.fm-preset-list'); if (!list) return;
           list.innerHTML = '';
-          const plist = synth._usingCustom ? synth._customPresets : DX7_PRESETS;
-          if (synth._usingCustom) {
-            plist.forEach((p, i) => {
-              const item = document.createElement('div');
-              item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
-              item.textContent = p.name;
-              item.addEventListener('click', () => { synth.currentPreset=i; synth.loadFMPreset(p); renderFMPresets(); syncFMSliders(); });
-              list.appendChild(item);
-            });
+          const allPatches = synth.presetList;
+          if (!synth._engineReady) {
+            statusBadge.textContent = 'Loading…';
+            list.innerHTML = '<div style="color:#555;font-size:9px;padding:4px 0">Initialising DX7 engine…</div>';
             return;
           }
-          const byBank = {};
-          plist.forEach((p, i) => { const c = p.cat||'Other'; (byBank[c]||(byBank[c]=[])).push({p,i}); });
-          FM_BANK_ORDER.forEach(cat => {
-            const entries = byBank[cat]; if (!entries) return;
-            const det = document.createElement('details');
-            det.className = 'preset-bank';
-            if (entries.some(({i}) => i === synth.currentPreset)) det.open = true;
-            const sum = document.createElement('summary');
-            sum.textContent = cat;
-            det.appendChild(sum);
-            entries.forEach(({p, i}) => {
-              const item = document.createElement('div');
-              item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
-              item.textContent = p.name;
-              item.addEventListener('click', () => { synth.currentPreset=i; synth.loadFMPreset(p); renderFMPresets(); syncFMSliders(); });
-              det.appendChild(item);
+          if (!allPatches.length) {
+            statusBadge.textContent = 'Loading…';
+            list.innerHTML = '<div style="color:#555;font-size:9px;padding:4px 0">Fetching patches…</div>';
+            return;
+          }
+
+          // Filter by selected bank
+          const visible = activeBankFilter === 'ALL'
+            ? allPatches
+            : allPatches.filter(p => p.bank === activeBankFilter);
+
+          statusBadge.textContent = visible.length + (activeBankFilter === 'ALL' ? '' : '/' + allPatches.length) + ' patches';
+
+          if (activeBankFilter === 'ALL') {
+            // Categorized view
+            const catOrder = (typeof DX7_CATEGORY_ORDER !== 'undefined') ? DX7_CATEGORY_ORDER : ['Other'];
+            const bycat = {};
+            allPatches.forEach((p, i) => { const c = p.cat || 'Other'; (bycat[c] || (bycat[c] = [])).push({ p, i }); });
+            catOrder.forEach(cat => {
+              const entries = bycat[cat]; if (!entries) return;
+              const det = document.createElement('details');
+              det.className = 'preset-bank';
+              if (entries.some(({ i }) => i === synth.currentPreset)) det.open = true;
+              const sum = document.createElement('summary');
+              sum.textContent = `${cat} (${entries.length})`;
+              det.appendChild(sum);
+              entries.forEach(({ p, i }) => _appendPatchItem(det, p, i));
+              list.appendChild(det);
             });
-            list.appendChild(det);
-          });
+          } else {
+            // Flat list for single-bank view
+            visible.forEach(p => {
+              const i = allPatches.indexOf(p);
+              _appendPatchItem(list, p, i);
+            });
+          }
+          _updatePatchInfo();
         };
+
+        const _appendPatchItem = (parent, p, i) => {
+          const item = document.createElement('div');
+          item.className = 'fm-preset-item' + (i === synth.currentPreset ? ' fm-preset-active' : '');
+          item.textContent = p.name || `Patch ${i + 1}`;
+          item.addEventListener('click', () => {
+            synth.currentPreset = i;
+            synth.loadPreset(p);
+            renderFMPresets();
+            _updatePatchInfo();
+          });
+          parent.appendChild(item);
+        };
+
+        _buildBankBtns();
         renderFMPresets();
 
-        qs('.fm-harm').addEventListener('input',  () => { synth.harmonicity     = parseFloat(qs('.fm-harm').value);  synth.updateFMParams(); });
-        qs('.fm-modi').addEventListener('input',  () => { synth.modulationIndex = parseFloat(qs('.fm-modi').value);  synth.updateFMParams(); });
-        qs('.fm-atk').addEventListener('input',   () => { synth.attack          = parseFloat(qs('.fm-atk').value);   synth.updateEnvelope(); });
-        qs('.fm-dec').addEventListener('input',   () => { synth.decay           = parseFloat(qs('.fm-dec').value);   synth.updateEnvelope(); });
-        qs('.fm-sus').addEventListener('input',   () => { synth.sustain         = parseFloat(qs('.fm-sus').value);   synth.updateEnvelope(); });
-        qs('.fm-rel').addEventListener('input',   () => { synth.release         = parseFloat(qs('.fm-rel').value);   synth.updateEnvelope(); });
-        qs('.fm-matk').addEventListener('input',  () => { synth.modAttack       = parseFloat(qs('.fm-matk').value);  synth.updateModEnv(); });
-        qs('.fm-mdec').addEventListener('input',  () => { synth.modDecay        = parseFloat(qs('.fm-mdec').value);  synth.updateModEnv(); });
-        qs('.fm-msus').addEventListener('input',  () => { synth.modSustain      = parseFloat(qs('.fm-msus').value);  synth.updateModEnv(); });
-        qs('.fm-mrel').addEventListener('input',   () => { synth.modRelease  = parseFloat(qs('.fm-mrel').value);   synth.updateModEnv(); });
-        qs('.fm-glide').addEventListener('input',  () => { synth.portamento  = parseFloat(qs('.fm-glide').value);  synth.updatePortamento(); });
-
-        qs('.fm-sysx-btn').addEventListener('click', () => {
-          const inp = document.getElementById('syx-input');
-          inp._targetSynthId = synth.id; inp.click();
-        });
+        // Re-render when async engine/banks finish loading
+        const _onDX7Updated = e => {
+          if (e.detail && e.detail.id !== synth.id) return;
+          if (!typeBody.isConnected) { document.removeEventListener('dx7-updated', _onDX7Updated); return; }
+          _buildBankBtns();
+          renderFMPresets();
+        };
+        document.addEventListener('dx7-updated', _onDX7Updated);
 
       } else if (synth.synthType === 'wavetable') {
         typeBody.innerHTML = `
@@ -1127,7 +1129,8 @@
         dup.updateOscType(); dup.updateEnvelope(); dup.updateFilter(); dup.updateTexture();
       } else if (synth.synthType === 'fm') {
         dup = new FMSynthInstrument(id, synth.name, synth.x + offset, synth.y + offset);
-        dup.loadPreset({ name: synth.name, harmonicity: synth.harmonicity, modulationIndex: synth.modulationIndex, attack: synth.attack, decay: synth.decay, sustain: synth.sustain, release: synth.release, modAttack: synth.modAttack, modDecay: synth.modDecay, modSustain: synth.modSustain, modRelease: synth.modRelease });
+        dup.currentPreset = synth.currentPreset;
+        if (synth._currentPatch) dup.loadPreset(synth._currentPatch);
       } else if (synth.synthType === 'wavetable') {
         dup = new WavetableSynth(id, synth.name, synth.x + offset, synth.y + offset);
         Object.assign(dup, {
