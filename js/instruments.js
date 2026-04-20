@@ -120,6 +120,7 @@
         if (this._romplerBridge) { try { this._romplerBridge.dispose(); } catch(e) {} this._romplerBridge = null; }
         // DX7 AudioWorklet
         if (this._dx7Node) { try { this._dx7Node.disconnect(); } catch(e) {} this._dx7Node = null; }
+        if (this._fmFilter) { try { this._fmFilter.dispose(); } catch(e) {} this._fmFilter = null; }
         if (this._bridge && this._bridge !== this.pan) { try { this._bridge.dispose(); } catch(e) {} this._bridge = null; }
       }
       // Shared smplr loader — handles both SF1 (Soundfont) and SF2 (Soundfont2Sampler)
@@ -202,11 +203,16 @@
           this.currentPreset = 0;
           this._dx7Node = null; this._dx7Patches = null; this._currentPatch = null;
           this._pending = []; this._engineReady = false;
+          this.fmAlgorithmOverride = null; this.fmFeedbackOverride = null;
+          this.fmModLevel = 1.0; this.portamento = 0;
+          this.fmFilterFreq = 20000; this.fmFilterQ = 0.7; this.fmFilterType = 'lowpass';
           this.synthType = 'fm';
-          this._bridge = new Tone.Gain(1.0).connect(this.pan);
+          this._fmFilter = new Tone.Filter(this.fmFilterFreq, this.fmFilterType).connect(this.pan);
+          this._bridge   = new Tone.Gain(1.0).connect(this._fmFilter);
           ['noteOn','noteOff','allNotesOff','triggerAtTime','_toMidi','_post','_sendPatch',
            '_loadAllBanks','_emitUpdate','loadPreset',
-           'updateFMParams','updateEnvelope','updateModEnv','updatePortamento'].forEach(m => {
+           'updateFMParams','updateEnvelope','updateModEnv','updatePortamento',
+           'updateFMVoiceParam','updateFMFilter'].forEach(m => {
             this[m] = FMSynthInstrument.prototype[m].bind(this);
           });
           Object.defineProperty(this, 'presetList',
@@ -547,14 +553,25 @@
         super(id, name, x, y);
         this.synthType     = 'fm';
         this.currentPreset = 0;
-        this._dx7Patches   = null;   // merged flat patch array (all banks)
+        this._dx7Patches   = null;
         this._dx7Node      = null;
         this._currentPatch = null;
         this._pending      = [];
         this._engineReady  = false;
 
-        // Tone.js gain as bridge: AudioWorkletNode (native) → pan → vol → master
-        this._bridge = new Tone.Gain(1.0).connect(this.pan);
+        // Voice override params (sent to worklet on each noteOn)
+        this.fmAlgorithmOverride = null;  // null = use patch algorithm
+        this.fmFeedbackOverride  = null;  // null = use patch feedback
+        this.fmModLevel  = 1.0;
+        this.portamento  = 0;
+
+        // Post-filter
+        this.fmFilterFreq = 20000;
+        this.fmFilterQ    = 0.7;
+        this.fmFilterType = 'lowpass';
+
+        this._fmFilter = new Tone.Filter(this.fmFilterFreq, this.fmFilterType).connect(this.pan);
+        this._bridge   = new Tone.Gain(1.0).connect(this._fmFilter);
 
         this._initEngine();
       }
@@ -568,6 +585,7 @@
           });
           this._dx7Node.connect(this._bridge.input);
           this._engineReady = true;
+          this.updateFMVoiceParam();
 
           for (const m of this._pending) this._dx7Node.port.postMessage(m);
           this._pending = [];
@@ -627,7 +645,7 @@
       }
 
       noteOn(note, vel = 100) {
-        this._post({ type: 'noteOn', note: this._toMidi(note), velocity: vel });
+        this._post({ type: 'noteOn', note: this._toMidi(note), velocity: vel, portamento: this.portamento });
       }
 
       noteOff(note) {
@@ -640,22 +658,39 @@
 
       triggerAtTime(note, dur, time, vel) {
         this._noteHighlight(note, true);
-        const midiNote = this._toMidi(note);
-        const nowCtx   = Tone.context.rawContext.currentTime;
-        const delayOn  = Math.max(0, time - nowCtx);
-        const delayOff = delayOn + dur;
-        setTimeout(() => this._post({ type: 'noteOn',  note: midiNote, velocity: Math.round(vel * 127) }), delayOn  * 1000);
+        const midiNote  = this._toMidi(note);
+        const portVal   = this.portamento;          // capture NOW before any step changes it
+        const nowCtx    = Tone.context.rawContext.currentTime;
+        const delayOn   = Math.max(0, time - nowCtx);
+        const delayOff  = delayOn + dur;
+        setTimeout(() => this._post({ type: 'noteOn', note: midiNote, velocity: Math.round(vel * 127), portamento: portVal }), delayOn * 1000);
         setTimeout(() => {
           this._post({ type: 'noteOff', note: midiNote });
           this._noteHighlight(note, false);
         }, delayOff * 1000);
       }
 
-      // Stubs — DX7 6-op engine uses its own per-operator envelopes from SysEx
-      updateFMParams()   {}
-      updateEnvelope()   {}
-      updateModEnv()     {}
-      updatePortamento() {}
+      updateFMVoiceParam() {
+        this._post({ type: 'setParam', key: 'algorithm',     value: this.fmAlgorithmOverride });
+        this._post({ type: 'setParam', key: 'feedback',      value: this.fmFeedbackOverride });
+        this._post({ type: 'setParam', key: 'modLevelScale', value: this.fmModLevel });
+      }
+
+      updatePortamento() {
+        this._post({ type: 'setParam', key: 'portamento', value: this.portamento });
+      }
+
+      updateFMFilter() {
+        if (!this._fmFilter) return;
+        this._fmFilter.frequency.value = Math.max(20, Math.min(20000, this.fmFilterFreq));
+        this._fmFilter.Q.value = Math.max(0.01, Math.min(20, this.fmFilterQ));
+        this._fmFilter.type = this.fmFilterType;
+      }
+
+      // Stubs — DX7 uses its own per-operator envelopes from SysEx
+      updateFMParams() {}
+      updateEnvelope() {}
+      updateModEnv()   {}
 
       dispose() {
         this.allNotesOff();
@@ -663,6 +698,7 @@
           try { this._dx7Node.disconnect(); } catch(e) {}
           this._dx7Node = null;
         }
+        if (this._fmFilter) { try { this._fmFilter.dispose(); } catch(e) {} this._fmFilter = null; }
         try { this._bridge.dispose(); } catch(e) {}
         super.dispose();
       }

@@ -117,7 +117,16 @@
             portamento: synth.portamento, currentPreset: synth.currentPreset,
           });
         } else if (synth.synthType === 'fm') {
-          Object.assign(sd, { currentPreset: synth.currentPreset });
+          Object.assign(sd, {
+            currentPreset:       synth.currentPreset,
+            fmAlgorithmOverride: synth.fmAlgorithmOverride,
+            fmFeedbackOverride:  synth.fmFeedbackOverride,
+            fmModLevel:          synth.fmModLevel,
+            portamento:          synth.portamento,
+            fmFilterFreq:        synth.fmFilterFreq,
+            fmFilterQ:           synth.fmFilterQ,
+            fmFilterType:        synth.fmFilterType,
+          });
         } else if (synth.synthType === 'wavetable') {
           Object.assign(sd, {
             currentWave: synth.currentWave, detune1: synth.detune1, detune2: synth.detune2,
@@ -459,7 +468,16 @@
               if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
             } else if (sd.synthType === 'fm') {
               synth = new FMSynthInstrument(id, sd.name || ('FM Synth ' + id), sd.x || 300, sd.y || 300);
-              if (sd.currentPreset != null) synth.currentPreset = sd.currentPreset;
+              if (sd.currentPreset        != null) synth.currentPreset        = sd.currentPreset;
+              if (sd.fmAlgorithmOverride !== undefined) synth.fmAlgorithmOverride = sd.fmAlgorithmOverride;
+              if (sd.fmFeedbackOverride  !== undefined) synth.fmFeedbackOverride  = sd.fmFeedbackOverride;
+              if (sd.fmModLevel   != null) synth.fmModLevel   = sd.fmModLevel;
+              if (sd.portamento   != null) { synth.portamento = sd.portamento; synth.updatePortamento(); }
+              if (sd.fmFilterFreq != null) synth.fmFilterFreq = sd.fmFilterFreq;
+              if (sd.fmFilterQ    != null) synth.fmFilterQ    = sd.fmFilterQ;
+              if (sd.fmFilterType != null) synth.fmFilterType = sd.fmFilterType;
+              synth.updateFMFilter();
+              // updateFMVoiceParam is called after worklet init in _initEngine
             } else if (sd.synthType === 'wavetable') {
               synth = new WavetableSynth(id, sd.name || ('Wavetable ' + id), sd.x || 300, sd.y || 300);
               if (sd.currentWave  != null) { synth.currentWave  = sd.currentWave;  synth.updateWave(); }

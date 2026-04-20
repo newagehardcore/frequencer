@@ -174,7 +174,7 @@ class DX7Operator {
 // ── Voice ─────────────────────────────────────────────────────────────────────
 
 class DX7Voice {
-  constructor(note, velocity, patch) {
+  constructor(note, velocity, patch, fromNote = null, portamentoSamples = 0) {
     this.note    = note;
     this.down    = true;
     this.patch   = patch;
@@ -185,18 +185,53 @@ class DX7Voice {
     for (let i = 0; i < 6; i++) {
       const op = patch.operators[i];
       const o  = new DX7Operator(op, baseFreq);
-      // Velocity scaling per DX7 spec
       o.outputLevel = (1 + (velocity - 1) * (op.velocitySens / 7)) * op.outputLevel;
       this.operators[i] = o;
     }
 
+    // Glide: exponentially interpolate phaseStep from fromNote to note over portamentoSamples
+    this._glideTargetSteps = null;
+    this._glideRatio       = 1;
+    this._glideSamples     = 0;
+    if (fromNote !== null && fromNote !== note && portamentoSamples > 0) {
+      const fromFreq = 440 * Math.pow(2, (fromNote - 69) / 12);
+      const freqScale = fromFreq / baseFreq;                           // scale target → source
+      const perSample = Math.pow(baseFreq / fromFreq, 1 / portamentoSamples); // ratio per sample
+      this._glideTargetSteps = [];
+      this._glideRatio   = perSample;
+      this._glideSamples = portamentoSamples;
+      for (let i = 0; i < 6; i++) {
+        if (!patch.operators[i].oscMode) {
+          this._glideTargetSteps[i] = this.operators[i].phaseStep;
+          this.operators[i].phaseStep *= freqScale;  // start at fromNote frequency
+        } else {
+          this._glideTargetSteps[i] = null;
+        }
+      }
+    }
+
     // LFO: simple global pitch LFO per voice
-    this._lfoPhase     = 0;
-    this._lfoPhaseStep = PERIOD * (LFO_FREQ_TABLE[Math.min(127, patch.lfoSpeed || 0)]) / sampleRate;
+    this._lfoPhase      = 0;
+    this._lfoPhaseStep  = PERIOD * (LFO_FREQ_TABLE[Math.min(127, patch.lfoSpeed || 0)]) / sampleRate;
     this._lfoPitchDepth = LFO_PITCH_MOD_TABLE[patch.lfoPitchModSens || 0] * ((patch.lfoPitchModDepth || 0) / 99);
   }
 
   render() {
+    // Advance glide
+    if (this._glideSamples > 0) {
+      this._glideSamples--;
+      if (this._glideSamples === 0) {
+        for (let i = 0; i < 6; i++) {
+          if (this._glideTargetSteps[i] !== null) this.operators[i].phaseStep = this._glideTargetSteps[i];
+        }
+        this._glideRatio = 1;
+      } else {
+        for (let i = 0; i < 6; i++) {
+          if (this._glideTargetSteps[i] !== null) this.operators[i].phaseStep *= this._glideRatio;
+        }
+      }
+    }
+
     const alg = ALGORITHMS[this.patch.algorithm - 1];
     const mm  = alg.modulationMatrix;
     const om  = alg.outputMix;
@@ -252,9 +287,11 @@ class DX7Voice {
 class DX7Processor extends AudioWorkletProcessor {
   constructor() {
     super();
-    this._voices = [];
-    this._maxPoly = 12;
-    this._patch   = null;
+    this._voices   = [];
+    this._maxPoly  = 12;
+    this._patch    = null;
+    this._lastNote = null;
+    this._overrides = { algorithm: null, feedback: null, modLevelScale: 1.0, portamento: 0 };
     this.port.onmessage = (e) => this._handleMessage(e.data);
   }
 
@@ -264,21 +301,66 @@ class DX7Processor extends AudioWorkletProcessor {
         this._patch = msg.patch;
         break;
       case 'noteOn':
-        this._noteOn(msg.note, msg.velocity);
+        this._noteOn(msg.note, msg.velocity, msg.portamento);
         break;
       case 'noteOff':
         this._noteOff(msg.note);
         break;
       case 'allNotesOff':
         for (const v of this._voices) v.noteOff();
+        this._lastNote = null;
+        break;
+      case 'setParam':
+        if (msg.key in this._overrides) {
+          this._overrides[msg.key] = msg.value;
+          // Apply feedback to active voices immediately (real-time param)
+          if (msg.key === 'feedback' && msg.value !== null) {
+            const fbRatio = Math.pow(2, Math.round(Math.max(0, Math.min(7, msg.value))) - 7);
+            for (const v of this._voices) v.fbRatio = fbRatio;
+          }
+        }
         break;
     }
   }
 
-  _noteOn(note, velocity) {
+  _noteOn(note, velocity, portamento) {
     if (!this._patch) return;
+    if (note < 0 || note > 127) return;
     if (this._voices.length >= this._maxPoly) this._voices.shift();
-    this._voices.push(new DX7Voice(note, velocity / 127, this._patch));
+
+    const ov = this._overrides;
+    let patch = this._patch;
+    const algNum = ov.algorithm != null
+      ? Math.round(Math.max(1, Math.min(32, ov.algorithm)))
+      : patch.algorithm;
+    const fbNum = ov.feedback != null
+      ? Math.round(Math.max(0, Math.min(7, ov.feedback)))
+      : patch.feedback;
+    const needsModScale = ov.modLevelScale !== 1.0;
+
+    if (algNum !== patch.algorithm || fbNum !== patch.feedback || needsModScale) {
+      const carriers = ALGORITHMS[algNum - 1].outputMix;
+      patch = {
+        ...patch,
+        algorithm: algNum,
+        feedback:  fbNum,
+        operators: needsModScale
+          ? patch.operators.map((op, i) =>
+              carriers.includes(i) ? op : { ...op, outputLevel: op.outputLevel * ov.modLevelScale })
+          : patch.operators,
+      };
+    }
+
+    // Use inline portamento (captured at scheduling time) to avoid race with per-step resets
+    const port = portamento !== undefined ? portamento : ov.portamento;
+    const portSamples = Math.round((port || 0) * sampleRate);
+    // Mono mode: release all current voices so glide sweep is not masked
+    if (portSamples > 0) {
+      for (const v of this._voices) v.noteOff();
+    }
+    const fromNote = (portSamples > 0 && this._lastNote !== null) ? this._lastNote : null;
+    this._voices.push(new DX7Voice(note, velocity / 127, patch, fromNote, portSamples));
+    this._lastNote = note;
   }
 
   _noteOff(note) {

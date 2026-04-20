@@ -337,6 +337,8 @@
         });
 
       } else if (synth.synthType === 'fm') {
+        const _fmAlgVal  = () => synth.fmAlgorithmOverride ?? synth._currentPatch?.algorithm ?? 1;
+        const _fmFbVal   = () => synth.fmFeedbackOverride  ?? synth._currentPatch?.feedback  ?? 7;
         typeBody.innerHTML = `
           <div class="card-accordion">
             <div class="card-acc-hdr">DX7 PATCHES
@@ -346,6 +348,35 @@
               <div class="dx7-bank-filter" style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;max-height:72px;overflow-y:auto"></div>
               <div class="dx7-patch-info" style="font-size:8px;color:#666;margin-bottom:4px;min-height:14px"></div>
               <div class="fm-preset-list"></div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">VOICE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Algorithm</span>${mkCsl('dx7-algorithm','1','32','0.1',_fmAlgVal())}</div>
+              <div class="crow"><span class="clbl">Feedback</span>${mkCsl('dx7-feedback','0','7','0.1',_fmFbVal())}</div>
+              <div class="crow"><span class="clbl">Mod Depth</span>${mkCsl('dx7-modlevel','0','2','0.01',synth.fmModLevel)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">FILTER</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="synth-row" style="margin-bottom:6px">
+                <div class="synth-lbl">Type</div>
+                <div class="synth-btn-row" style="flex:1">
+                  <button class="synth-btn ${synth.fmFilterType==='lowpass'?'act':''}"  data-fmflt="lowpass">LP</button>
+                  <button class="synth-btn ${synth.fmFilterType==='highpass'?'act':''}" data-fmflt="highpass">HP</button>
+                  <button class="synth-btn ${synth.fmFilterType==='bandpass'?'act':''}" data-fmflt="bandpass">BP</button>
+                </div>
+              </div>
+              <div class="crow"><span class="clbl">Cutoff</span>${mkCsl('dx7-cutoff','20','20000','1',synth.fmFilterFreq)}</div>
+              <div class="crow"><span class="clbl">Reso</span>${mkCsl('dx7-reso','0.01','20','0.01',synth.fmFilterQ)}</div>
+            </div></div>
+          </div>
+          <div class="card-accordion">
+            <div class="card-acc-hdr">GLIDE</div>
+            <div class="card-acc-body"><div class="csec">
+              <div class="crow"><span class="clbl">Time</span>${mkCsl('fm-glide','0','1','0.001',synth.portamento)}</div>
             </div></div>
           </div>`;
 
@@ -439,6 +470,7 @@
             synth.loadPreset(p);
             renderFMPresets();
             _updatePatchInfo();
+            setTimeout(() => _syncVoiceSliders?.(), 0);
           });
           parent.appendChild(item);
         };
@@ -454,6 +486,74 @@
           renderFMPresets();
         };
         document.addEventListener('dx7-updated', _onDX7Updated);
+
+        // VOICE sliders
+        const fmtAlg = v => 'Alg ' + Math.round(v);
+        const fmtFb  = v => 'FB ' + parseFloat(v).toFixed(1);
+        const fmtLvl = v => parseFloat(v).toFixed(2) + '×';
+        initCslider(qs('.dx7-algorithm').closest('.cslider'), fmtAlg);
+        initCslider(qs('.dx7-feedback').closest('.cslider'),  fmtFb);
+        initCslider(qs('.dx7-modlevel').closest('.cslider'),  fmtLvl);
+
+        qs('.dx7-algorithm').addEventListener('input', () => {
+          synth.fmAlgorithmOverride = Math.round(parseFloat(qs('.dx7-algorithm').value));
+          synth.updateFMVoiceParam();
+        });
+        qs('.dx7-feedback').addEventListener('input', () => {
+          synth.fmFeedbackOverride = parseFloat(qs('.dx7-feedback').value);
+          synth.updateFMVoiceParam();
+        });
+        qs('.dx7-modlevel').addEventListener('input', () => {
+          synth.fmModLevel = parseFloat(qs('.dx7-modlevel').value);
+          synth.updateFMVoiceParam();
+        });
+
+        // FILTER sliders
+        const fmtHz = v => v >= 1000 ? (v/1000).toFixed(1)+' kHz' : Math.round(v)+' Hz';
+        initCslider(qs('.dx7-cutoff').closest('.cslider'), fmtHz);
+        initCslider(qs('.dx7-reso').closest('.cslider'),   v => parseFloat(v).toFixed(2));
+
+        qas('[data-fmflt]').forEach(btn => btn.addEventListener('click', () => {
+          synth.fmFilterType = btn.dataset.fmflt;
+          qas('[data-fmflt]').forEach(b => b.classList.toggle('act', b.dataset.fmflt === synth.fmFilterType));
+          synth.updateFMFilter();
+        }));
+        qs('.dx7-cutoff').addEventListener('input', () => {
+          synth.fmFilterFreq = parseFloat(qs('.dx7-cutoff').value);
+          synth.updateFMFilter();
+        });
+        qs('.dx7-reso').addEventListener('input', () => {
+          synth.fmFilterQ = parseFloat(qs('.dx7-reso').value);
+          synth.updateFMFilter();
+        });
+
+        // GLIDE slider
+        const fmtGlide = v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v));
+        initCslider(qs('.fm-glide').closest('.cslider'), fmtGlide);
+        qs('.fm-glide').addEventListener('input', () => {
+          synth.portamento = parseFloat(qs('.fm-glide').value);
+          synth.updatePortamento();
+        });
+
+        // Sync VOICE sliders when a new preset is loaded (only if no user override yet)
+        const _syncVoiceSliders = () => {
+          const p = synth._currentPatch;
+          if (!p) return;
+          if (synth.fmAlgorithmOverride === null) {
+            const sl = qs('.dx7-algorithm');
+            if (sl) { sl.value = p.algorithm; sl.closest('.cslider')?._syncPos?.(); }
+          }
+          if (synth.fmFeedbackOverride === null) {
+            const sl = qs('.dx7-feedback');
+            if (sl) { sl.value = p.feedback; sl.closest('.cslider')?._syncPos?.(); }
+          }
+        };
+        // Re-sync voice sliders whenever dx7-updated fires (covers initial preset load)
+        const _onDX7VoiceSync = () => {
+          if (!typeBody.isConnected) { document.removeEventListener('dx7-updated', _onDX7VoiceSync); return; }
+          _syncVoiceSliders();
+        };
+        document.addEventListener('dx7-updated', _onDX7VoiceSync);
 
       } else if (synth.synthType === 'wavetable') {
         typeBody.innerHTML = `

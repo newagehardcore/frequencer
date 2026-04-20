@@ -96,12 +96,15 @@
           for (const instrId of this.destinations) {
             const instr = getInstrument(instrId);
             if (!instr || instr.muted) continue;
-            // Per-step glide: override portamento before triggering
-            if (instr instanceof SynthInstrument) {
-              const newPortamento = stepData.slide ? ((stepData.glideMs ?? 50) / 1000) : 0;
-              if (instr.portamento !== newPortamento) {
-                instr.portamento = newPortamento;
-                instr.updatePortamento();
+            // Per-step glide: slide steps temporarily override portamento; non-slide steps
+            // leave it unchanged so the global GLIDE slider remains in effect.
+            let savedPort = null;
+            if (instr instanceof SynthInstrument && stepData.slide) {
+              const stepPort = (stepData.glideMs ?? 50) / 1000;
+              if (instr.portamento !== stepPort) {
+                savedPort = instr.portamento;
+                instr.portamento = stepPort;
+                if (instr.updatePortamento) instr.updatePortamento();
               }
             }
             for (const n of tNotes) {
@@ -112,6 +115,8 @@
                 instr.triggerAtTime(time, 0.8, vel, semis);
               }
             }
+            // Restore global portamento — triggerAtTime already captured the step value
+            if (savedPort !== null) instr.portamento = savedPort;
           }
           if (this._midiCapture) {
             for (const n of tNotes) {
@@ -834,6 +839,13 @@
       // Glide / portamento (all synth types)
       'sc-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'fm-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
+      // DX7 voice override params
+      'dx7-algorithm': { prop: 'fmAlgorithmOverride', min: 1, max: 32, label: 'DX7 Alg',     isSynth: true, updater: 'updateFMVoiceParam', fmtVal: v => 'Alg ' + Math.round(v) },
+      'dx7-feedback':  { prop: 'fmFeedbackOverride',  min: 0, max: 7,  label: 'DX7 Feedback', isSynth: true, updater: 'updateFMVoiceParam', fmtVal: v => 'FB ' + parseFloat(v).toFixed(1) },
+      'dx7-modlevel':  { prop: 'fmModLevel',          min: 0, max: 2,  label: 'DX7 Mod Dep', isSynth: true, updater: 'updateFMVoiceParam', fmtVal: v => parseFloat(v).toFixed(2) + '×' },
+      // DX7 post-filter params
+      'dx7-cutoff':    { prop: 'fmFilterFreq', min: 20,   max: 20000, label: 'DX7 Cutoff', isSynth: true, updater: 'updateFMFilter', fmtVal: v => v >= 1000 ? (v/1000).toFixed(1)+' kHz' : Math.round(v)+' Hz' },
+      'dx7-reso':      { prop: 'fmFilterQ',    min: 0.01, max: 20,    label: 'DX7 Reso',   isSynth: true, updater: 'updateFMFilter', fmtVal: v => parseFloat(v).toFixed(2) },
       'wt-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'kp-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
       'rm-glide': { prop: 'portamento', min: 0, max: 1, label: 'Glide', isSynth: true, updater: 'updatePortamento', fmtVal: v => parseFloat(v) < 0.001 ? 'Off' : fmtFade(parseFloat(v)) },
