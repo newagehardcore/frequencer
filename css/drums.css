@@ -363,6 +363,7 @@
     .riff-node.dragging { z-index: inherit; }
     .riff-node.collapsed { width: 136px; padding: 0; background: var(--surface, #000); }
     .riff-node.collapsed .riff-titlebar { display: none; }
+    .riff-node.collapsed .riff-mode-row { display: none; }
     .riff-node.collapsed .riff-body { display: none; }
     .riff-node.collapsed .riff-min-footer { display: block; }
     .riff-node.collapsed .riff-mini-grid { display: grid; }
@@ -495,6 +496,46 @@
     .riff-step-btn:hover { border-color: #fff; color: #fff; }
     .riff-step-btn.act { background: #fff; color: #000; border-color: #fff; }
     .riff-step-btn.rec-act { background: #c00; color: #fff; border-color: #c00; }
+    /* Riff mode row (below header, like synth type row) */
+    .riff-mode-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    /* Orbit mode */
+    .riff-seqmode-sel { font-size: 9px; font-weight: 700; }
+    .riff-orbit-mini {
+      display: none; box-sizing: border-box;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .riff-node.collapsed.orbit-mode .riff-mini-grid { display: none !important; }
+    .riff-node.collapsed.orbit-mode .riff-orbit-mini { display: block; width: 100%; height: 40px; }
+    .riff-orbit-section { display: none; }
+    .riff-orbit-section.active { display: block; }
+    .riff-orbit-canvas {
+      display: block; width: 100%; height: 200px;
+      background: rgba(255,255,255,0.02); cursor: crosshair; box-sizing: border-box;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .riff-ring-tabbar {
+      display: flex; align-items: center; gap: 3px;
+      padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .riff-ring-tab {
+      flex: 1; padding: 4px 0; background: #000; border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4); font-size: 9px; font-weight: 700;
+      letter-spacing: -0.03em; text-transform: uppercase; cursor: pointer; font-family: inherit;
+      transition: all 0.08s;
+    }
+    .riff-ring-tab:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.8); }
+    .riff-ring-tab.act { background: rgba(255,255,255,0.1); border-color: var(--riff-color, #fff); color: #fff; }
+    .riff-ring-tab.hidden-ring { display: none; }
+    .riff-ring-addrm {
+      flex: 0 0 auto; width: 20px; height: 20px; background: none;
+      border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.5);
+      font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+      padding: 0; line-height: 18px; text-align: center;
+    }
+    .riff-ring-addrm:hover { border-color: #fff; color: #fff; }
     /* Chords playback section */
     .chords-playback-body { display: flex; flex-direction: column; gap: 4px; padding: 0 8px 6px; }
     .chords-pm-btn {
@@ -556,16 +597,29 @@
     .riff-kbd-hint { font-size: 7px; color: rgba(255,255,255,0.25); text-align: center; padding: 1px 8px 4px; letter-spacing: 0.04em; text-transform: uppercase; }
     /* Wire */
     .riff-wire-row { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; }
-    .riff-wire-port {
+    .riff-port-strip {
       position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 7px; z-index: 20;
+    }
+    .riff-port-strip-left { right: auto; left: -7px; }
+    .riff-wire-port {
       width: 14px; height: 14px; border-radius: 50%;
       background: #000; border: 2px solid rgba(255,255,255,0.5);
-      cursor: crosshair; transition: border-color 0.15s, background 0.15s;
-      z-index: 20;
+      cursor: crosshair; transition: border-color 0.1s, background 0.1s, box-shadow 0.1s;
+      flex-shrink: 0;
     }
     .riff-wire-port:hover { border-color: #fff; background: #222; }
-    .riff-wire-port-left { right: auto; left: -7px; }
+    .riff-wire-port.port-active {
+      background: var(--riff-color, #fff);
+      border-color: var(--riff-color, #fff);
+      box-shadow: 0 0 7px var(--riff-color, #fff);
+    }
     .riff-dest-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .riff-dest-ring-sec { display: flex; flex-direction: column; gap: 1px; margin-bottom: 3px; }
+    .riff-dest-ring-lbl {
+      font-size: 8px; font-weight: 700; letter-spacing: -0.02em; text-transform: uppercase;
+      color: var(--riff-color, rgba(255,255,255,0.35)); opacity: 0.7; padding-bottom: 1px;
+    }
     .riff-dest-item { display: flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 0; }
     .riff-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
     .riff-dest-unlink { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 10px; padding: 0 2px; }

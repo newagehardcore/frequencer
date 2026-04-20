@@ -184,6 +184,13 @@
           loopBars: riff.loopBars, quantize: riff.quantize,
           scale: riff.scale, scaleRoot: riff.scaleRoot, harmony: riff.harmony,
           midiInput: riff.midiInput,
+          seqMode: riff.seqMode,
+          orbitNumRings: riff.orbitNumRings,
+          orbitRings: riff.orbitRings.map(r => ({
+            numSteps: r.numSteps, speedRatio: r.speedRatio,
+            steps: r.steps.map(s => ({ ...s }))
+          })),
+          orbitDestinations: riff.orbitDestinations.map(d => [...d]),
           destinations: [...riff.destinations]
         });
       }
@@ -625,15 +632,35 @@
           riff.harmony = rd.harmony || 0;
           riff.quantize   = rd.quantize !== false;
           riff.midiInput  = rd.midiInput ?? 'all';
+          riff.seqMode = rd.seqMode || 'grid';
+          riff.orbitNumRings = rd.orbitNumRings || 2;
+          if (Array.isArray(rd.orbitRings)) {
+            for (let ri = 0; ri < Math.min(4, rd.orbitRings.length); ri++) {
+              const or = rd.orbitRings[ri];
+              riff.orbitRings[ri].numSteps = or.numSteps || 8;
+              riff.orbitRings[ri].speedRatio = or.speedRatio || 1.0;
+              if (Array.isArray(or.steps)) {
+                const ls = or.steps.slice(0, 16).map(s => ({note: s.note || null, vel: s.vel ?? 1.0}));
+                while (ls.length < 16) ls.push({note: null, vel: 1.0});
+                riff.orbitRings[ri].steps = ls;
+              }
+            }
+          }
           riffs.set(rid, riff);
           createRiffNode(riff);
           document.getElementById('riff-' + rid)?.classList.add('collapsed');
           if (Array.isArray(rd.destinations)) {
             for (const oldId of rd.destinations) {
               const targetId = idMap[oldId] ?? (getInstrument(oldId) ? oldId : null);
-              if (targetId != null) {
-                riff.addDestination(targetId);
-                riffNodes.get(rid)?.updateDestList();
+              if (targetId != null) { riff.addDestination(targetId); riffNodes.get(rid)?.updateDestList(); }
+            }
+          }
+          if (Array.isArray(rd.orbitDestinations)) {
+            for (let ri = 0; ri < Math.min(4, rd.orbitDestinations.length); ri++) {
+              if (!Array.isArray(rd.orbitDestinations[ri])) continue;
+              for (const oldId of rd.orbitDestinations[ri]) {
+                const targetId = idMap[oldId] ?? (getInstrument(oldId) ? oldId : null);
+                if (targetId != null) { riff.addOrbitDestination(ri, targetId); riffNodes.get(rid)?.updateDestList(); }
               }
             }
           }

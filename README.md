@@ -370,7 +370,13 @@ Select a root note and scale (55+ options, shared with the Riff module). All cho
 
 Add melodic step sequencers to the canvas via `+ Riff`. Each riff connects to synths or samplers via wires and loops a melodic pattern in sync with the transport.
 
-### Step Grid
+### Sequencer Modes
+
+The **Mode** row below the titlebar selects between two sequencer modes:
+
+#### GRID Mode
+
+The default mode. Steps play left-to-right in a linear grid, identical to a traditional step sequencer.
 
 Up to 64 steps in an 8-column grid. Each step shows its note name and a velocity bar (drag up/down to adjust velocity).
 
@@ -380,7 +386,34 @@ Up to 64 steps in an 8-column grid. Each step shows its note name and a velocity
 - **Clear** — erase all steps
 - **Steps +/−** — 1–64 steps
 
-### Per-Step Controls
+#### ORBIT Mode
+
+A non-Euclidean, multi-ring orbital sequencer. Instead of a linear grid, notes are arranged on concentric circles — each ring is an independent loop running at its own tempo ratio, creating polyrhythmic patterns that evolve over time.
+
+**Rings** — 1 to 4 concentric rings, each configured independently:
+
+| Parameter | Description |
+|-----------|-------------|
+| **Steps** | Number of note positions on this ring (1–16) |
+| **Speed** | Tempo ratio relative to the base subdivision — e.g. ×2 means the ring cycles twice as fast |
+
+**Note entry** — identical to GRID mode. Select a ring via the ring tabs, then use the keyboard or QWERTY input to assign notes to steps. Velocity bars, per-step octave shift, and per-step glide all work the same way.
+
+**Visualization** — the orbit canvas shows:
+- Each ring as a circle scaled to its step count
+- A rotating arm (playhead) on each ring showing the current position in real time
+- Filled dots for steps that have a note assigned; hollow dots for rests
+- The selected step highlighted for editing
+
+**Collapsed tile** — when the riff node is minimized, orbit mode shows a small animated ring canvas instead of the usual step grid strip.
+
+**Per-ring wire outputs** — in ORBIT mode, each ring gets its own pair of output ports stacked vertically on the left and right sides of the module (Ring 1 at top, Ring 2 below, etc.). Drag from any ring's port to connect that ring independently to a different synth or sampler. Ports flash the riff's accent color when that ring fires a note.
+
+This means a single Riff node in ORBIT mode can drive multiple instruments simultaneously with different polyrhythmic patterns — e.g. a 3-step fast ring routed to a lead synth and a 7-step slow ring routed to a pad.
+
+---
+
+### Per-Step Controls (both modes)
 
 Each step cell has two sets of per-step controls:
 
@@ -425,7 +458,9 @@ A 2-octave mouse-playable keyboard with octave shift buttons. QWERTY mapping (wh
 
 ### Wires
 
-Drag from the riff's wire port onto a synth tile or sampler tile to connect. A riff can drive multiple instruments simultaneously.
+In **GRID mode**, drag from the single wire port onto a synth or sampler tile to connect. A riff can drive multiple instruments simultaneously.
+
+In **ORBIT mode**, each ring has its own wire port pair. Drag from any ring's port to route that ring to a separate instrument.
 
 ---
 

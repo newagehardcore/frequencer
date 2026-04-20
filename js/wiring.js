@@ -202,17 +202,44 @@ function startWireDrag(lfo, startEvent, portEl) {
       svg.querySelectorAll('.riff-wire-line').forEach(w => w.remove());
       for (const [, riff] of riffs) {
         const nodeInfo = riffNodes.get(riff.id);
-        if (!nodeInfo || !riff.destinations.length) continue;
-        for (const instrId of riff.destinations) {
-          const tileEl = document.getElementById('t' + instrId);
-          if (!tileEl) continue;
-          const { srcSide, tileSide } = _portSides(nodeInfo.el, RIFF_W, tileEl);
-          const portSel = srcSide === 'right' ? '.riff-wire-port:not(.riff-wire-port-left)' : '.riff-wire-port-left';
-          const riffPort = nodeInfo.el.querySelector(portSel) || nodeInfo.el.querySelector('.riff-wire-port');
-          const riffPR = riffPort.getBoundingClientRect();
-          const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
-          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
-          _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
+        if (!nodeInfo) continue;
+
+        const getRiffPort = (side, ringIdx) => {
+          const strip = nodeInfo.el.querySelector(side === 'right' ? '.riff-port-strip-right' : '.riff-port-strip-left');
+          if (!strip) return nodeInfo.el.querySelector('.riff-wire-port');
+          if (ringIdx !== null && ringIdx !== undefined) {
+            return strip.querySelector(`.riff-wire-port[data-ring="${ringIdx}"]`) || strip.querySelector('.riff-wire-port');
+          }
+          return strip.querySelector('.riff-wire-port');
+        };
+
+        if (riff.seqMode === 'orbit') {
+          for (let ri = 0; ri < riff.orbitNumRings; ri++) {
+            const dests = riff.orbitDestinations[ri] || [];
+            for (const instrId of dests) {
+              const tileEl = document.getElementById('t' + instrId);
+              if (!tileEl) continue;
+              const { srcSide, tileSide } = _portSides(nodeInfo.el, RIFF_W, tileEl);
+              const riffPort = getRiffPort(srcSide, ri);
+              if (!riffPort) continue;
+              const riffPR = riffPort.getBoundingClientRect();
+              const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
+              const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
+              _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
+            }
+          }
+        } else {
+          for (const instrId of riff.destinations) {
+            const tileEl = document.getElementById('t' + instrId);
+            if (!tileEl) continue;
+            const { srcSide, tileSide } = _portSides(nodeInfo.el, RIFF_W, tileEl);
+            const riffPort = getRiffPort(srcSide, null);
+            if (!riffPort) continue;
+            const riffPR = riffPort.getBoundingClientRect();
+            const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
+            const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
+            _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
+          }
         }
       }
 

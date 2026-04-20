@@ -46,11 +46,33 @@
         this._activeRecordNotes = new Map(); // note → wallStartSec
         this._recordedNotes = [];
         this._midiCapture = null;
+        // Orbit mode
+        this.seqMode = 'grid';   // 'grid' | 'orbit'
+        this.orbitNumRings = 2;
+        this.orbitRings = [
+          { numSteps: 8, speedRatio: 1.0, steps: Array.from({length: 16}, () => ({note: null, vel: 1.0})) },
+          { numSteps: 6, speedRatio: 2.0, steps: Array.from({length: 16}, () => ({note: null, vel: 1.0})) },
+          { numSteps: 5, speedRatio: 3.0, steps: Array.from({length: 16}, () => ({note: null, vel: 1.0})) },
+          { numSteps: 7, speedRatio: 1.5, steps: Array.from({length: 16}, () => ({note: null, vel: 1.0})) },
+        ];
+        this._orbitScheduleIds = [];
+        this._orbitStepIdx = [0, 0, 0, 0];
+        this.orbitDestinations = [[], [], [], []]; // per-ring destination arrays
+      }
+
+      addOrbitDestination(ringIdx, instrId) {
+        if (!this.orbitDestinations[ringIdx]) this.orbitDestinations[ringIdx] = [];
+        if (!this.orbitDestinations[ringIdx].includes(instrId)) this.orbitDestinations[ringIdx].push(instrId);
+      }
+      removeOrbitDestination(ringIdx, instrId) {
+        if (!this.orbitDestinations[ringIdx]) return;
+        this.orbitDestinations[ringIdx] = this.orbitDestinations[ringIdx].filter(d => d !== instrId);
       }
 
       schedule() {
         this.unschedule();
         if (!audioReady) return;
+        if (this.seqMode === 'orbit') { this._scheduleOrbit(); return; }
         if (this.mode === 'step') this._scheduleStep();
         else this._schedulePart();
       }
@@ -159,6 +181,57 @@
         this._part.start(0);
       }
 
+      _scheduleOrbit() {
+        const baseSec = this.gridSync ? Tone.Time(this.subdiv).toSeconds() : this.rate;
+        this._orbitScheduleIds = [];
+        for (let ri = 0; ri < this.orbitNumRings; ri++) {
+          const ring = this.orbitRings[ri];
+          const interval = Math.max(0.02, baseSec / ring.speedRatio);
+          let stepIdx = 0;
+          const riCopy = ri;
+          const id = Tone.Transport.scheduleRepeat((time) => {
+            const step = stepIdx % ring.numSteps;
+            stepIdx++;
+            this._orbitStepIdx[riCopy] = step;
+            riffNodes.get(this.id)?.setOrbitPlayStep?.(riCopy, step);
+            const stepData = ring.steps[step];
+            if (!stepData?.note) return;
+            riffNodes.get(this.id)?.flashOrbitPort?.(riCopy);
+            const noteDur = Math.min(interval * 0.85, interval - 0.01);
+            const vel = stepData.vel ?? 1.0;
+            const notes = [stepData.note];
+            if (this.harmony) {
+              const harmMidi = noteToSemis(stepData.note) + this.harmony;
+              const intervals = RIFF_SCALES[this.scale] || RIFF_SCALES['Chromatic'];
+              notes.push(snapToScale(midiToNoteName(harmMidi), this.scaleRoot, intervals));
+            }
+            const tNotes = globalTranspose ? notes.map(n => midiToNoteName(noteToSemis(n) + globalTranspose)) : notes;
+            const kbdProxy = riffKbdProxies.get(this.id);
+            for (const n of tNotes) {
+              kbdProxy?._noteHighlight?.(n, true);
+              setTimeout(() => kbdProxy?._noteHighlight?.(n, false), (noteDur + 0.05) * 1000);
+            }
+            const ringDests = this.orbitDestinations[riCopy] || [];
+            for (const instrId of ringDests) {
+              const instr = getInstrument(instrId);
+              if (!instr || instr.muted) continue;
+              for (const n of tNotes) {
+                if (instr instanceof SynthInstrument) instr.triggerAtTime(n, noteDur, time, vel);
+                else if (instr instanceof Sample) instr.triggerAtTime(time, 0.8, vel, noteToSemis(n) - noteToSemis('C4'));
+              }
+            }
+            if (this._midiCapture) {
+              for (const n of tNotes) {
+                const midi = noteToSemis(n);
+                this._midiCapture.noteOn(time, midi, Math.round(vel * 100));
+                this._midiCapture.noteOff(time + noteDur, midi);
+              }
+            }
+          }, interval, 0);
+          this._orbitScheduleIds.push(id);
+        }
+      }
+
       unschedule() {
         if (this._scheduleId !== null) {
           Tone.Transport.clear(this._scheduleId);
@@ -169,6 +242,9 @@
           this._part.dispose();
           this._part = null;
         }
+        for (const id of this._orbitScheduleIds) Tone.Transport.clear(id);
+        this._orbitScheduleIds = [];
+        this._orbitStepIdx = [0, 0, 0, 0];
         this._seqPhaseTransport = null;
         // Release all voices on connected synths so no voice gets stuck between reschedules
         for (const instrId of this.destinations) {
