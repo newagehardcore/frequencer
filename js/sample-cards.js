@@ -38,10 +38,7 @@
       const tile = document.getElementById('t' + id);
       if (tile) {
         tile.classList.remove('active', 'expanded');
-        for (const cls of ['.tile-in-port', '.tile-out-port']) {
-          const p = tile.querySelector(cls);
-          if (p) { p.style.top = ''; p.style.left = ''; }
-        }
+        syncParamPorts(tile, null);
       }
       updateSampleList();
     }
@@ -1241,11 +1238,8 @@
       if (tile) tile.classList.add('active', 'expanded');
       cv.appendChild(cardEl);
       if (tile) {
-        const midY = (cardEl.offsetHeight / 2) + 'px';
-        const inP  = tile.querySelector('.tile-in-port');
-        const outP = tile.querySelector('.tile-out-port');
-        if (inP)  inP.style.top  = midY;
-        if (outP) { outP.style.top = midY; outP.style.left = (cardEl.offsetWidth - 7) + 'px'; }
+        _syncTilePorts(tile, cardEl);
+        requestAnimationFrame(() => { syncParamPorts(tile, cardEl); updateLfoWires(); });
       }
       initVpSliders(cardEl);
       requestAnimationFrame(() => cardEl.classList.add('open'));
@@ -1277,6 +1271,7 @@
           }
           s.x = nx + TW / 2;
           s.y = ny + TH / 2;
+          updateLfoWires();
         };
         const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
         document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
@@ -1528,6 +1523,10 @@
           e.stopPropagation();
           hdr.classList.toggle('open');
           hdr.nextElementSibling.classList.toggle('open');
+          requestAnimationFrame(() => {
+            syncParamPorts(document.getElementById('t' + s.id), cardEl);
+            updateLfoWires();
+          });
         });
       });
 

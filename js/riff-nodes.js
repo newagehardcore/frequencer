@@ -1266,7 +1266,7 @@
       const sy = portRect.top + portRect.height / 2;
 
       document.querySelectorAll('.tile').forEach(t => { t.style.outline = '2px dashed rgba(255,255,255,0.3)'; });
-      document.querySelectorAll('.sample-card, .synth-card').forEach(c => { c.style.outline = '2px dashed rgba(255,255,255,0.3)'; });
+      document.querySelectorAll('.sample-card .card-wave-wrap, .synth-card .vp-scope-wrap').forEach(el => el.classList.add('riff-drag-target'));
 
       const mm = ev => { tempLine.setAttribute('d', `M${sx},${sy} L${ev.clientX},${ev.clientY}`); };
       const mu = ev => {
@@ -1274,7 +1274,7 @@
         document.removeEventListener('mouseup', mu);
         tempLine.remove();
         document.querySelectorAll('.tile').forEach(t => { t.style.outline = ''; });
-        document.querySelectorAll('.sample-card, .synth-card').forEach(c => { c.style.outline = ''; });
+        document.querySelectorAll('.riff-drag-target').forEach(el => el.classList.remove('riff-drag-target'));
 
         const target = document.elementFromPoint(ev.clientX, ev.clientY);
         if (!target) return;

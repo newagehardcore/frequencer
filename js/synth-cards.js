@@ -15,10 +15,7 @@
       const tile = document.getElementById('t' + id);
       if (tile) {
         tile.classList.remove('active', 'expanded');
-        for (const cls of ['.tile-in-port', '.tile-out-port']) {
-          const p = tile.querySelector(cls);
-          if (p) { p.style.top = ''; p.style.left = ''; }
-        }
+        syncParamPorts(tile, null);
       }
       const synth = synths.get(id) || drums.get(id);
       if (synth) synth._refreshSf2List = null;
@@ -984,7 +981,10 @@
         if (!hdr || !el.contains(hdr)) return;
         hdr.classList.toggle('open');
         hdr.nextElementSibling?.classList.toggle('open');
-        requestAnimationFrame(updateLfoWires);
+        requestAnimationFrame(() => {
+          syncParamPorts(document.getElementById('t' + synth.id), el);
+          updateLfoWires();
+        });
       });
 
       q('.synth-vol').addEventListener('input', () => { synth._currentDb  = parseFloat(q('.synth-vol').value); synth._applyVol(); });
@@ -1016,6 +1016,7 @@
       cv.appendChild(el);
       initVpSliders(el);
       _syncTilePorts(tile, el);
+      requestAnimationFrame(() => { syncParamPorts(tile, el); updateLfoWires(); });
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(synth.id, { el });
       if (tile) tile.classList.add('active', 'expanded');
@@ -1593,7 +1594,10 @@
         if (!hdr || !el.contains(hdr)) return;
         hdr.classList.toggle('open');
         hdr.nextElementSibling?.classList.toggle('open');
-        requestAnimationFrame(updateLfoWires);
+        requestAnimationFrame(() => {
+          syncParamPorts(document.getElementById('t' + drum.id), el);
+          updateLfoWires();
+        });
       });
 
       // Step button state helper
@@ -1814,6 +1818,7 @@
       cv.appendChild(el);
       initVpSliders(el);
       _syncTilePorts(tile, el);
+      requestAnimationFrame(() => { syncParamPorts(tile, el); updateLfoWires(); });
       requestAnimationFrame(() => el.classList.add('open'));
       openCards.set(drum.id, { el });
       if (tile) tile.classList.add('active', 'expanded');

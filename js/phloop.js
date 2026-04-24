@@ -159,8 +159,8 @@
       }
 
       // LFO modulation tick
-      lfoModulationTick();
-      updateLfoWires();
+      try { lfoModulationTick(); } catch(e) { console.warn('lfoModulationTick error:', e); }
+      try { updateLfoWires(); } catch(e) { console.warn('updateLfoWires error:', e); }
 
       requestAnimationFrame(phLoop);
     }

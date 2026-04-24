@@ -224,7 +224,8 @@ Add LFOs to the canvas via `+ LFO`. Modulate any sample parameter (Pitch, Stretc
 
 - **Presets** — Sine, Square, Triangle, Random, and Blank (flat line).
 - **Custom Shapes** — Click to add breakpoints, Shift + Click to remove. Drag to reshape.
-- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Wire endpoints always track to the tile's input port regardless of whether the edit card is open or closed. Modulatable sample parameters include: Pitch, Fine, Tape, Volume, Pan, Loop Start/End, File Position, PaulStretch, Attack, Release, Crossfade, Grain controls, and all FX parameters.
+- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Modulatable sample parameters include: Pitch, Fine, Tape, Volume, Pan, Loop Start/End, File Position, PaulStretch, Attack, Release, Crossfade, Grain controls, and all FX parameters.
+- **Param-aligned ports** — Each patched parameter gets its own left/right port pair on the tile, vertically aligned with the control row it targets in the open card. When an accordion section is collapsed, all ports for controls inside it merge at the accordion header row and re-split when the section is reopened. When a card is closed, a single center port appears on the tile for as long as any patch is active.
 - **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for filter sweeps.
 - **Range Control** — Set Min/Max boundaries per modulation target.
 - **Sync** — Free-running (seconds) or locked to the project grid (bars/subdivisions).
@@ -361,7 +362,7 @@ Select a root note and scale (55+ options, shared with the Riff module). All cho
 ### Grid & Subdivisions
 
 - **Grid** — lock to BPM at the selected subdivision (`1 bar · ½ · ¼ · ¼. · ⅛ · ⅛. · 1/16`), or **free** mode with a rate slider.
-- **Wires** — drag from the wire port onto a synth or sampler tile to connect. A chord sequencer can drive multiple instruments simultaneously.
+- **Wires** — drag from the wire port onto a synth or sampler tile to connect. A chord sequencer can drive multiple instruments simultaneously. When dragging, the waveform and oscilloscope areas on open cards highlight as drop targets; once connected, a port pair appears at the center of that area.
 - **Organization** — Minimize (compact tile view), Duplicate, or Delete.
 
 ---
@@ -461,6 +462,8 @@ A 2-octave mouse-playable keyboard with octave shift buttons. QWERTY mapping (wh
 In **GRID mode**, drag from the single wire port onto a synth or sampler tile to connect. A riff can drive multiple instruments simultaneously.
 
 In **ORBIT mode**, each ring has its own wire port pair. Drag from any ring's port to route that ring to a separate instrument.
+
+When dragging a Riff wire, the **waveform** area on open sampler cards and the **oscilloscope** on open synth cards highlight as drop targets. Once connected, a port pair appears at the center of the waveform or oscilloscope, showing exactly where the trigger wire lands.
 
 ---
 

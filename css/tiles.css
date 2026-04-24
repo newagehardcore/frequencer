@@ -23,10 +23,19 @@
       cursor: crosshair;
       z-index: 20;
       transition: border-color 0.15s, background 0.15s;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .tile-in-port  { left: -7px; }
     .tile-out-port { left: calc(100% - 7px); }
+
+    /* Show generic center port only when tile has active patches and card is closed */
+    .tile[data-patched]:not(.expanded) .tile-in-port:not([data-param]),
+    .tile[data-patched]:not(.expanded) .tile-out-port:not([data-param]) {
+      visibility: visible;
+      pointer-events: auto;
+    }
 
     .tile-in-port:hover,
     .tile-out-port:hover {
@@ -63,8 +72,10 @@
       pointer-events: none;
     }
 
-    .tile.expanded .tile-in-port,
-    .tile.expanded .tile-out-port {
+    .tile.expanded .tile-in-port[data-param],
+    .tile.expanded .tile-out-port[data-param],
+    .tile.expanded .tile-in-port[data-trigger],
+    .tile.expanded .tile-out-port[data-trigger] {
       visibility: visible;
       pointer-events: auto;
     }

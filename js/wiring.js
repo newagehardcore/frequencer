@@ -16,9 +16,7 @@ function startWireDrag(lfo, startEvent, portEl) {
       document.querySelectorAll('.synth-card .dm-step').forEach(btn => btn.classList.add('dm-step-drag-target'));
 
       const mm = ev => {
-        const ex = ev.clientX, ey = ev.clientY;
-        const cx1 = sx, cy1 = sy + 30, cx2 = ex, cy2 = ey - 30;
-        tempLine.setAttribute('d', `M${sx},${sy} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`);
+        tempLine.setAttribute('d', `M${sx},${sy} L${ev.clientX},${ev.clientY}`);
       };
 
       const mu = ev => {
@@ -50,6 +48,8 @@ function startWireDrag(lfo, startEvent, portEl) {
               lfo.addDestination(instrId, paramClass, pInfo.min, pInfo.max, null);
               applyParamOverride(instrId, paramClass, lfo, null);
               lfoNodes.get(lfo.id)?.updateDestList();
+              const _ci0 = openCards.get(instrId);
+              if (_ci0) syncParamPorts(tileEl, _ci0.el);
               updateLfoWires();
             }
           }
@@ -127,6 +127,8 @@ function startWireDrag(lfo, startEvent, portEl) {
         lfo.addDestination(sampleId, paramClass, pInfo.min, pInfo.max, fxUid);
         applyParamOverride(sampleId, paramClass, lfo, fxUid);
         lfoNodes.get(lfo.id)?.updateDestList();
+        const _ci1 = openCards.get(sampleId);
+        if (_ci1) syncParamPorts(document.getElementById('t' + sampleId), _ci1.el);
         updateLfoWires();
       };
 
@@ -152,9 +154,17 @@ function startWireDrag(lfo, startEvent, portEl) {
     }
 
     // Compute tile port center in viewport coords.
-    // Reads the actual port element so position updates (card open/close) are reflected.
-    function _tilePortVP(tileEl, side = 'left') {
-      const port = tileEl.querySelector(side === 'right' ? '.tile-out-port' : '.tile-in-port');
+    // preferTrigger=true uses [data-trigger] port (for riff/chords wires).
+    // paramClass uses [data-param] port (for LFO wires).
+    function _tilePortVP(tileEl, side = 'left', paramClass = null, preferTrigger = false) {
+      const cls = side === 'right' ? '.tile-out-port' : '.tile-in-port';
+      const port = preferTrigger
+        ? (tileEl.querySelector(`${cls}[data-trigger]`) ||
+           tileEl.querySelector(`${cls}:not([data-param])`) ||
+           tileEl.querySelector(cls))
+        : ((paramClass && tileEl.querySelector(`${cls}[data-param="${paramClass}"]`)) ||
+           tileEl.querySelector(`${cls}:not([data-param])`) ||
+           tileEl.querySelector(cls));
       if (port) {
         const r = port.getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -180,12 +190,15 @@ function startWireDrag(lfo, startEvent, portEl) {
       const svg = document.getElementById('lfo-wires');
       svg.querySelectorAll('.lfo-wire-line').forEach(w => w.remove());
 
+      const patchedIds = new Set();
+
       // ── LFO → sample/synth wires ──
       for (const [, lfo] of lfos) {
         const nodeInfo = lfoNodes.get(lfo.id);
         if (!nodeInfo) continue;
 
         for (const d of lfo.destinations) {
+          patchedIds.add(d.sampleId);
           const tileEl = document.getElementById('t' + d.sampleId);
           if (!tileEl) continue;
           const { srcSide, tileSide } = _portSides(nodeInfo.el, LFO_W, tileEl);
@@ -193,7 +206,7 @@ function startWireDrag(lfo, startEvent, portEl) {
           const port = nodeInfo.el.querySelector(portSel) || nodeInfo.el.querySelector('.lfo-wire-port');
           const portR = port.getBoundingClientRect();
           const sx = portR.left + portR.width / 2, sy = portR.top + portR.height / 2;
-          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
+          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide, d.param);
           _wire(svg, 'lfo-wire-line', lfo.color, sx, sy, ex, ey);
         }
       }
@@ -224,7 +237,7 @@ function startWireDrag(lfo, startEvent, portEl) {
               if (!riffPort) continue;
               const riffPR = riffPort.getBoundingClientRect();
               const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
-              const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
+              const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide, null, true);
               _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
             }
           }
@@ -237,7 +250,7 @@ function startWireDrag(lfo, startEvent, portEl) {
             if (!riffPort) continue;
             const riffPR = riffPort.getBoundingClientRect();
             const sx = riffPR.left + riffPR.width / 2, sy = riffPR.top + riffPR.height / 2;
-            const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
+            const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide, null, true);
             _wire(svg, 'riff-wire-line', riff.color, sx, sy, ex, ey);
           }
         }
@@ -249,6 +262,7 @@ function startWireDrag(lfo, startEvent, portEl) {
         const nodeInfo = chordsNodes.get(ch.id);
         if (!nodeInfo || !ch.destinations.length) continue;
         for (const instrId of ch.destinations) {
+          patchedIds.add(instrId);
           const tileEl = document.getElementById('t' + instrId);
           if (!tileEl) continue;
           const { srcSide, tileSide } = _portSides(nodeInfo.el, CHORDS_NODE_W, tileEl);
@@ -256,10 +270,166 @@ function startWireDrag(lfo, startEvent, portEl) {
           const chordsPort = nodeInfo.el.querySelector(portSel) || nodeInfo.el.querySelector('.chords-wire-port');
           const chPR = chordsPort.getBoundingClientRect();
           const csx = chPR.left + chPR.width / 2, csy = chPR.top + chPR.height / 2;
-          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide);
+          const { x: ex, y: ey } = _tilePortVP(tileEl, tileSide, null, true);
           _wire(svg, 'chords-wire-line', ch.color, csx, csy, ex, ey);
         }
       }
+
+      // Collect riff/chords destinations (separate set for trigger port sync)
+      const riffChordsPatched = new Set();
+      for (const [, riff] of riffs) {
+        for (const id of riff.destinations) { patchedIds.add(id); riffChordsPatched.add(id); }
+        for (const arr of riff.orbitDestinations) for (const id of arr) { patchedIds.add(id); riffChordsPatched.add(id); }
+      }
+      for (const [, ch] of chords) {
+        for (const id of ch.destinations) { patchedIds.add(id); riffChordsPatched.add(id); }
+      }
+
+      // Update data-patched + sync trigger ports on all tiles
+      document.querySelectorAll('.tile').forEach(tileEl => {
+        const id = parseInt(tileEl.id.slice(1));
+        if (isNaN(id)) return;
+
+        if (patchedIds.has(id)) tileEl.dataset.patched = '1';
+        else delete tileEl.dataset.patched;
+
+        // Trigger ports: only for riff/chords-connected samples+synths with open card
+        const cardEl = openCards.get(id)?.el ?? null;
+        const needsTrigger = riffChordsPatched.has(id) && cardEl !== null && !drums.has(id);
+        const prevCardEl = tileEl._triggerCardEl;
+
+        if (needsTrigger !== !!tileEl._hasTrigger || (needsTrigger && prevCardEl !== cardEl)) {
+          tileEl.querySelectorAll('[data-trigger]').forEach(p => p.remove());
+          tileEl._hasTrigger = false;
+          if (needsTrigger) _buildTriggerPorts(tileEl, cardEl, id);
+        } else if (needsTrigger) {
+          // Recheck Y every frame — handles card-open animation and position drift
+          const wavEl = samples.has(id)
+            ? cardEl.querySelector('.card-wave-wrap')
+            : cardEl.querySelector('.vp-scope-wrap');
+          if (wavEl) {
+            const r = wavEl.getBoundingClientRect();
+            if (r.height > 0) {
+              const tileR = tileEl.getBoundingClientRect();
+              const freshY = r.top + r.height / 2 - tileR.top;
+              if (Math.abs(freshY - (tileEl._triggerPortY ?? 0)) > 2) {
+                tileEl.querySelectorAll('[data-trigger]').forEach(p => p.remove());
+                tileEl._hasTrigger = false;
+                _buildTriggerPorts(tileEl, cardEl, id);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Creates a left+right trigger port pair on a tile at the waveform/scope Y.
+    function _buildTriggerPorts(tileEl, cardEl, instrId) {
+      const isSampler = samples.has(instrId);
+      const wavEl = isSampler
+        ? cardEl.querySelector('.card-wave-wrap')
+        : cardEl.querySelector('.vp-scope-wrap');
+
+      const tileRect = tileEl.getBoundingClientRect();
+      let portY = (tileEl.offsetHeight || TH) / 2;
+      if (wavEl) {
+        const r = wavEl.getBoundingClientRect();
+        if (r.height > 0) portY = r.top + r.height / 2 - tileRect.top;
+      }
+
+      const cardW = cardEl.offsetWidth;
+      const inPort = document.createElement('div');
+      inPort.className = 'tile-in-port';
+      inPort.dataset.trigger = '1';
+      inPort.style.top = portY + 'px';
+      tileEl.appendChild(inPort);
+
+      const outPort = document.createElement('div');
+      outPort.className = 'tile-out-port';
+      outPort.dataset.trigger = '1';
+      outPort.style.top = portY + 'px';
+      outPort.style.left = (cardW - 7) + 'px';
+      tileEl.appendChild(outPort);
+
+      tileEl._hasTrigger = true;
+      tileEl._triggerCardEl = cardEl;
+      tileEl._triggerPortY = portY;
+    }
+
+    // ── Param-aligned port sync ──
+    // Creates one port pair per active LFO param on the tile, positioned at the control's Y.
+    // When a param's accordion is closed its port collapses to the header row.
+    // Call whenever patches change, cards open/close, or accordions toggle.
+    function syncParamPorts(tileEl, cardEl) {
+      if (!tileEl) return;
+      tileEl.querySelectorAll('[data-param]').forEach(p => p.remove());
+      if (!cardEl) {
+        const inP  = tileEl.querySelector('.tile-in-port');
+        const outP = tileEl.querySelector('.tile-out-port');
+        if (inP)  { inP.style.top = ''; inP.style.left = ''; }
+        if (outP) { outP.style.top = ''; outP.style.left = ''; }
+        return;
+      }
+      const instrId = parseInt(tileEl.id.slice(1));
+      const seen = new Set();
+      const active = [];
+      for (const [, lfo] of lfos) {
+        for (const d of lfo.destinations) {
+          if (d.sampleId === instrId && !String(d.param).startsWith('dm-step:')) {
+            const key = d.param + '\x00' + (d.fxUid ?? '');
+            if (!seen.has(key)) { seen.add(key); active.push({ param: d.param, fxUid: d.fxUid ?? null }); }
+          }
+        }
+      }
+      _syncTilePorts(tileEl, cardEl);
+      if (!active.length) return;
+      const tileRect = tileEl.getBoundingClientRect();
+      const cardW = cardEl.offsetWidth;
+      for (const { param, fxUid } of active) {
+        const y = _paramPortY(cardEl, param, fxUid, tileRect);
+        const inPort = document.createElement('div');
+        inPort.className = 'tile-in-port';
+        inPort.dataset.param = param;
+        inPort.style.top = y + 'px';
+        tileEl.appendChild(inPort);
+        const outPort = document.createElement('div');
+        outPort.className = 'tile-out-port';
+        outPort.dataset.param = param;
+        outPort.style.top = y + 'px';
+        outPort.style.left = (cardW - 7) + 'px';
+        tileEl.appendChild(outPort);
+      }
+    }
+
+    // Return Y (px, relative to tile top) for a param's port.
+    // Collapses to accordion header Y when the param's accordion is closed.
+    function _paramPortY(cardEl, paramClass, fxUid, tileRect) {
+      let rowEl = null;
+      // EQ params: target the eq canvas element
+      if (String(paramClass).startsWith('eq-')) {
+        const panel = fxUid != null ? cardEl.querySelector(`.fx-panel[data-fx-uid="${fxUid}"]`) : null;
+        rowEl = (panel || cardEl).querySelector('.card-eq-canvas');
+      }
+      if (!rowEl) {
+        const ctx = fxUid != null
+          ? (cardEl.querySelector(`.fx-panel[data-fx-uid="${fxUid}"]`) || cardEl)
+          : cardEl;
+        const input = ctx.querySelector(`input.${paramClass}`);
+        if (input) rowEl = input.closest('.cslider, .lfo-slot, .card-pan-row, .vp-vol-wrap') || input;
+      }
+      if (!rowEl) return tileRect.height / 2;
+      // If inside a closed accordion, collapse to header
+      const accBody = rowEl.closest('.card-acc-body');
+      if (accBody && !accBody.classList.contains('open')) {
+        const hdr = accBody.previousElementSibling;
+        if (hdr?.classList.contains('card-acc-hdr')) {
+          const r = hdr.getBoundingClientRect();
+          if (r.height > 0) return r.top + r.height / 2 - tileRect.top;
+        }
+      }
+      const r = rowEl.getBoundingClientRect();
+      if (r.height > 0) return r.top + r.height / 2 - tileRect.top;
+      return tileRect.height / 2;
     }
 
     // ── Apply/remove override styling on a slider ──
