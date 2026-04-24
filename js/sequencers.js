@@ -847,14 +847,23 @@
       'fx-tr-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
       'fx-di-drive': { prop: 'distortion', min: 0, max: 1, label: 'Drive', isFx: true },
       'fx-di-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
-      'fx-ch-rate': { prop: 'frequency', min: 0.1, max: 10, label: 'Rate', isFx: true },
-      'fx-ch-dly': { prop: 'delayTime', min: 2, max: 20, label: 'Delay', isFx: true },
-      'fx-ch-depth': { prop: 'depth', min: 0, max: 1, label: 'Depth', isFx: true },
-      'fx-ch-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
-      'fx-ph-rate': { prop: 'frequency', min: 0.1, max: 20, label: 'Rate', isFx: true },
-      'fx-ph-oct': { prop: 'octaves', min: 0, max: 8, label: 'Octaves', isFx: true },
-      'fx-ph-base': { prop: 'baseFrequency', min: 100, max: 4000, label: 'Base Hz', isFx: true },
-      'fx-ph-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
+      // MOD - phaser mode
+      'fx-mod-ph-rate': { prop: 'phFrequency', min: 0.1, max: 20, label: 'PH Rate', isFx: true },
+      'fx-mod-ph-oct':  { prop: 'phOctaves',   min: 0, max: 8, label: 'Octaves', isFx: true },
+      'fx-mod-ph-base': { prop: 'phBase',       min: 100, max: 4000, label: 'Base Hz', isFx: true },
+      // MOD - chorus mode
+      'fx-mod-ch-rate':  { prop: 'chFrequency', min: 0.1, max: 10, label: 'CH Rate', isFx: true },
+      'fx-mod-ch-dly':   { prop: 'chDelay',     min: 2, max: 20, label: 'Delay', isFx: true },
+      'fx-mod-ch-depth': { prop: 'chDepth',     min: 0, max: 1, label: 'Depth', isFx: true },
+      // MOD - flanger mode
+      'fx-mod-fl-rate':  { prop: 'flFrequency', min: 0.1, max: 10, label: 'FL Rate', isFx: true },
+      'fx-mod-fl-depth': { prop: 'flDepth',     min: 0, max: 0.015, label: 'FL Depth', isFx: true },
+      'fx-mod-fl-fb':    { prop: 'flFeedback',  min: 0, max: 0.9, label: 'Feedback', isFx: true },
+      // MOD - shared wet
+      'fx-mod-wet': { prop: 'wet', min: 0, max: 1, label: 'MOD Wet', isFx: true },
+      // FLTR
+      'fx-flt-cutoff': { prop: 'frequency', min: 20, max: 20000, label: 'Cutoff', isFx: true },
+      'fx-flt-reso':   { prop: 'Q',         min: 0.1, max: 20, label: 'Resonance', isFx: true },
       'fx-bc-bits': { prop: 'bits', min: 1, max: 16, label: 'Bits', isFx: true },
       'fx-bc-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },
       'eq-hp-freq': { prop: 'freq', min: 20, max: 20000, label: 'HP Freq', isEq: true, bandIdx: 0 },

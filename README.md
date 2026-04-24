@@ -132,13 +132,23 @@ Parameters are grouped into collapsible accordion sections:
 | Button | Effect |
 |--------|--------|
 | EQ | 5-band parametric (HP, 3× peaking, LP) |
+| FLTR | Multi-mode filter — LP / HP / Notch / BP; Cutoff, Resonance, Drive, Wet |
 | REV | Reverb — Decay, Pre-delay, Wet |
 | DLY | Delay — Free or tempo-synced, Feedback, Wet |
 | TRM | Tremolo — Rate, Depth, Wet |
 | DST | Distortion — Drive, Wet |
-| CHR | Chorus — Rate, Delay, Depth, Wet |
-| PHS | Phaser — Rate, Octaves, Base Hz, Wet |
+| MOD | Modulation — three sub-modes selectable via PHSR / CHR / FLNG buttons (see below) |
 | BIT | Bit Crusher — Bits (1–16), Wet |
+
+**MOD sub-modes:**
+
+| Mode | Parameters |
+|------|-----------|
+| PHSR (Phaser) | Rate, Octaves, Base Hz, Wet |
+| CHR (Chorus) | Rate, Delay, Depth, Wet |
+| FLNG (Flanger) | Rate, Depth, Feedback, Wet — implemented as a short delay line modulated by an internal LFO with a feedback path |
+
+All FLTR and MOD sliders are LFO-targetable. Switching MOD sub-modes hot-swaps the underlying audio node and preserves per-mode parameter values.
 
 **Remove** — permanently deletes the sample from the session.
 
@@ -224,7 +234,7 @@ Add LFOs to the canvas via `+ LFO`. Modulate any sample parameter (Pitch, Stretc
 
 - **Presets** — Sine, Square, Triangle, Random, and Blank (flat line).
 - **Custom Shapes** — Click to add breakpoints, Shift + Click to remove. Drag to reshape.
-- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Modulatable sample parameters include: Pitch, Fine, Tape, Volume, Pan, Loop Start/End, File Position, PaulStretch, Attack, Release, Crossfade, Grain controls, and all FX parameters.
+- **Modulation Wires** — Drag from the LFO port onto any parameter slider, the **EQ canvas**, or directly onto a **module tile** (connects to volume). Modulatable sample parameters include: Pitch, Fine, Tape, Volume, Pan, Loop Start/End, File Position, PaulStretch, Attack, Release, Crossfade, Grain controls, and all FX parameters — including FLTR Cutoff and Resonance, and all MOD sub-mode sliders (Phaser Rate/Octaves/Base Hz, Chorus Rate/Delay/Depth, Flanger Rate/Depth/Feedback) and the shared Wet.
 - **Param-aligned ports** — Each patched parameter gets its own left/right port pair on the tile, vertically aligned with the control row it targets in the open card. When an accordion section is collapsed, all ports for controls inside it merge at the accordion header row and re-split when the section is reopened. When a card is closed, a single center port appears on the tile for as long as any patch is active.
 - **EQ Sweeping** — Dropping a wire on the EQ canvas targets the nearest frequency band for filter sweeps.
 - **Range Control** — Set Min/Max boundaries per modulation target.
@@ -318,7 +328,7 @@ Patterns are preserved across kit switches and restored when switching back.
 
 ### Mixer & Effects
 
-Volume, Pan, and the full shared FX rack (EQ, Reverb, Delay, Tremolo, Distortion, Chorus, Phaser, Bit Crusher).
+Volume, Pan, and the full shared FX rack (EQ, Filter, Reverb, Delay, Tremolo, Distortion, MOD, Bit Crusher).
 
 ---
 

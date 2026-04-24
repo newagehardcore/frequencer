@@ -218,7 +218,7 @@
       a.click(); URL.revokeObjectURL(url);
     }
 
-    function applyFxNodeParams(inst) {
+    function applyFxNodeParams(inst, instrument) {
       const { type, node, params: p } = inst;
       switch (type) {
         case 'reverb': {
@@ -252,9 +252,44 @@
         }
         case 'tremolo': node.frequency.value = p.frequency; node.depth.value = p.depth; node.wet.value = p.wet; break;
         case 'dist': node.distortion = p.distortion; node.wet.value = p.wet; break;
-        case 'chorus': node.frequency.value = p.frequency; node.delayTime = p.delayTime; node.depth = p.depth; node.wet.value = p.wet; break;
-        case 'phaser': node.frequency.value = p.frequency; node.octaves = p.octaves; node.baseFrequency = p.baseFrequency; node.wet.value = p.wet; break;
         case 'bitcrush': node.bits = p.bits; node.wet.value = p.wet; break;
+        case 'mod': {
+          const targetMode = p.mode || 'chorus';
+          const currentMode = inst.modData?.type || 'chorus';
+          if (currentMode !== targetMode) {
+            if (instrument) _switchModMode(inst, targetMode, instrument);
+          } else if (targetMode === 'chorus') {
+            node.frequency.value = p.chFrequency ?? 1.5;
+            node.delayTime = p.chDelay ?? 3.5;
+            node.depth = p.chDepth ?? 0.7;
+            node.wet.value = p.wet ?? 0.5;
+          } else if (targetMode === 'phaser') {
+            node.frequency.value = p.phFrequency ?? 0.5;
+            node.octaves = p.phOctaves ?? 3;
+            node.baseFrequency = p.phBase ?? 350;
+            node.wet.value = p.wet ?? 0.5;
+          } else if (targetMode === 'flanger' && inst.modData?.flangerData) {
+            const fd = inst.modData.flangerData;
+            fd.lfo.frequency.value = p.flFrequency ?? 0.5;
+            fd.lfo.max.value = p.flDepth ?? 0.004;
+            fd.feedbackGain.gain.value = p.flFeedback ?? 0.5;
+            fd.wetGain.gain.value = p.wet ?? 0.5;
+            fd.dryGain.gain.value = 1 - (p.wet ?? 0.5);
+          }
+          break;
+        }
+        case 'fltr': {
+          if (inst.fltrData) {
+            const fd = inst.fltrData;
+            fd.filterNode.type = p.mode || 'lowpass';
+            fd.filterNode.frequency.value = p.cutoff ?? 2000;
+            fd.filterNode.Q.value = p.resonance ?? 1;
+            fd.driveNode.distortion = p.drive ?? 0;
+            fd.wetGain.gain.value = p.wet ?? 1;
+            fd.dryGain.gain.value = 1 - (p.wet ?? 1);
+          }
+          break;
+        }
       }
     }
 
@@ -363,7 +398,7 @@
                 });
               } else if (fxd.params) {
                 Object.assign(inst.params, fxd.params);
-                applyFxNodeParams(inst);
+                applyFxNodeParams(inst, s);
               }
               if (fxd.postFader) {
                 inst.postFader = true;
@@ -439,7 +474,7 @@
                   fi.bands.forEach((b, i) => { inst.eqData.bands[i] = { ...b }; inst.eqData.applyBand(i); });
                 } else if (fi.params) {
                   Object.assign(inst.params, fi.params);
-                  applyFxNodeParams(inst);
+                  applyFxNodeParams(inst, drum);
                 }
                 if (fi.postFader) { inst.postFader = true; drum.rebuildFxChain(); }
               }
@@ -546,7 +581,7 @@
                   fi.bands.forEach((b, i) => { inst.eqData.bands[i] = { ...b }; inst.eqData.applyBand(i); });
                 } else if (fi.params) {
                   Object.assign(inst.params, fi.params);
-                  applyFxNodeParams(inst);
+                  applyFxNodeParams(inst, synth);
                 }
                 if (fi.postFader) { inst.postFader = true; synth.rebuildFxChain(); }
               }

@@ -642,6 +642,12 @@ function startWireDrag(lfo, startEvent, portEl) {
                   targetNode[pInfo.prop] = modVal;
                 }
               }
+              const cardInfo = openCards.get(d.sampleId);
+              if (cardInfo) {
+                const slider = cardInfo.el.querySelector('.' + d.param);
+                if (slider) { slider.value = modVal; slider.closest('.cslider')?._syncPos?.(); }
+                if (inst._fltrDraw) inst._fltrDraw();
+              }
             }
           } else if (pInfo.isEq) {
             const band = s.eqBands[pInfo.bandIdx];

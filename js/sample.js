@@ -70,6 +70,106 @@ function _switchDelayMode(inst, newMode, instrument) {
       instrument.rebuildFxChain();
     }
 
+    function _createModNodes(params) {
+      const mode = params.mode || 'chorus';
+      const wet = params.wet ?? 0.5;
+      if (mode === 'phaser') {
+        const node = new Tone.Phaser({ frequency: params.phFrequency ?? 0.5, octaves: params.phOctaves ?? 3, baseFrequency: params.phBase ?? 350, wet });
+        const proxy = {
+          phFrequency: node.frequency,
+          phOctaves: { get value() { return node.octaves; }, set value(v) { node.octaves = v; } },
+          phBase: { get value() { return node.baseFrequency; }, set value(v) { node.baseFrequency = v; } },
+          wet: node.wet,
+        };
+        return { node, fxLfoNode: proxy, modData: { type: 'phaser' } };
+      } else if (mode === 'flanger') {
+        const dep = params.flDepth ?? 0.004;
+        const inputGain = new Tone.Gain(1);
+        const delay = new Tone.Delay({ delayTime: 0, maxDelay: 0.02 });
+        const lfo = new Tone.LFO({ frequency: params.flFrequency ?? 0.5, min: 0, max: dep }).start();
+        const feedbackGain = new Tone.Gain(params.flFeedback ?? 0.5);
+        const wetGain = new Tone.Gain(wet);
+        const dryGain = new Tone.Gain(1 - wet);
+        const outputGain = new Tone.Gain(1);
+        lfo.connect(delay.delayTime);
+        inputGain.connect(delay);
+        inputGain.connect(dryGain);
+        delay.connect(feedbackGain);
+        feedbackGain.connect(delay);
+        delay.connect(wetGain);
+        wetGain.connect(outputGain);
+        dryGain.connect(outputGain);
+        const flangerData = { inputGain, delay, lfo, feedbackGain, wetGain, dryGain, outputGain };
+        const proxy = {
+          flFrequency: { get value() { return lfo.frequency.value; }, set value(v) { lfo.frequency.value = v; } },
+          flDepth: { get value() { return lfo.max.value; }, set value(v) { lfo.max.value = v; } },
+          flFeedback: { get value() { return feedbackGain.gain.value; }, set value(v) { feedbackGain.gain.value = v; } },
+          wet: { get value() { return wetGain.gain.value; }, set value(v) { wetGain.gain.value = v; dryGain.gain.value = 1 - v; } },
+        };
+        return { node: inputGain, outputNode: outputGain, fxLfoNode: proxy, modData: { type: 'flanger', flangerData } };
+      } else {
+        // chorus (default)
+        const node = new Tone.Chorus({ frequency: params.chFrequency ?? 1.5, delayTime: params.chDelay ?? 3.5, depth: params.chDepth ?? 0.7, wet }).start();
+        const proxy = {
+          chFrequency: node.frequency,
+          chDelay: { get value() { return node.delayTime; }, set value(v) { node.delayTime = v; } },
+          chDepth: { get value() { return node.depth; }, set value(v) { node.depth = v; } },
+          wet: node.wet,
+        };
+        return { node, fxLfoNode: proxy, modData: { type: 'chorus' } };
+      }
+    }
+
+    function _disposeFlangerData(fd) {
+      if (!fd) return;
+      try { fd.lfo?.stop(); fd.lfo?.dispose(); } catch (e) {}
+      for (const n of [fd.inputGain, fd.delay, fd.feedbackGain, fd.wetGain, fd.dryGain, fd.outputGain]) {
+        if (n) { try { n.disconnect(); } catch (e) {} try { n.dispose(); } catch (e) {} }
+      }
+    }
+
+    function _switchModMode(inst, newMode, instrument) {
+      if (inst.modData?.type === 'flanger') {
+        _disposeFlangerData(inst.modData.flangerData);
+      } else {
+        try { inst.node.disconnect(); } catch (e) {}
+        try { inst.node.dispose(); } catch (e) {}
+      }
+      try { if (inst.outputNode && inst.outputNode !== inst.node) { inst.outputNode.disconnect(); inst.outputNode.dispose(); } } catch (e) {}
+      inst.params.mode = newMode;
+      const created = _createModNodes(inst.params);
+      inst.node = created.node;
+      inst.outputNode = created.outputNode;
+      inst.fxLfoNode = created.fxLfoNode;
+      inst.modData = created.modData;
+      instrument.rebuildFxChain();
+    }
+
+    function _createFltrNodes(params) {
+      const wet = params.wet ?? 1;
+      const inputGain = new Tone.Gain(1);
+      const driveNode = new Tone.Distortion({ distortion: params.drive ?? 0, wet: 1 });
+      const filterNode = new Tone.Filter({ type: params.mode || 'lowpass', frequency: params.cutoff ?? 2000, Q: params.resonance ?? 1 });
+      const wetGain = new Tone.Gain(wet);
+      const dryGain = new Tone.Gain(1 - wet);
+      const outputGain = new Tone.Gain(1);
+      inputGain.connect(driveNode);
+      driveNode.connect(filterNode);
+      filterNode.connect(wetGain);
+      inputGain.connect(dryGain);
+      wetGain.connect(outputGain);
+      dryGain.connect(outputGain);
+      return { node: inputGain, outputNode: outputGain, fxLfoNode: filterNode, fltrData: { inputGain, driveNode, filterNode, wetGain, dryGain, outputGain } };
+    }
+
+    function _disposeFltrData(fd) {
+      if (!fd) return;
+      for (const n of [fd.inputGain, fd.driveNode, fd.filterNode, fd.wetGain, fd.dryGain, fd.outputGain]) {
+        if (n) { try { n.disconnect(); } catch (e) {} try { n.dispose(); } catch (e) {} }
+      }
+    }
+
+
     // ─────────────────────────────────────────────────────────────────────────
 
     class Sample {
@@ -171,12 +271,12 @@ function _switchDelayMode(inst, newMode, instrument) {
         // FX catalog (available types) + dynamic instance chain
         this.fxCatalog = [
           { id: 'eq', name: 'EQ' },
+          { id: 'fltr', name: 'Filter' },
           { id: 'reverb', name: 'Reverb' },
           { id: 'delay', name: 'Delay' },
           { id: 'tremolo', name: 'Tremolo' },
           { id: 'dist', name: 'Distortion' },
-          { id: 'chorus', name: 'Chorus' },
-          { id: 'phaser', name: 'Phaser' },
+          { id: 'mod', name: 'MOD' },
           { id: 'bitcrush', name: 'Bit Crush' },
         ];
         this.fxChain = []; // active instances: { uid, type, node, params }
@@ -1499,8 +1599,8 @@ function _switchDelayMode(inst, newMode, instrument) {
           delay: { mode: 'mono', delayTime: 0.25, feedback: 0.35, wet: 0.4, filterFreq: 2000, filterType: 'lowpass', syncMode: false, subdivision: '4n' },
           tremolo: { frequency: 4, depth: 0.7, wet: 1 },
           dist: { distortion: 0.4, wet: 0.8 },
-          chorus: { frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 },
-          phaser: { frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.6 },
+          mod: { mode: 'chorus', wet: 0.5, chFrequency: 1.5, chDelay: 3.5, chDepth: 0.7, phFrequency: 0.5, phOctaves: 3, phBase: 350, flFrequency: 0.5, flDepth: 0.004, flFeedback: 0.5 },
+          fltr: { mode: 'lowpass', cutoff: 2000, resonance: 1, drive: 0, wet: 1 },
           bitcrush: { bits: 8, wet: 0.8 },
         };
         return { ...(d[type] || {}) };
@@ -1511,8 +1611,6 @@ function _switchDelayMode(inst, newMode, instrument) {
           case 'delay': return new Tone.FeedbackDelay({ delayTime: params.delayTime, feedback: params.feedback, wet: params.wet });
           case 'tremolo': return new Tone.Tremolo({ frequency: params.frequency, depth: params.depth, wet: params.wet }).start();
           case 'dist': return new Tone.Distortion({ distortion: params.distortion, wet: params.wet });
-          case 'chorus': return new Tone.Chorus({ frequency: params.frequency, delayTime: params.delayTime, depth: params.depth, wet: params.wet }).start();
-          case 'phaser': return new Tone.Phaser({ frequency: params.frequency, octaves: params.octaves, baseFrequency: params.baseFrequency, wet: params.wet });
           case 'bitcrush': return new Tone.BitCrusher({ bits: params.bits, wet: params.wet });
           default: return null;
         }
@@ -1555,6 +1653,14 @@ function _switchDelayMode(inst, newMode, instrument) {
           const params = this._fxDefaultParams(type);
           const created = _createDelayNodes(params);
           inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, delayData: created.delayData, params, postFader: true };
+        } else if (type === 'mod') {
+          const params = this._fxDefaultParams(type);
+          const created = _createModNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, modData: created.modData, params, postFader: true };
+        } else if (type === 'fltr') {
+          const params = this._fxDefaultParams(type);
+          const created = _createFltrNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, fltrData: created.fltrData, params, postFader: true };
         } else {
           const params = this._fxDefaultParams(type);
           const node = this._createFxNode(type, params);
@@ -1576,6 +1682,12 @@ function _switchDelayMode(inst, newMode, instrument) {
           _disposeReverbData(inst.reverbData);
         } else if (inst.delayData) {
           _disposeDelayData(inst.delayData);
+        } else if (inst.modData) {
+          if (inst.modData.type === 'flanger') _disposeFlangerData(inst.modData.flangerData);
+          else { try { inst.node.disconnect(); } catch (e) {} try { inst.node.dispose(); } catch (e) {} }
+          try { if (inst.outputNode && inst.outputNode !== inst.node) { inst.outputNode.disconnect(); inst.outputNode.dispose(); } } catch (e) {}
+        } else if (inst.fltrData) {
+          _disposeFltrData(inst.fltrData);
         } else {
           try { inst.node.disconnect(); } catch (e) { }
           try { inst.node.dispose(); } catch (e) { }

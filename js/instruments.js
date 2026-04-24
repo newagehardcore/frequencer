@@ -25,12 +25,12 @@
 
         this.fxCatalog = [
           { id: 'eq', name: 'EQ' },
+          { id: 'fltr', name: 'Filter' },
           { id: 'reverb', name: 'Reverb' },
           { id: 'delay', name: 'Delay' },
           { id: 'tremolo', name: 'Tremolo' },
           { id: 'dist', name: 'Distortion' },
-          { id: 'chorus', name: 'Chorus' },
-          { id: 'phaser', name: 'Phaser' },
+          { id: 'mod', name: 'MOD' },
           { id: 'bitcrush', name: 'Bit Crush' },
         ];
         this.fxChain = [];
@@ -294,8 +294,8 @@
           delay:    { mode: 'mono', delayTime: 0.25, feedback: 0.35, wet: 0.4, filterFreq: 2000, filterType: 'lowpass', syncMode: false, subdivision: '4n' },
           tremolo:  { frequency: 4, depth: 0.7, wet: 1 },
           dist:     { distortion: 0.4, wet: 0.8 },
-          chorus:   { frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 },
-          phaser:   { frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.6 },
+          mod:      { mode: 'chorus', wet: 0.5, chFrequency: 1.5, chDelay: 3.5, chDepth: 0.7, phFrequency: 0.5, phOctaves: 3, phBase: 350, flFrequency: 0.5, flDepth: 0.004, flFeedback: 0.5 },
+          fltr:     { mode: 'lowpass', cutoff: 2000, resonance: 1, drive: 0, wet: 1 },
           bitcrush: { bits: 8, wet: 0.8 },
         };
         return { ...(d[type] || {}) };
@@ -306,8 +306,6 @@
           case 'delay':    return new Tone.FeedbackDelay({ delayTime: params.delayTime, feedback: params.feedback, wet: params.wet });
           case 'tremolo':  return new Tone.Tremolo({ frequency: params.frequency, depth: params.depth, wet: params.wet }).start();
           case 'dist':     return new Tone.Distortion({ distortion: params.distortion, wet: params.wet });
-          case 'chorus':   return new Tone.Chorus({ frequency: params.frequency, delayTime: params.delayTime, depth: params.depth, wet: params.wet }).start();
-          case 'phaser':   return new Tone.Phaser({ frequency: params.frequency, octaves: params.octaves, baseFrequency: params.baseFrequency, wet: params.wet });
           case 'bitcrush': return new Tone.BitCrusher({ bits: params.bits, wet: params.wet });
           default: return null;
         }
@@ -350,6 +348,14 @@
           const params = this._fxDefaultParams(type);
           const created = _createDelayNodes(params);
           inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, delayData: created.delayData, params, postFader: true };
+        } else if (type === 'mod') {
+          const params = this._fxDefaultParams(type);
+          const created = _createModNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, modData: created.modData, params, postFader: true };
+        } else if (type === 'fltr') {
+          const params = this._fxDefaultParams(type);
+          const created = _createFltrNodes(params);
+          inst = { uid: ++this._fxUidCounter, type, node: created.node, outputNode: created.outputNode, fxLfoNode: created.fxLfoNode, fltrData: created.fltrData, params, postFader: true };
         } else {
           const params = this._fxDefaultParams(type);
           const node = this._createFxNode(type, params);
@@ -371,6 +377,12 @@
           _disposeReverbData(inst.reverbData);
         } else if (inst.delayData) {
           _disposeDelayData(inst.delayData);
+        } else if (inst.modData) {
+          if (inst.modData.type === 'flanger') _disposeFlangerData(inst.modData.flangerData);
+          else { try { inst.node.disconnect(); } catch(e) {} try { inst.node.dispose(); } catch(e) {} }
+          try { if (inst.outputNode && inst.outputNode !== inst.node) { inst.outputNode.disconnect(); inst.outputNode.dispose(); } } catch(e) {}
+        } else if (inst.fltrData) {
+          _disposeFltrData(inst.fltrData);
         } else {
           try { inst.node.disconnect(); } catch(e) {}
           try { inst.node.dispose(); } catch(e) {}
@@ -383,6 +395,8 @@
         if (this._filter) { try { this._filter.dispose(); } catch(e) {} this._filter = null; }
         for (const inst of this.fxChain) {
           if (inst.eqData) { for (const f of inst.eqData.filters) { try { f.disconnect(); f.dispose(); } catch(e) {} } }
+          else if (inst.modData?.type === 'flanger') { _disposeFlangerData(inst.modData.flangerData); try { if (inst.outputNode) { inst.outputNode.disconnect(); inst.outputNode.dispose(); } } catch(e) {} }
+          else if (inst.fltrData) { _disposeFltrData(inst.fltrData); }
           else { try { inst.node.disconnect(); inst.node.dispose(); } catch(e) {} }
         }
         try { this.pan.dispose(); } catch(e) {}
