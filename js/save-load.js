@@ -282,9 +282,9 @@
           if (inst.fltrData) {
             const fd = inst.fltrData;
             fd.filterNode.type = p.mode || 'lowpass';
-            fd.filterNode.frequency.value = p.cutoff ?? 2000;
+            fd.filterNode.frequency.value = p.cutoff ?? 15000;
             fd.filterNode.Q.value = p.resonance ?? 1;
-            fd.driveNode.distortion = p.drive ?? 0;
+            if (fd.driveNode) fd.driveNode.setMap(_makeDriveMap(p.drive ?? 0));
             fd.wetGain.gain.value = p.wet ?? 1;
             fd.dryGain.gain.value = 1 - (p.wet ?? 1);
           }

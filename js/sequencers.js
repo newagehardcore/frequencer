@@ -862,7 +862,7 @@
       // MOD - shared wet
       'fx-mod-wet': { prop: 'wet', min: 0, max: 1, label: 'MOD Wet', isFx: true },
       // FLTR
-      'fx-flt-cutoff': { prop: 'frequency', min: 20, max: 20000, label: 'Cutoff', isFx: true },
+      'fx-flt-cutoff': { prop: 'frequency', min: 20, max: 15000, label: 'Cutoff', isFx: true },
       'fx-flt-reso':   { prop: 'Q',         min: 0.1, max: 20, label: 'Resonance', isFx: true },
       'fx-bc-bits': { prop: 'bits', min: 1, max: 16, label: 'Bits', isFx: true },
       'fx-bc-wet': { prop: 'wet', min: 0, max: 1, label: 'Wet', isFx: true },

@@ -145,11 +145,20 @@ function _switchDelayMode(inst, newMode, instrument) {
       instrument.rebuildFxChain();
     }
 
+    function _makeDriveMap(drive) {
+      const k = (drive ?? 0) * 20;
+      return x => {
+        if (Math.abs(x) < 1e-6) return 0;
+        if (k < 0.001) return x;
+        return (1 + k) * x / (1 + k * Math.abs(x));
+      };
+    }
+
     function _createFltrNodes(params) {
       const wet = params.wet ?? 1;
       const inputGain = new Tone.Gain(1);
-      const driveNode = new Tone.Distortion({ distortion: params.drive ?? 0, wet: 1 });
-      const filterNode = new Tone.Filter({ type: params.mode || 'lowpass', frequency: params.cutoff ?? 2000, Q: params.resonance ?? 1 });
+      const driveNode = new Tone.WaveShaper(_makeDriveMap(params.drive ?? 0), 4096);
+      const filterNode = new Tone.Filter({ type: params.mode || 'lowpass', frequency: params.cutoff ?? 18000, Q: params.resonance ?? 1 });
       const wetGain = new Tone.Gain(wet);
       const dryGain = new Tone.Gain(1 - wet);
       const outputGain = new Tone.Gain(1);
@@ -1600,7 +1609,7 @@ function _switchDelayMode(inst, newMode, instrument) {
           tremolo: { frequency: 4, depth: 0.7, wet: 1 },
           dist: { distortion: 0.4, wet: 0.8 },
           mod: { mode: 'chorus', wet: 0.5, chFrequency: 1.5, chDelay: 3.5, chDepth: 0.7, phFrequency: 0.5, phOctaves: 3, phBase: 350, flFrequency: 0.5, flDepth: 0.004, flFeedback: 0.5 },
-          fltr: { mode: 'lowpass', cutoff: 2000, resonance: 1, drive: 0, wet: 1 },
+          fltr: { mode: 'lowpass', cutoff: 15000, resonance: 1, drive: 0, wet: 1 },
           bitcrush: { bits: 8, wet: 0.8 },
         };
         return { ...(d[type] || {}) };

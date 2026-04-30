@@ -295,7 +295,7 @@
           tremolo:  { frequency: 4, depth: 0.7, wet: 1 },
           dist:     { distortion: 0.4, wet: 0.8 },
           mod:      { mode: 'chorus', wet: 0.5, chFrequency: 1.5, chDelay: 3.5, chDepth: 0.7, phFrequency: 0.5, phOctaves: 3, phBase: 350, flFrequency: 0.5, flDepth: 0.004, flFeedback: 0.5 },
-          fltr:     { mode: 'lowpass', cutoff: 2000, resonance: 1, drive: 0, wet: 1 },
+          fltr:     { mode: 'lowpass', cutoff: 15000, resonance: 1, drive: 0, wet: 1 },
           bitcrush: { bits: 8, wet: 0.8 },
         };
         return { ...(d[type] || {}) };

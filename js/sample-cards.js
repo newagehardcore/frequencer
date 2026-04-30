@@ -2325,7 +2325,7 @@
         fltr: {
           build(body, p, node, inst) {
             const modeMeta = [['lowpass', 'LP'], ['highpass', 'HP'], ['notch', 'NOTCH'], ['bandpass', 'BP']];
-            const MIN_F = 20, MAX_F = 20000, Q_MIN = 0.1, Q_MAX = 20;
+            const MIN_F = 20, MAX_F = 15000, Q_MIN = 0.1, Q_MAX = 20;
             const DB_MIN = -42, DB_MAX = 18;
 
             function fToX(f, W) { return Math.log10(f / MIN_F) / Math.log10(MAX_F / MIN_F) * W; }
@@ -2341,7 +2341,7 @@
                   `<button class="cbtn fx-flt-mode-btn" data-mode="${m}" style="font-size:8px;padding:2px 5px;${mode === m ? 'border-color:#888;color:#fff' : ''}">${lbl}</button>`
                 ).join('') + `</div>` +
                 `<canvas class="fx-flt-canvas" height="70" style="width:100%;display:block;cursor:crosshair;margin-bottom:4px;border-bottom:1px solid #161616"></canvas>` +
-                sliderRow('Cutoff', 'fx-flt-cutoff', 20, 20000, p.cutoff ?? 2000, 1) +
+                sliderRow('Cutoff', 'fx-flt-cutoff', 20, 15000, p.cutoff ?? 15000, 1) +
                 sliderRow('Reso', 'fx-flt-reso', 0.1, 20, p.resonance ?? 1, 0.1) +
                 sliderRow('Drive', 'fx-flt-drive', 0, 1, p.drive ?? 0, 0.01) +
                 sliderRow('Wet', 'fx-flt-wet', 0, 1, p.wet ?? 1, 0.01);
@@ -2484,7 +2484,7 @@
               });
               body.querySelector('.fx-flt-drive')?.addEventListener('input', e => {
                 p.drive = parseFloat(e.target.value);
-                if (fd) fd.driveNode.distortion = p.drive;
+                if (fd?.driveNode) fd.driveNode.setMap(_makeDriveMap(p.drive));
               });
               body.querySelector('.fx-flt-wet')?.addEventListener('input', e => {
                 p.wet = parseFloat(e.target.value);
