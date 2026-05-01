@@ -770,3 +770,43 @@
     .chords-dest-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,0.5); }
     .chords-dest-unlink { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 10px; padding: 0 2px; }
     .chords-dest-unlink:hover { color: #f44; }
+
+    /* ── Randomness zones ── */
+    .riff-rand-mode-btn {
+      flex-shrink: 0; padding: 4px 7px; background: #000;
+      border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.6);
+      font-size: 9px; font-weight: 700; font-family: inherit;
+      letter-spacing: -0.03em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.08s; white-space: nowrap;
+    }
+    .riff-rand-mode-btn:hover { border-color: #fff; color: #fff; }
+    /* Roll button: fixed size, bigger than default riff-step-btn */
+    .riff-rand-roll-btn { flex: 0 0 auto !important; padding: 5px 14px !important; font-size: 11px !important; }
+    /* Density slider: stretch to match adjacent button heights; thumb edge-aligned by initRandCslider */
+    .riff-rand-density-slider {
+      align-self: stretch; height: auto !important;
+      overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.18);
+    }
+    .riff-rand-density-slider .cslider-thumb { border-color: rgba(255,255,255,0.35); top: 0; bottom: 0; height: auto; }
+    /* Sub-row */
+    .riff-rand-sub-row { padding-top: 0 !important; gap: 4px !important; align-items: stretch !important; }
+    .riff-rand-sub-grp { display: flex; flex-direction: column; align-items: stretch; flex: 1; gap: 2px; }
+    /* Sub-grp sliders: column-flex means flex:1 grows vertically — pin to 18px */
+    .riff-rand-sub-grp .cslider {
+      flex: 0 0 18px !important; height: 18px !important; overflow: hidden;
+      background: #000; border: 1px solid rgba(255,255,255,0.18);
+    }
+    .riff-rand-sub-grp .cslider-thumb { border-color: rgba(255,255,255,0.35); }
+    .chords-rand-roll-btn-lg {
+      flex: 0 0 auto !important; padding: 5px 14px !important; font-size: 11px !important;
+      white-space: nowrap; color: #7d7d7d !important; font-family: Helvetica, Arial, sans-serif !important;
+      font-weight: 700 !important; letter-spacing: -0.03em !important; text-transform: uppercase !important;
+    }
+    .chords-rand-roll-btn-lg:hover { border-color: #fff !important; color: #fff !important; }
+    /* Oversized dice emoji without stretching the line box */
+    .rand-dice { display: inline-block; font-size: 1.5em; line-height: 0; vertical-align: -0.18em; }
+    .chords-rand-slider {
+      flex: 1; align-self: stretch; height: auto !important;
+      overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.18);
+    }
+    .chords-rand-slider .cslider-thumb { border-color: rgba(255,255,255,0.35); top: 0; bottom: 0; height: auto; }

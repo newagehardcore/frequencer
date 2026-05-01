@@ -220,6 +220,38 @@
           <!-- KEYBOARD -->
           <div class="riff-kbd-wrap" id="riff-kbd-${riff.id}"></div>
           <div class="riff-kbd-hint">A–J = white keys &nbsp;·&nbsp; W E T Y U = sharps &nbsp;·&nbsp; Z / X = oct ↓↑ &nbsp;·&nbsp; R = rest</div>
+          <!-- RANDOMNESS ZONE -->
+          <div class="riff-row riff-rand-zone sep" style="gap:4px">
+            <button class="riff-step-btn riff-rand-roll-btn"><span class="rand-dice">&#x1F3B2;</span> Roll</button>
+            <div class="cslider riff-rand-density-slider riff-rand-slider">
+              <input type="range" class="riff-rand-density-input" min="0" max="100" step="5" value="${Math.round((riff.randDensity ?? 0.6) * 100)}">
+              <div class="cslider-thumb"><span class="cslider-lbl">${Math.round((riff.randDensity ?? 0.6) * 100)}%</span><input class="cslider-edit" type="text"></div>
+            </div>
+            <button class="riff-rand-mode-btn" data-mode="${riff.randMode || 'musical'}">${riff.randMode === 'neutral' ? 'Neutral' : riff.randMode === 'chaotic' ? 'Chaotic' : 'Musical'}</button>
+          </div>
+          <div class="riff-row riff-rand-sub-row">
+            <div class="riff-rand-sub-grp">
+              <button class="riff-step-btn riff-rand-oct-btn"><span class="rand-dice">&#x1F3B2;</span> Oct</button>
+              <div class="cslider riff-rand-oct-spread-slider riff-rand-slider">
+                <input type="range" class="riff-rand-oct-spread-input" min="0" max="100" step="10" value="${Math.round((riff.randOctSpread ?? 1.0) * 100)}">
+                <div class="cslider-thumb"><span class="cslider-lbl">${Math.round((riff.randOctSpread ?? 1.0) * 100)}%</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
+            <div class="riff-rand-sub-grp">
+              <button class="riff-step-btn riff-rand-vel-btn"><span class="rand-dice">&#x1F3B2;</span> Vel</button>
+              <div class="cslider riff-rand-vel-range-slider riff-rand-slider">
+                <input type="range" class="riff-rand-vel-range-input" min="0" max="100" step="5" value="${Math.round((riff.randVelRange ?? 1.0) * 100)}">
+                <div class="cslider-thumb"><span class="cslider-lbl">${Math.round((riff.randVelRange ?? 1.0) * 100)}%</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
+            <div class="riff-rand-sub-grp">
+              <button class="riff-step-btn riff-rand-glide-btn"><span class="rand-dice">&#x1F3B2;</span> Glide</button>
+              <div class="cslider riff-rand-glide-amount-slider riff-rand-slider">
+                <input type="range" class="riff-rand-glide-amount-input" min="0" max="100" step="5" value="${Math.round((riff.randGlideAmount ?? 1.0) * 100)}">
+                <div class="cslider-thumb"><span class="cslider-lbl">${Math.round((riff.randGlideAmount ?? 1.0) * 100)}%</span><input class="cslider-edit" type="text"></div>
+              </div>
+            </div>
+          </div>
           <!-- WIRE DESTINATIONS -->
           <div class="riff-wire-row sep">
             <div class="riff-dest-list"></div>
@@ -525,6 +557,83 @@
         buildStepGrid(); riff.reschedule(); setRiffFocus(riff.id);
       });
 
+      // ── Randomness zone ──
+
+      // Edge-aligned cslider: thumb left-edge at 0%, right-edge at 100%
+      // (initCslider centers the thumb which causes overflow; we patch the sync)
+      function initRandCslider(wrap, fmt) {
+        initCslider(wrap, fmt);
+        const native = wrap.querySelector('input[type=range]');
+        const thumb  = wrap.querySelector('.cslider-thumb');
+        const sync = () => {
+          const min = parseFloat(native.min), max = parseFloat(native.max);
+          const norm = max > min ? (parseFloat(native.value) - min) / (max - min) : 0;
+          const trackW = wrap.offsetWidth;
+          const thumbW = thumb.offsetWidth || 46;
+          thumb.style.left = (norm * (trackW - thumbW)) + 'px';
+          thumb.style.transform = 'none';
+          thumb.querySelector('.cslider-lbl').textContent = fmt(parseFloat(native.value));
+        };
+        wrap._syncPos = sync;
+        native.addEventListener('input', sync);
+        requestAnimationFrame(sync);
+      }
+
+      const RAND_MODES = ['musical', 'neutral', 'chaotic'];
+      const RAND_MODE_LABELS = ['Musical', 'Neutral', 'Chaotic'];
+      const randModeBtn = q('.riff-rand-mode-btn');
+      randModeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const cur = RAND_MODES.indexOf(riff.randMode || 'musical');
+        riff.randMode = RAND_MODES[(cur + 1) % 3];
+        randModeBtn.textContent = RAND_MODE_LABELS[RAND_MODES.indexOf(riff.randMode)];
+        randModeBtn.dataset.mode = riff.randMode;
+      });
+
+      const randDensityInput = q('.riff-rand-density-input');
+      randDensityInput.addEventListener('input', () => { riff.randDensity = randDensityInput.value / 100; });
+      initRandCslider(q('.riff-rand-density-slider'), v => Math.round(v) + '%');
+
+      q('.riff-rand-roll-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        rollRiffMelody(riff);
+        buildStepGrid();
+        if (riff.seqMode === 'orbit') requestAnimationFrame(drawOrbit);
+        riff.reschedule();
+      });
+
+      // Sub-roll sliders
+      const octSpreadInput = q('.riff-rand-oct-spread-input');
+      octSpreadInput.addEventListener('input', () => { riff.randOctSpread = octSpreadInput.value / 100; });
+      initRandCslider(q('.riff-rand-oct-spread-slider'), v => Math.round(v) + '%');
+
+      const velRangeInput = q('.riff-rand-vel-range-input');
+      velRangeInput.addEventListener('input', () => { riff.randVelRange = velRangeInput.value / 100; });
+      initRandCslider(q('.riff-rand-vel-range-slider'), v => Math.round(v) + '%');
+
+      const glideAmountInput = q('.riff-rand-glide-amount-input');
+      glideAmountInput.addEventListener('input', () => { riff.randGlideAmount = glideAmountInput.value / 100; });
+      initRandCslider(q('.riff-rand-glide-amount-slider'), v => Math.round(v) + '%');
+
+      // Sub-roll buttons
+      q('.riff-rand-oct-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        rollRiffOctaves(riff);
+        buildStepGrid();
+        if (riff.seqMode === 'orbit') requestAnimationFrame(drawOrbit);
+        riff.reschedule();
+      });
+      q('.riff-rand-vel-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        rollRiffVelocities(riff);
+        buildStepGrid();
+      });
+      q('.riff-rand-glide-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        rollRiffGlide(riff);
+        buildStepGrid();
+      });
+
       // ── Steps inc/dec ──
       q('.riff-steps-inc').addEventListener('click', e => {
         e.stopPropagation();
@@ -582,6 +691,7 @@
       const rateLbl = q('.riff-rate-lbl');
       const rateInput = q('.riff-rate-input');
       initCslider(rateSlider, v => parseFloat(v).toFixed(2) + 's');
+      initCslider(q('.riff-rand-density-slider'), v => Math.round(v) + '%');
 
       function updateGridUI() {
         const on = riff.gridSync;

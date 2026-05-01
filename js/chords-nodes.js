@@ -166,6 +166,18 @@
             </div>
             <div class="chords-sarp-grid"></div>
           </div>
+          <!-- RANDOMNESS ZONE -->
+          <div class="chords-row chords-rand-zone sep">
+            <button class="chords-pm-btn chords-rand-roll-btn chords-rand-roll-btn-lg"><span class="rand-dice">&#x1F3B2;</span> Roll</button>
+            <div class="cslider chords-rand-density-slider chords-rand-slider">
+              <input type="range" class="chords-rand-density-input" min="0" max="100" step="5" value="${Math.round((chordsInst.randDensity ?? 0.7) * 100)}">
+              <div class="cslider-thumb"><span class="cslider-lbl">${Math.round((chordsInst.randDensity ?? 0.7) * 100)}%</span><input class="cslider-edit" type="text"></div>
+            </div>
+            <div class="cslider chords-rand-variety-slider chords-rand-slider">
+              <input type="range" class="chords-rand-variety-input" min="0" max="100" step="5" value="${Math.round((chordsInst.randVariety ?? 0.5) * 100)}">
+              <div class="cslider-thumb"><span class="cslider-lbl">Var ${Math.round((chordsInst.randVariety ?? 0.5) * 100)}%</span><input class="cslider-edit" type="text"></div>
+            </div>
+          </div>
           <!-- Wire destinations -->
           <div class="chords-wire-row sep">
             <div class="chords-dest-list"></div>
@@ -547,6 +559,27 @@
 
       // Rate slider
       initCslider(q('.chords-rate-slider'), v => parseFloat(v).toFixed(2) + 's');
+      // Edge-aligned cslider: same helper pattern as riff rand sliders
+      function initChordRandCslider(wrap, fmt) {
+        initCslider(wrap, fmt);
+        const native = wrap.querySelector('input[type=range]');
+        const thumb  = wrap.querySelector('.cslider-thumb');
+        const sync = () => {
+          const min = parseFloat(native.min), max = parseFloat(native.max);
+          const norm = max > min ? (parseFloat(native.value) - min) / (max - min) : 0;
+          const trackW = wrap.offsetWidth;
+          const thumbW = thumb.offsetWidth || 46;
+          thumb.style.left = (norm * (trackW - thumbW)) + 'px';
+          thumb.style.transform = 'none';
+          thumb.querySelector('.cslider-lbl').textContent = fmt(parseFloat(native.value));
+        };
+        wrap._syncPos = sync;
+        native.addEventListener('input', sync);
+        requestAnimationFrame(sync);
+      }
+
+      initChordRandCslider(q('.chords-rand-density-slider'), v => Math.round(v) + '%');
+      initChordRandCslider(q('.chords-rand-variety-slider'), v => 'Var ' + Math.round(v) + '%');
 
       // Voice leading checkbox
       q('.chords-vl-check').addEventListener('change', e => {
@@ -573,6 +606,24 @@
       q('.chords-scale-sel').addEventListener('change', e => {
         e.stopPropagation(); chordsInst.scale = e.target.value;
         if (selectedStep >= 0) openSuggestionsPanel(selectedStep);
+      });
+
+      // ── Randomness zone ──
+      const chRandDensityInput = q('.chords-rand-density-input');
+      chRandDensityInput.addEventListener('input', () => {
+        chordsInst.randDensity = chRandDensityInput.value / 100;
+      });
+      const chRandVarietyInput = q('.chords-rand-variety-input');
+      chRandVarietyInput.addEventListener('input', () => {
+        chordsInst.randVariety = chRandVarietyInput.value / 100;
+      });
+      q('.chords-rand-roll-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        rollChords(chordsInst);
+        buildStepRow();
+        updateMiniGrid();
+        if (selectedStep >= 0) openSuggestionsPanel(selectedStep);
+        if (isPlaying) chordsInst.reschedule();
       });
 
       // Wire port drag

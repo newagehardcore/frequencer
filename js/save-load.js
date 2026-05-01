@@ -183,6 +183,8 @@
           subdiv: riff.subdiv, gridSync: riff.gridSync, rate: riff.rate,
           loopBars: riff.loopBars, quantize: riff.quantize,
           scale: riff.scale, scaleRoot: riff.scaleRoot, harmony: riff.harmony,
+          randMode: riff.randMode || 'musical', randDensity: riff.randDensity ?? 0.6,
+          randOctSpread: riff.randOctSpread ?? 1.0, randVelRange: riff.randVelRange ?? 1.0, randGlideAmount: riff.randGlideAmount ?? 1.0,
           midiInput: riff.midiInput,
           seqMode: riff.seqMode,
           orbitNumRings: riff.orbitNumRings,
@@ -208,6 +210,7 @@
           stepArp: ch.stepArp, stepArpSteps: ch.stepArpSteps, stepArpPattern: ch.stepArpPattern.map(col => [...col]),
           scaleRoot: ch.scaleRoot, scale: ch.scale,
           genre: ch.genre, decade: ch.decade,
+          randDensity: ch.randDensity ?? 0.7, randVariety: ch.randVariety ?? 0.5,
           destinations: [...ch.destinations]
         });
       }
@@ -628,6 +631,8 @@
           ch.scale = cd.scale || 'Chromatic';
           ch.genre = cd.genre || '';
           ch.decade = cd.decade || '';
+          ch.randDensity = cd.randDensity ?? 0.7;
+          ch.randVariety = cd.randVariety ?? 0.5;
           chords.set(cid, ch);
           createChordsNode(ch);
           document.getElementById('chords-' + cid)?.classList.add('collapsed');
@@ -665,6 +670,11 @@
           riff.scale = rd.scale || 'Chromatic';
           riff.scaleRoot = rd.scaleRoot || 'C';
           riff.harmony = rd.harmony || 0;
+          riff.randMode        = rd.randMode        || 'musical';
+          riff.randDensity     = rd.randDensity     ?? 0.6;
+          riff.randOctSpread   = rd.randOctSpread   ?? 1.0;
+          riff.randVelRange    = rd.randVelRange    ?? 1.0;
+          riff.randGlideAmount = rd.randGlideAmount ?? 1.0;
           riff.quantize   = rd.quantize !== false;
           riff.midiInput  = rd.midiInput ?? 'all';
           riff.seqMode = rd.seqMode || 'grid';

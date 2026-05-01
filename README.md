@@ -369,6 +369,17 @@ Select a root note and scale (55+ options, shared with the Riff module). All cho
 
 **Step Arp** — enables a custom rhythmic gate pattern within the arp, with its own step count.
 
+### Randomization
+
+A **🎲 Roll** button generates a random chord progression. Two sliders control the result:
+
+- **Density** — fraction of harmonic slots filled (0–100% maps to 0–50% of slots; at 100% roughly half the pattern has chords, preserving musical harmonic rhythm)
+- **Variety** — breadth of chord choices and slot-length jitter (low = safe, common progressions; high = wider variety and less regular rhythm)
+
+Chord choices are drawn from the same AI engine used by the manual suggestions panel, conditioned on the selected root, scale, genre, and decade filters. At least one chord is always placed regardless of density.
+
+---
+
 ### Grid & Subdivisions
 
 - **Grid** — lock to BPM at the selected subdivision (`1 bar · ½ · ¼ · ¼. · ⅛ · ⅛. · 1/16`), or **free** mode with a rate slider.
@@ -435,6 +446,25 @@ Each step cell has two sets of per-step controls:
 - *On*: strip lights up in the riff's accent color; a fill bar grows from left to right showing the glide duration relative to the 500 ms maximum. Drag left/right to set the glide time (0–500 ms). The current value in ms is shown while dragging. Click again (without dragging) to turn glide off.
 
 When a step fires with glide enabled, the sequencer sets that synth's portamento to the step's glide time before triggering the note, overriding the global Glide knob for that step only. Steps with glide off always set portamento to 0. Glide data moves with the note when the pattern is shifted with ◀ ▶. Glide settings are saved and restored with the project.
+
+### Randomization
+
+A **🎲 Roll** button in the riff card generates a new random melody pattern for all steps.
+
+- **Density** — controls what fraction of steps receive notes (0–100% maps directly to fill percentage)
+- **Mode** — click to cycle: **Musical** (consonance-weighted, beat-strength bias, stepwise motion with direction momentum) · **Neutral** (uniform weighting) · **Chaotic** (inverted consonance, prefers leaps)
+
+Three sub-roll buttons each have an **amount slider**:
+
+| Button | What it randomizes |
+|--------|-------------------|
+| **🎲 Oct** | Reassigns each note to octave 3, 4, or 5 (octave 4 weighted 3×; amount 0 = center octave only) |
+| **🎲 Vel** | Randomizes per-step velocity (amount 0 = all at max, 100% = full 0.2–1.0 range) |
+| **🎲 Glide** | Randomly enables glide on steps and sets glide duration (amount 0 = no glide, 100% = up to 300 ms at 30% chance) |
+
+Rolling melody always respects the selected **Scale**, **Root**, and sequencer mode (GRID or ORBIT). Musical mode weights consonant intervals and stronger beats (beat 1 is most likely to get a note), and prefers step-wise melodic motion.
+
+---
 
 ### Grid & Subdivision
 
